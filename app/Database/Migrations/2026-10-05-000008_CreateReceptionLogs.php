@@ -12,7 +12,7 @@ class CreateReceptionLogs extends Migration
             'id'           => ['type' => 'INT', 'constraint' => 11, 'unsigned' => true, 'auto_increment' => true],
             'reception_id' => ['type' => 'INT', 'constraint' => 11, 'unsigned' => true],
             'actor_id'     => ['type' => 'INT', 'constraint' => 11, 'unsigned' => true],
-            'action'       => ['type' => 'ENUM', 'constraint' => ['CREATE', 'UPDATE']],
+            'action'       => ['type' => 'ENUM', 'constraint' => ['CREATE', 'UPDATE', 'DELETE']],
             'created_at'   => ['type' => 'DATETIME'],
         ]);
         $this->forge->addKey('id', true);

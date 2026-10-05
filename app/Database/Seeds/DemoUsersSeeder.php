@@ -2,6 +2,7 @@
 
 namespace App\Database\Seeds;
 
+use App\Helpers\Hash;
 use CodeIgniter\Database\Seeder;
 
 class DemoUsersSeeder extends Seeder
@@ -10,21 +11,24 @@ class DemoUsersSeeder extends Seeder
     {
         $users = [
             [
+                'name'          => 'Rina Supervisor',
                 'username'      => 'supervisor',
-                'password_hash' => password_hash('supervisor123', PASSWORD_DEFAULT),
+                'email'         => 'supervisor@farmagitechs.test',
+                'password_hash' => Hash::make('supervisor123'),
                 'role'          => 'supervisor',
                 'is_active'     => 1,
             ],
             [
+                'name'          => 'Dewi Petugas',
                 'username'      => 'petugas',
-                'password_hash' => password_hash('petugas123', PASSWORD_DEFAULT),
-                'role'          => 'penerimaan',
+                'email'         => 'petugas@farmagitechs.test',
+                'password_hash' => Hash::make('petugas123'),
+                'role'          => 'reception',
                 'is_active'     => 1,
             ],
         ];
 
-        $this->db->table('users')->where('username', 'supervisor')->delete();
-        $this->db->table('users')->where('username', 'petugas')->delete();
+        $this->db->table('users')->whereIn('username', ['supervisor', 'petugas'])->delete();
         $this->db->table('users')->insertBatch($users);
     }
 }

@@ -6,7 +6,7 @@ use CodeIgniter\Config\BaseConfig;
 
 class Permissions extends BaseConfig
 {
-    public const ROLE_PENERIMAAN = 'penerimaan';
+    public const ROLE_RECEPTION  = 'reception';
     public const ROLE_SUPERVISOR = 'supervisor';
 
     public const RECEIPT_CREATE     = 'receipt.create';
@@ -18,7 +18,7 @@ class Permissions extends BaseConfig
      * @var array<string, list<string>>
      */
     public array $roles = [
-        self::ROLE_PENERIMAAN => [
+        self::ROLE_RECEPTION => [
             self::RECEIPT_CREATE,
             self::RECEIPT_VIEW,
             self::RECEIPT_UPDATE_OWN,

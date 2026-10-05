@@ -14,7 +14,9 @@ class CreateReceptions extends Migration
             'supplier_id'  => ['type' => 'INT', 'constraint' => 11, 'unsigned' => true],
             'received_at'  => ['type' => 'DATETIME'],
             'created_by'   => ['type' => 'INT', 'constraint' => 11, 'unsigned' => true],
+            'created_at'   => ['type' => 'DATETIME'],
             'updated_by'   => ['type' => 'INT', 'constraint' => 11, 'unsigned' => true, 'null' => true],
+            'updated_at'   => ['type' => 'DATETIME', 'null' => true],
         ]);
         $this->forge->addKey('id', true);
         $this->forge->addUniqueKey('reference_no');

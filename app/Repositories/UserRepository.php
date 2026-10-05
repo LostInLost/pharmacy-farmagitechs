@@ -16,6 +16,11 @@ class UserRepository
         return $this->model->where('username', $username)->first();
     }
 
+    public function findByEmail(string $email): ?array
+    {
+        return $this->model->where('email', $email)->first();
+    }
+
     public function findById(int $id): ?array
     {
         return $this->model->find($id);
