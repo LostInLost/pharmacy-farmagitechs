@@ -1,0 +1,141 @@
+# Pharmacy Farmagitechs
+
+Aplikasi pencatatan penerimaan obat dan laporan stok untuk fasilitas kesehatan. Dibuat sebagai jawaban Tes Fullstack Web Developer PT Farma Global Teknologi.
+
+## 1. Versi dan Prasyarat
+
+| Komponen | Versi yang dipakai |
+| --- | --- |
+| PHP | 8.3.33 (minimal 8.2, ekstensi `mysqli` dan `intl` aktif) |
+| CodeIgniter | 4.7.4 |
+| MySQL | 8.4.3 (minimal 5.7) |
+| Composer | 2.x |
+
+Prasyarat lain: ekstensi PHP `mysqli`, `intl`, `mbstring`, dan `json` aktif. Aplikasi dijalankan lokal tanpa deployment khusus.
+
+## 2. Diagram Database dan Urutan Setup Skema
+
+Diagram ERD Mermaid ada di [`docs/database.md`](docs/database.md), lengkap dengan penjelasan primary key, foreign key, unique constraint, indeks, model stok, dan aturan konsistensi transaksi.
+
+Urutan pembuatan skema dari database kosong:
+
+1. Buat database kosong: `CREATE DATABASE pharmacy_farmagitechs CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`
+2. Jalankan migrasi aplikasi: `php spark migrate`
+3. Muat data awal lampiran (bila tersedia): `mysql -u <user> -p pharmacy_farmagitechs < Lampiran/seed_farmasi.sql`
+4. Buat dua akun demo: `php spark db:seed DemoUsersSeeder`
+
+Catatan: tabel `suppliers`, `medicines`, `seed_batch_stock`, dan `stock_usage` dibuat oleh migrasi sebagai skema provisional. Saat `Lampiran/seed_farmasi.sql` tersedia, impor file tersebut menggantikan isi keempat tabel tanpa mengubah struktur tabel transaksi.
+
+## 3. Cara Menjalankan Aplikasi
+
+1. Salin `env` menjadi `.env`, lalu sesuaikan bagian database:
+
+   ```
+   database.default.hostname = localhost
+   database.default.database = pharmacy_farmagitechs
+   database.default.username = <user_database_anda>
+   database.default.password = <kata_sandi_anda>
+   database.default.DBDriver = MySQLi
+   database.default.port = 3306
+   ```
+
+2. Install dependensi: `composer install`
+3. Jalankan migrasi dan seeder sesuai urutan pada bagian 2.
+4. Jalankan server lokal: `php spark serve --port 8080`
+5. Buka `http://localhost:8080`.
+
+Kata sandi database tidak dicantumkan di repositori ini. Isi sesuai konfigurasi lokal Anda.
+
+## 4. Akun Demo dan Autentikasi
+
+Dua akun dibuat oleh `DemoUsersSeeder`:
+
+| Username | Kata sandi | Peran |
+| --- | --- | --- |
+| `supervisor` | `supervisor123` | Supervisor farmasi |
+| `petugas` | `petugas123` | Petugas penerimaan |
+
+Kata sandi disimpan sebagai hash `password_hash()` (bcrypt). Autentikasi memakai session CodeIgniter 4: login lewat `POST /login` (form web) atau `POST /api/login` (JSON), logout lewat `GET /logout` atau `POST /api/logout`. Identitas pembuat/pengubah selalu diambil server dari session, bukan dari body request.
+
+## 5. Endpoint Utama
+
+| Metode | Path | Fungsi | Autentikasi |
+| --- | --- | --- | --- |
+| POST | `/api/login` | Login, mengembalikan JSON | Tidak perlu |
+| POST | `/api/logout` | Logout | Session |
+| GET | `/api/receipts` | Daftar seluruh penerimaan | Session |
+| POST | `/api/receipts` | Membuat penerimaan beserta seluruh item | Session |
+| GET | `/api/receipts/{id}` | Detail satu penerimaan | Session |
+| PUT | `/api/receipts/{id}` | Memperbarui penerimaan (keadaan akhir lengkap) | Session |
+| GET | `/api/stocks?on_date=YYYY-MM-DD` | Laporan stok per obat dan batch | Session |
+
+Status implementasi: pada tahap ini endpoint sudah terdaftar di router dan dilindungi filter `auth`; implementasi handler menyusul pada tahap backend berikutnya (saat ini mengembalikan `501`). Request tanpa login sudah ditolak: `401` JSON untuk path `/api/*` dan redirect ke `/login` untuk halaman web.
+
+Contoh request membuat penerimaan (setelah login, kirim cookie session):
+
+```
+POST /api/receipts
+Content-Type: application/json
+
+{
+  "reference_no": "PB-001",
+  "supplier_id": 1,
+  "received_at": "2026-10-03T10:00:00+07:00",
+  "items": [
+    {"medicine_id": 101, "batch_no": "PCT-2601", "expires_on": "2027-12-31", "quantity": 10},
+    {"medicine_id": 104, "batch_no": "IBU-2602", "expires_on": "2028-06-30", "quantity": 5}
+  ]
+}
+```
+
+Contoh request laporan stok:
+
+```
+GET /api/stocks?on_date=2026-10-03
+```
+
+## 6. Pengujian dan Verifikasi
+
+Pengujian otomatis belum tersedia pada tahap ini. Rencana skenario feature ada di [`tests/Feature/scenarios.md`](tests/Feature/scenarios.md).
+
+Verifikasi manual yang sudah dapat dijalankan sekarang:
+
+1. Dari database kosong, jalankan `php spark migrate` lalu `php spark db:seed DemoUsersSeeder`; pastikan kedua akun muncul di tabel `users` dengan hash bcrypt.
+2. Uji constraint: insert penerimaan dengan `supplier_id` tidak ada harus gagal (FK), insert dua item dengan kombinasi `(reception_id, medicine_id, batch_no)` sama harus gagal (unique), insert dua stok awal batch sama harus gagal (unique).
+3. Jalankan `php spark migrate:rollback` lalu `php spark migrate` untuk memastikan migrasi turun dan naik bersih.
+4. Buka `/receptions` tanpa login; harus redirect ke `/login`. Akses `/api/stocks` tanpa login; harus `401` JSON.
+5. Jalankan `php spark routes` untuk memastikan seluruh path terdaftar dengan filter `auth`.
+
+Asumsi dan batasan saat ini:
+
+- Lampiran `Lampiran/seed_farmasi.sql` belum tersedia; struktur tabel seed dibuat provisional dari deskripsi soal dan akan direkonsiliasi saat lampiran diterima.
+- Belum ada UI berfungsi; view masih placeholder.
+- Belum ada logika bisnis penerimaan, stok, dan autentikasi (menyusul pada tahap backend).
+
+## 7. Postman Collection
+
+Belum tersedia pada tahap ini. Rencana: satu collection JSON di `postman/` berisi folder Auth, Receipts, dan Stocks dengan variabel environment `base_url` (contoh `http://localhost:8080`) dan penyimpanan cookie session otomatis dari request login.
+
+## Struktur Proyek
+
+```
+app/
+  Config/         Konfigurasi termasuk peta permission hardcoded
+  Controllers/    Api/ dan Web/ hanya menerjemahkan HTTP
+  Database/       Migrations/ dan Seeds/
+  Filters/        AuthFilter (menolak request tanpa login)
+  Models/         CRUD tipis
+  Policies/       Keputusan hak ubah
+  Repositories/   Query database
+  Services/       Logika transaksi
+  Validation/     Aturan validasi payload
+  Views/          Tampilan web
+docs/             Dokumentasi database dan konvensi kode
+tests/Feature/    Rencana skenario pengujian
+```
+
+Aturan lapisan ada di [`docs/conventions.md`](docs/conventions.md).
+
+## Catatan Alat AI dan Referensi
+
+Solusi ini disusun dengan bantuan AI (CodeBuddy) dan referensi dokumentasi resmi CodeIgniter 4. Keputusan desain, alasan pemilihan model stok, dan peta hak akses diverifikasi dan disesuaikan manual; detail keputusan tercatat di riwayat commit dan dokumentasi pada folder `docs/`.
