@@ -38,7 +38,6 @@
 # database.default.DBPrefix =
 # database.default.port = 3306
 
-
 # If you use MySQLi as tests, first update the values of Config\Database::$tests.
 # database.tests.hostname = localhost
 # database.tests.database = ci4_test
@@ -62,9 +61,3 @@
 
 # session.driver = 'CodeIgniter\Session\Handlers\FileHandler'
 # session.savePath = null
-
-#--------------------------------------------------------------------
-# LOGGER
-#--------------------------------------------------------------------
-
-# logger.threshold = 4
