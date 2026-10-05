@@ -50,12 +50,12 @@ Kata sandi database tidak dicantumkan di repositori ini. Isi sesuai konfigurasi 
 
 Dua akun dibuat oleh `DemoUsersSeeder`:
 
-| Username | Kata sandi | Peran |
-| --- | --- | --- |
-| `supervisor` | `supervisor123` | Supervisor farmasi |
-| `petugas` | `petugas123` | Petugas penerimaan |
+| Nama | Username | Email | Kata sandi | Peran |
+| --- | --- | --- | --- | --- |
+| Rina Supervisor | `supervisor` | `supervisor@farmagitechs.test` | `supervisor123` | Supervisor farmasi |
+| Dewi Petugas | `petugas` | `petugas@farmagitechs.test` | `petugas123` | Petugas penerimaan |
 
-Kata sandi disimpan sebagai hash `password_hash()` (bcrypt). Autentikasi memakai session CodeIgniter 4: login lewat `POST /login` (form web) atau `POST /api/login` (JSON), logout lewat `GET /logout` atau `POST /api/logout`. Identitas pembuat/pengubah selalu diambil server dari session, bukan dari body request.
+Kata sandi disimpan sebagai hash Argon2id (`Config\Hash`, dapat diubah lewat `hash.algo` di `.env`; otomatis jatuh ke bcrypt bila Argon2 tidak tersedia di mesin tersebut). `email` wajib dan unik agar alur pemulihan kata sandi berbasis email dapat ditambahkan nanti; fitur pemulihan itu sendiri di luar cakupan tes. Autentikasi memakai session CodeIgniter 4: login lewat `POST /login` (form web) atau `POST /api/login` (JSON), logout lewat `GET /logout` atau `POST /api/logout`. Identitas pembuat/pengubah selalu diambil server dari session, bukan dari body request.
 
 ## 5. Endpoint Utama
 
@@ -96,11 +96,11 @@ GET /api/stocks?on_date=2026-10-03
 
 ## 6. Pengujian dan Verifikasi
 
-Pengujian otomatis belum tersedia pada tahap ini. Rencana skenario feature ada di [`tests/Feature/scenarios.md`](tests/Feature/scenarios.md).
+Pengujian otomatis tersedia untuk helper hash: `vendor/bin/phpunit --filter HashTest`. Rencana skenario feature ada di [`tests/Feature/scenarios.md`](tests/Feature/scenarios.md).
 
 Verifikasi manual yang sudah dapat dijalankan sekarang:
 
-1. Dari database kosong, jalankan `php spark migrate` lalu `php spark db:seed DemoUsersSeeder`; pastikan kedua akun muncul di tabel `users` dengan hash bcrypt.
+1. Dari database kosong, jalankan `php spark migrate` lalu `php spark db:seed DemoUsersSeeder`; pastikan kedua akun muncul di tabel `users` dengan hash Argon2id.
 2. Uji constraint: insert penerimaan dengan `supplier_id` tidak ada harus gagal (FK), insert dua item dengan kombinasi `(reception_id, medicine_id, batch_no)` sama harus gagal (unique), insert dua stok awal batch sama harus gagal (unique).
 3. Jalankan `php spark migrate:rollback` lalu `php spark migrate` untuk memastikan migrasi turun dan naik bersih.
 4. Buka `/receptions` tanpa login; harus redirect ke `/login`. Akses `/api/stocks` tanpa login; harus `401` JSON.
@@ -130,6 +130,7 @@ app/
   Services/       Logika transaksi
   Validation/     Aturan validasi payload
   Views/          Tampilan web
+  Helpers/        Helper lintas lapisan (Hash)
 docs/             Dokumentasi database dan konvensi kode
 tests/Feature/    Rencana skenario pengujian
 ```
