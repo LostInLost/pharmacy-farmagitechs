@@ -896,7 +896,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"reference_no\": \"PB-SUP-{{$timestamp}}\",\n  \"supplier_id\": 1,\n  \"received_at\": \"2026-10-04T10:00:00+07:00\",\n  \"items\": [\n    {\"medicine_id\": 102, \"batch_no\": \"AMX-2601\", \"expires_on\": \"2027-06-30\", \"quantity\": 5}\n  ]\n}"
+                            "raw": "{\n  \"reference_no\": \"PB-SUP-{{$timestamp}}\",\n  \"supplier_id\": 1,\n  \"received_at\": \"2026-10-04T10:00:00+07:00\",\n  \"items\": [\n    {\"medicine_id\": 102, \"batch_no\": \"AMX-2601\", \"expires_on\": \"2027-05-31\", \"quantity\": 5}\n  ]\n}"
                         },
                         "url": {
                             "raw": "{{base_url}}/api/receipts",
@@ -1005,7 +1005,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"reference_no\": \"PB-SUP-1\",\n  \"supplier_id\": 1,\n  \"received_at\": \"2026-10-04T10:00:00+07:00\",\n  \"items\": [\n    {\"medicine_id\": 102, \"batch_no\": \"AMX-2601\", \"expires_on\": \"2027-06-30\", \"quantity\": 99}\n  ]\n}"
+                            "raw": "{\n  \"reference_no\": \"PB-SUP-1\",\n  \"supplier_id\": 1,\n  \"received_at\": \"2026-10-04T10:00:00+07:00\",\n  \"items\": [\n    {\"medicine_id\": 102, \"batch_no\": \"AMX-2601\", \"expires_on\": \"2027-05-31\", \"quantity\": 99}\n  ]\n}"
                         },
                         "url": {
                             "raw": "{{base_url}}/api/receipts/{{foreign_receipt_id}}",

@@ -46,6 +46,8 @@ erDiagram
         int id PK
         int medicine_id FK
         varchar batch_no
+        datetime used_at "NULL = tidak disebut lampiran"
+        varchar unit_name "NULL = tidak disebut lampiran"
         int quantity
     }
     receptions {
@@ -85,12 +87,12 @@ erDiagram
 | `suppliers` | Katalog pemasok beserta status aktifnya. |
 | `medicines` | Katalog obat, satuan (`unit`), dan status aktifnya. |
 | `seed_batch_stock` | Stok awal per batch pada 2026-10-01, sebelum pemakaian seed. |
-| `stock_usage` | Pemakaian final oleh unit pelayanan yang mengurangi stok. |
+| `stock_usage` | Pemakaian final oleh unit pelayanan yang mengurangi stok, beserta waktu pakai dan unit pelayanannya. |
 | `receptions` | Header satu transaksi kedatangan dari satu pemasok. |
 | `reception_items` | Rincian obat, batch, kedaluwarsa, dan jumlah per penerimaan. |
 | `reception_logs` | Riwayat aksi buat/ubah per penerimaan beserta snapshot sebelum/sesudah. |
 
-`suppliers`, `medicines`, `seed_batch_stock`, dan `stock_usage` berasal dari lampiran seed. Tiga tabel pertama dimuat ulang oleh `Lampiran/seed_farmasi.sql`; migrasi menyediakan skema provisional yang sama agar aplikasi bisa dijalankan dan diuji tanpa lampiran, dan direkonsiliasi saat lampiran tersedia.
+`suppliers`, `medicines`, `seed_batch_stock`, dan `stock_usage` berasal dari lampiran `app/Database/seed_farmasi.sql`. Isinya dipindahkan apa adanya ke `StockSeeder` (3 pemasok, 25 obat, 10 batch awal, 3 baris pemakaian) supaya angka laporan stok sama dengan contoh soal tanpa impor SQL manual. Seeder mencocokkan baris per `id`: `suppliers` dan `medicines` diperbarui di tempat karena dirujuk foreign key, sedangkan `seed_batch_stock` dan `stock_usage` dimuat ulang seluruhnya agar stok penerimaan lama tidak menumpuk. Kolom `used_at` dan `unit_name` hanya dibaca lampiran; perhitungan stok tetap memakai `quantity`.
 
 ## Kunci dan Indeks
 

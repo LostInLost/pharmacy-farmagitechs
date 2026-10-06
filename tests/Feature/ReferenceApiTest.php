@@ -49,7 +49,10 @@ final class ReferenceApiTest extends CIUnitTestCase
 
         $data = $this->body($result)['data'];
 
-        $this->assertSame([['id' => 1, 'name' => 'PT Sehat Sentosa']], $data);
+        $this->assertSame([
+            ['id' => 1, 'name' => 'Farma Nusantara'],
+            ['id' => 2, 'name' => 'Medika Sentosa'],
+        ], $data);
     }
 
     public function testMedicinesReturnOnlyActiveWithMinimalFields(): void
@@ -62,7 +65,7 @@ final class ReferenceApiTest extends CIUnitTestCase
         $ids  = array_column($data, 'id');
 
         $this->assertNotContains(105, $ids);
-        $this->assertSame([102, 107, 106, 104, 101, 103], $ids);
+        $this->assertSame([102, 106, 104, 107, 101, 103], $ids);
         $this->assertSame(['id', 'name', 'unit'], array_keys($data[0]));
     }
 

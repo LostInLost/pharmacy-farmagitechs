@@ -21,10 +21,10 @@ Urutan pembuatan skema dari database kosong:
 
 1. Buat database kosong: `CREATE DATABASE pharmacy_farmagitechs CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`
 2. Jalankan migrasi aplikasi: `php spark migrate`
-3. Muat data awal lampiran (bila tersedia): `mysql -u <user> -p pharmacy_farmagitechs < Lampiran/seed_farmasi.sql`
+3. Muat data awal lampiran: `php spark db:seed StockSeeder`
 4. Buat dua akun demo: `php spark db:seed DemoUsersSeeder`
 
-Catatan: tabel `suppliers`, `medicines`, `seed_batch_stock`, dan `stock_usage` dibuat oleh migrasi sebagai skema provisional. Saat `Lampiran/seed_farmasi.sql` tersedia, impor file tersebut menggantikan isi keempat tabel tanpa mengubah struktur tabel transaksi.
+Catatan: isi lampiran `app/Database/seed_farmasi.sql` (3 pemasok, 25 obat, 10 batch stok awal, 3 baris pemakaian) sudah dipindahkan ke `StockSeeder`, sehingga tidak perlu impor SQL manual. Seeder mencocokkan baris per `id` dan aman dijalankan ulang.
 
 ## 3. Cara Menjalankan Aplikasi
 
@@ -128,7 +128,7 @@ Mencakup: skenario 1-5 soal, angka laporan stok contoh soal, batas `expires_on` 
 
 Verifikasi manual:
 
-1. Dari database kosong, jalankan `php spark migrate`, `php spark db:seed DemoUsersSeeder`, lalu `php spark db:seed ProvisionalStockSeeder`.
+1. Dari database kosong, jalankan `php spark migrate`, `php spark db:seed StockSeeder`, lalu `php spark db:seed DemoUsersSeeder`.
 2. Jalankan `composer run test`; semua test harus lulus.
 3. Jalankan `php spark migrate:rollback` lalu `php spark migrate` untuk memastikan migrasi turun dan naik bersih.
 4. Buka `/receptions` tanpa login; harus redirect ke `/login`. Akses `/api/stocks` tanpa login; harus `401` JSON.
@@ -138,8 +138,7 @@ Verifikasi manual:
 
 Asumsi dan batasan saat ini:
 
-- Lampiran `Lampiran/seed_farmasi.sql` belum tersedia; `ProvisionalStockSeeder` memuat angka yang disebut soal (obat 101, 102, 103, 104, 106, 107) agar perhitungan stok dapat diverifikasi. Saat lampiran asli diterima, impor menggantikan isi tabel seed dan seeder provisional dilewati otomatis.
-- Obat di luar daftar contoh soal (105, dan obat lain dari 25 katalog) belum ada di seed provisional.
+- Data awal berasal dari lampiran `app/Database/seed_farmasi.sql`, dipindahkan ke `StockSeeder`. Jalankan seeder itu sebelum memakai angka contoh soal (obat 101, 102, 103, 104, 106, 107); menjalankannya ulang aman karena baris dicocokkan per `id`.
 - UI menyediakan 4 tampilan wajib (login, daftar/detail penerimaan, form penerimaan, daftar stok). Filter tanggal `on_date` di UI tersedia di halaman stok; angka contoh soal paling akurat diverifikasi lewat API.
 
 ## 7. Postman Collection
