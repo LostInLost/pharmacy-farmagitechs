@@ -24,7 +24,7 @@ Urutan pembuatan skema dari database kosong:
 3. Muat data awal lampiran: `php spark db:seed StockSeeder`
 4. Buat dua akun demo: `php spark db:seed DemoUsersSeeder`
 
-Catatan: isi lampiran `app/Database/seed_farmasi.sql` (3 pemasok, 25 obat, 10 batch stok awal, 3 baris pemakaian) sudah dipindahkan ke `StockSeeder`, sehingga tidak perlu impor SQL manual. Seeder mencocokkan baris per `id` dan aman dijalankan ulang.
+Catatan: isi lampiran `app/Database/seed_farmasi.sql` (3 pemasok, 25 obat, 10 batch stok awal, 3 baris pemakaian) sudah dipindahkan ke `StockSeeder`, sehingga tidak perlu impor SQL manual. Seeder mencocokkan `suppliers` dan `medicines` per `id`, lalu memuat ulang `seed_batch_stock` dan `stock_usage` agar aman dijalankan berulang.
 
 ## 3. Cara Menjalankan Aplikasi
 
@@ -138,7 +138,7 @@ Verifikasi manual:
 
 Asumsi dan batasan saat ini:
 
-- Data awal berasal dari lampiran `app/Database/seed_farmasi.sql`, dipindahkan ke `StockSeeder`. Jalankan seeder itu sebelum memakai angka contoh soal (obat 101, 102, 103, 104, 106, 107); menjalankannya ulang aman karena baris dicocokkan per `id`.
+- Data awal berasal dari lampiran `app/Database/seed_farmasi.sql`, dipindahkan ke `StockSeeder`. Jalankan seeder itu sebelum memakai angka contoh soal (obat 101, 102, 103, 104, 106, 107); menjalankannya ulang aman dan tidak menggandakan data.
 - UI menyediakan 4 tampilan wajib (login, daftar/detail penerimaan, form penerimaan, daftar stok). Filter tanggal `on_date` di UI tersedia di halaman stok; angka contoh soal paling akurat diverifikasi lewat API.
 
 ## 7. Postman Collection
