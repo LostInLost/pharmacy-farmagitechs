@@ -4,7 +4,7 @@
     <div class="col-md-6 col-lg-5 col-xl-4">
         <div class="card shadow-sm">
             <div class="card-body">
-                <h1 class="card-title h4 mb-3"><?= esc(lang('Auth.login.title')) ?></h1>
+                <h1 class="card-title h4 mb-3"><?= lang_html('Auth.login.title') ?></h1>
 
                 <?php if (! empty($error)): ?>
                     <div class="alert alert-danger" role="alert"><?= esc($error) ?></div>
@@ -13,16 +13,16 @@
                 <form method="post" action="<?= site_url('login') ?>">
                     <?= csrf_field() ?>
                     <div class="mb-3">
-                        <label for="username" class="form-label"><?= esc(lang('Auth.login.username')) ?></label>
+                        <label for="username" class="form-label"><?= lang_html('Auth.login.username') ?></label>
                         <input type="text" class="form-control" id="username" name="username"
                                value="<?= esc(old('username') ?? '') ?>" required autofocus>
                     </div>
                     <div class="mb-3">
-                        <label for="password" class="form-label"><?= esc(lang('Auth.login.password')) ?></label>
+                        <label for="password" class="form-label"><?= lang_html('Auth.login.password') ?></label>
                         <input type="password" class="form-control" id="password" name="password" required>
                     </div>
                     <button type="submit" class="btn btn-primary w-100">
-                        <?= esc(lang('Auth.login.submit')) ?>
+                        <?= lang_html('Auth.login.submit') ?>
                     </button>
                 </form>
             </div>

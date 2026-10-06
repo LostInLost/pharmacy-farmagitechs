@@ -19,7 +19,7 @@ $isStocks = str_starts_with($currentPath, 'stocks');
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
     <div class="container">
         <a class="navbar-brand" href="<?= site_url(session()->get('user_id') !== null ? 'receptions' : 'login') ?>">
-            <?= esc(lang('App.brand')) ?>
+            <?= lang_html('App.brand') ?>
         </a>
         <?php if (session()->get('user_id') !== null): ?>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"
@@ -31,12 +31,12 @@ $isStocks = str_starts_with($currentPath, 'stocks');
                     <li class="nav-item">
                         <a class="nav-link<?= $isReceptions ? ' active' : '' ?>"
                            <?= $isReceptions ? 'aria-current="page"' : '' ?>
-                           href="<?= site_url('receptions') ?>"><?= esc(lang('App.nav.receptions')) ?></a>
+                           href="<?= site_url('receptions') ?>"><?= lang_html('App.nav.receptions') ?></a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link<?= $isStocks ? ' active' : '' ?>"
                            <?= $isStocks ? 'aria-current="page"' : '' ?>
-                           href="<?= site_url('stocks') ?>"><?= esc(lang('App.nav.stocks')) ?></a>
+                           href="<?= site_url('stocks') ?>"><?= lang_html('App.nav.stocks') ?></a>
                     </li>
                 </ul>
                 <div class="d-flex align-items-center gap-3">
@@ -44,7 +44,7 @@ $isStocks = str_starts_with($currentPath, 'stocks');
                         <?= esc(session()->get('user_name')) ?> (<?= esc(session()->get('role')) ?>)
                     </span>
                     <a class="btn btn-outline-light btn-sm" href="<?= site_url('logout') ?>">
-                        <?= esc(lang('App.nav.logout')) ?>
+                        <?= lang_html('App.nav.logout') ?>
                     </a>
                 </div>
             </div>
@@ -56,7 +56,7 @@ $isStocks = str_starts_with($currentPath, 'stocks');
 </main>
 <footer class="border-top bg-white py-3">
     <div class="container text-muted small">
-        <?= esc(lang('App.brand')) ?>
+        <?= lang_html('App.brand') ?>
     </div>
 </footer>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"

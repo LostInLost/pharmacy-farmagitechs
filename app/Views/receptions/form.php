@@ -9,14 +9,14 @@
         <?= csrf_field() ?>
         <div class="row g-3">
             <div class="col-md-4">
-                <label for="reference_no" class="form-label"><?= esc(lang('Reception.form.reference_no')) ?></label>
+                <label for="reference_no" class="form-label"><?= lang_html('Reception.form.reference_no') ?></label>
                 <input type="text" class="form-control" id="reference_no" name="reference_no" required
                        value="<?= esc($reception['reference_no'] ?? '') ?>">
             </div>
             <div class="col-md-4">
-                <label for="supplier_id" class="form-label"><?= esc(lang('Reception.form.supplier')) ?></label>
+                <label for="supplier_id" class="form-label"><?= lang_html('Reception.form.supplier') ?></label>
                 <select class="form-select" id="supplier_id" name="supplier_id" required>
-                    <option value=""><?= esc(lang('Reception.form.choose')) ?></option>
+                    <option value=""><?= lang_html('Reception.form.choose') ?></option>
                     <?php foreach ($suppliers as $supplier): ?>
                         <option value="<?= (int) $supplier['id'] ?>"
                             <?= (int) ($reception['supplier_id'] ?? 0) === (int) $supplier['id'] ? 'selected' : '' ?>>
@@ -26,21 +26,21 @@
                 </select>
             </div>
             <div class="col-md-4">
-                <label for="received_at" class="form-label"><?= esc(lang('Reception.form.received_at')) ?></label>
+                <label for="received_at" class="form-label"><?= lang_html('Reception.form.received_at') ?></label>
                 <input type="datetime-local" class="form-control" id="received_at" name="received_at" required
                        value="<?= esc(isset($reception['received_at']) ? str_replace(' ', 'T', substr($reception['received_at'], 0, 16)) : '') ?>">
             </div>
         </div>
 
-        <h2 class="h5 mt-4 mb-2"><?= esc(lang('Reception.form.items')) ?></h2>
+        <h2 class="h5 mt-4 mb-2"><?= lang_html('Reception.form.items') ?></h2>
         <div class="table-responsive">
             <table class="table table-bordered align-middle">
                 <thead class="table-light">
                 <tr>
-                    <th><?= esc(lang('Reception.form.medicine')) ?></th>
-                    <th><?= esc(lang('Reception.form.batch_no')) ?></th>
-                    <th><?= esc(lang('Reception.form.expires_on')) ?></th>
-                    <th class="text-end"><?= esc(lang('Reception.form.quantity')) ?></th>
+                    <th><?= lang_html('Reception.form.medicine') ?></th>
+                    <th><?= lang_html('Reception.form.batch_no') ?></th>
+                    <th><?= lang_html('Reception.form.expires_on') ?></th>
+                    <th class="text-end"><?= lang_html('Reception.form.quantity') ?></th>
                     <th></th>
                 </tr>
                 </thead>
@@ -48,12 +48,12 @@
             </table>
         </div>
         <button type="button" class="btn btn-outline-secondary btn-sm" id="add-row">
-            <?= esc(lang('Reception.form.add_row')) ?>
+            <?= lang_html('Reception.form.add_row') ?>
         </button>
 
         <div class="d-flex align-items-center gap-3 mt-4">
-            <button type="submit" class="btn btn-primary"><?= esc(lang('Reception.form.save')) ?></button>
-            <a class="btn btn-link" href="<?= site_url('receptions') ?>"><?= esc(lang('Reception.form.back')) ?></a>
+            <button type="submit" class="btn btn-primary"><?= lang_html('Reception.form.save') ?></button>
+            <a class="btn btn-link" href="<?= site_url('receptions') ?>"><?= lang_html('Reception.form.back') ?></a>
         </div>
     </div>
 </form>
@@ -61,15 +61,15 @@
 <?php if ($reception !== null && $reception['logs'] !== []): ?>
     <section class="card shadow-sm">
         <div class="card-body">
-            <h2 class="h5 mb-3"><?= esc(lang('Reception.log.title')) ?></h2>
+            <h2 class="h5 mb-3"><?= lang_html('Reception.log.title') ?></h2>
             <div class="table-responsive">
                 <table class="table table-striped align-middle mb-0">
                     <thead class="table-light">
                     <tr>
-                        <th><?= esc(lang('Reception.log.time')) ?></th>
-                        <th><?= esc(lang('Reception.log.action')) ?></th>
-                        <th><?= esc(lang('Reception.log.actor')) ?></th>
-                        <th><?= esc(lang('Reception.log.changes')) ?></th>
+                        <th><?= lang_html('Reception.log.time') ?></th>
+                        <th><?= lang_html('Reception.log.action') ?></th>
+                        <th><?= lang_html('Reception.log.actor') ?></th>
+                        <th><?= lang_html('Reception.log.changes') ?></th>
                     </tr>
                     </thead>
                     <tbody>
@@ -91,9 +91,9 @@
                                     ?>
                                     <details>
                                         <summary><?= esc($summary) ?></summary>
-                                        <pre class="bg-light p-2 rounded small mb-0"><?= esc(lang('Reception.log.before')) ?>: <?= esc(json_encode($before, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) ?>
+                                        <pre class="bg-light p-2 rounded small mb-0"><?= lang_html('Reception.log.before') ?>: <?= esc(json_encode($before, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) ?>
 
-<?= esc(lang('Reception.log.after')) ?>: <?= esc(json_encode($after, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) ?></pre>
+<?= lang_html('Reception.log.after') ?>: <?= esc(json_encode($after, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) ?></pre>
                                     </details>
                                 <?php endif ?>
                             </td>

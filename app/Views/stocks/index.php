@@ -1,19 +1,19 @@
 <?= $this->extend('layout') ?>
 <?= $this->section('content') ?>
-<h1 class="h4 mb-3"><?= esc(lang('Stock.title')) ?></h1>
+<h1 class="h4 mb-3"><?= lang_html('Stock.title') ?></h1>
 
 <form class="card shadow-sm mb-4" method="get" action="<?= site_url('stocks') ?>">
     <div class="card-body">
         <div class="row g-3 align-items-end">
             <div class="col-md-4">
-                <label for="on_date" class="form-label"><?= esc(lang('Stock.filter.on_date')) ?></label>
+                <label for="on_date" class="form-label"><?= lang_html('Stock.filter.on_date') ?></label>
                 <input type="date" class="form-control" id="on_date" name="on_date" value="<?= esc($onDate) ?>">
             </div>
             <div class="col-md-4">
-                <button type="submit" class="btn btn-primary"><?= esc(lang('Stock.filter.show')) ?></button>
+                <button type="submit" class="btn btn-primary"><?= lang_html('Stock.filter.show') ?></button>
             </div>
         </div>
-        <p class="form-text mb-0 mt-2"><?= esc(lang('Stock.filter.hint')) ?></p>
+        <p class="form-text mb-0 mt-2"><?= lang_html('Stock.filter.hint') ?></p>
     </div>
 </form>
 
@@ -22,13 +22,13 @@
         <table class="table table-striped table-hover align-middle mb-0">
             <thead class="table-light">
             <tr>
-                <th><?= esc(lang('Stock.table.code')) ?></th>
-                <th><?= esc(lang('Stock.table.medicine')) ?></th>
-                <th><?= esc(lang('Stock.table.unit')) ?></th>
-                <th class="text-end"><?= esc(lang('Stock.table.physical')) ?></th>
-                <th class="text-end"><?= esc(lang('Stock.table.available')) ?></th>
-                <th class="text-end"><?= esc(lang('Stock.table.expired')) ?></th>
-                <th><?= esc(lang('Stock.table.batches')) ?></th>
+                <th><?= lang_html('Stock.table.code') ?></th>
+                <th><?= lang_html('Stock.table.medicine') ?></th>
+                <th><?= lang_html('Stock.table.unit') ?></th>
+                <th class="text-end"><?= lang_html('Stock.table.physical') ?></th>
+                <th class="text-end"><?= lang_html('Stock.table.available') ?></th>
+                <th class="text-end"><?= lang_html('Stock.table.expired') ?></th>
+                <th><?= lang_html('Stock.table.batches') ?></th>
             </tr>
             </thead>
             <tbody>
@@ -42,17 +42,17 @@
                     <td class="text-end"><?= (int) $medicine['expired_quantity'] ?></td>
                     <td>
                         <?php if ($medicine['available_batches'] === [] && $medicine['expired_batches'] === []): ?>
-                            <span class="text-muted"><?= esc(lang('Stock.table.no_batch')) ?></span>
+                            <span class="text-muted"><?= lang_html('Stock.table.no_batch') ?></span>
                         <?php else: ?>
                             <details>
-                                <summary><?= esc(lang('Stock.table.batch_count', [count($medicine['available_batches']) + count($medicine['expired_batches'])])) ?></summary>
+                                <summary><?= lang_html('Stock.table.batch_count', [count($medicine['available_batches']) + count($medicine['expired_batches'])]) ?></summary>
                                 <table class="table table-sm table-bordered mb-0 mt-2">
                                     <thead class="table-light">
                                     <tr>
-                                        <th><?= esc(lang('Stock.table.batch_no')) ?></th>
-                                        <th><?= esc(lang('Stock.table.expires_on')) ?></th>
-                                        <th class="text-end"><?= esc(lang('Stock.table.quantity')) ?></th>
-                                        <th><?= esc(lang('Stock.table.status')) ?></th>
+                                        <th><?= lang_html('Stock.table.batch_no') ?></th>
+                                        <th><?= lang_html('Stock.table.expires_on') ?></th>
+                                        <th class="text-end"><?= lang_html('Stock.table.quantity') ?></th>
+                                        <th><?= lang_html('Stock.table.status') ?></th>
                                     </tr>
                                     </thead>
                                     <tbody>
@@ -61,7 +61,7 @@
                                             <td><?= esc($batch['batch_no']) ?></td>
                                             <td><?= esc($batch['expires_on'] ?? '-') ?></td>
                                             <td class="text-end"><?= (int) $batch['quantity'] ?></td>
-                                            <td><span class="badge text-bg-success"><?= esc(lang('Stock.table.status_available')) ?></span></td>
+                                            <td><span class="badge text-bg-success"><?= lang_html('Stock.table.status_available') ?></span></td>
                                         </tr>
                                     <?php endforeach ?>
                                     <?php foreach ($medicine['expired_batches'] as $batch): ?>
@@ -69,7 +69,7 @@
                                             <td><?= esc($batch['batch_no']) ?></td>
                                             <td><?= esc($batch['expires_on'] ?? '-') ?></td>
                                             <td class="text-end"><?= (int) $batch['quantity'] ?></td>
-                                            <td><span class="badge text-bg-danger"><?= esc(lang('Stock.table.status_expired')) ?></span></td>
+                                            <td><span class="badge text-bg-danger"><?= lang_html('Stock.table.status_expired') ?></span></td>
                                         </tr>
                                     <?php endforeach ?>
                                     </tbody>
