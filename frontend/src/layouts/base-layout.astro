@@ -1,0 +1,22 @@
+---
+import "@/styles/global.css"
+
+interface Props {
+  title: string
+}
+
+const appName = import.meta.env.PUBLIC_APP_NAME ?? "Farmagitechs"
+const { title } = Astro.props
+---
+
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{title} · {appName}</title>
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

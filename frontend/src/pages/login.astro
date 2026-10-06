@@ -1,0 +1,30 @@
+---
+import BaseLayout from "@/layouts/base-layout.astro"
+import { LoginForm } from "@/components/auth/login-form"
+
+const appName = import.meta.env.PUBLIC_APP_NAME ?? "Farmagitechs"
+---
+
+<BaseLayout title="Masuk">
+  <main class="grid min-h-svh lg:grid-cols-2">
+    <section class="hidden flex-col justify-between bg-primary p-10 text-primary-foreground lg:flex">
+      <div class="font-heading text-lg font-medium">{appName}</div>
+      <div class="max-w-md space-y-3">
+        <h1 class="font-heading text-3xl leading-tight font-medium">
+          Kelola manajemen Rumah Sakit dan Klinik Anda.
+        </h1>
+        <p class="text-sm opacity-80">
+          Sistem informasi manajemen farmasi terintegrasi untuk penerimaan
+          barang dan pengelolaan stok.
+        </p>
+      </div>
+      <p class="text-xs opacity-70">
+        PT. Farma Global Teknologi
+      </p>
+    </section>
+
+    <section class="flex items-center justify-center p-6">
+      <LoginForm client:load appName={appName} />
+    </section>
+  </main>
+</BaseLayout>
