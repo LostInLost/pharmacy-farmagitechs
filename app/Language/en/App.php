@@ -7,6 +7,8 @@ return [
         'receptions' => 'Receptions',
         'stocks'     => 'Stock Report',
         'logout'     => 'Sign out',
+        'sidebar'    => 'Main navigation',
+        'close'      => 'Close menu',
     ],
 
     'api' => [

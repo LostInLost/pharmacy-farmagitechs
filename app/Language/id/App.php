@@ -7,6 +7,8 @@ return [
         'receptions' => 'Penerimaan',
         'stocks'     => 'Stok',
         'logout'     => 'Keluar',
+        'sidebar'    => 'Navigasi utama',
+        'close'      => 'Tutup menu',
     ],
 
     'api' => [
