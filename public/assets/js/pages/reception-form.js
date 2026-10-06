@@ -137,8 +137,8 @@
                 Farmasi.api.references.suppliers(),
                 Farmasi.api.references.medicines()
             ).then(function (supplierResult, medicineResult) {
-                var suppliers = supplierResult[0].body.data || [];
-                medicines = medicineResult[0].body.data || [];
+                var suppliers = (supplierResult.body && supplierResult.body.data) || [];
+                medicines = (medicineResult.body && medicineResult.body.data) || [];
 
                 var options = '<option value="">' + esc(Farmasi.text('choose', '')) + '</option>' +
                     suppliers.map(function (supplier) {

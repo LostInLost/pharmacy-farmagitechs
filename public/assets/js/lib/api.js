@@ -15,6 +15,16 @@
     function request(method, url, payload, isRetry) {
         var Farmasi = window.Farmasi;
 
+        // Jangan pernah kirim ke URL kosong: $.ajax({url: undefined})
+        // fallback ke URL halaman aktif dan menghasilkan POST nyasar
+        // (mis. POST /login yang memang tidak ada routenya).
+        if (! url) {
+            return $.Deferred().reject({
+                status: 0,
+                body: { message: Farmasi.text('contactFailed', '') }
+            }).promise();
+        }
+
         return $.ajax({
             url: url,
             method: method,
@@ -38,7 +48,7 @@
                     return request(method, url, payload, true);
                 }
 
-                if (jqXHR.status === 401 && Farmasi.boot.loginUrl) {
+                if (jqXHR.status === 401 && Farmasi.boot.loginUrl && url !== endpoints().login) {
                     Farmasi.sessionExpired();
                 }
 

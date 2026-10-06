@@ -2,13 +2,21 @@
 (function ($) {
     'use strict';
 
-    var boot = window.FARMASI_BOOT || {};
-    var i18n = boot.i18n || {};
+    // Dibaca live setiap kali diakses: skrip ini di-load layout SEBELUM
+    // section scripts halaman mendefinisikan window.FARMASI_BOOT, jadi
+    // snapshot sekali di sini akan kosong selamanya.
+    function boot() {
+        return window.FARMASI_BOOT || {};
+    }
 
-    window.Farmasi = {
-        boot: boot,
+    function strings() {
+        return boot().i18n || {};
+    }
+
+    var Farmasi = {
         text: function (key, fallback) {
-            var value = Object.prototype.hasOwnProperty.call(i18n, key) ? i18n[key] : null;
+            var table = strings();
+            var value = Object.prototype.hasOwnProperty.call(table, key) ? table[key] : null;
 
             return value === null || value === undefined || value === '' ? fallback : value;
         },
@@ -22,7 +30,16 @@
                 window.alert(message);
             }
 
-            this.redirect(boot.loginUrl);
+            this.redirect(boot().loginUrl);
         }
     };
+
+    Object.defineProperty(Farmasi, 'boot', {
+        enumerable: true,
+        get: function () {
+            return boot();
+        }
+    });
+
+    window.Farmasi = Farmasi;
 })(jQuery);
