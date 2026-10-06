@@ -112,7 +112,9 @@ Pengujian otomatis (60 test, 144 assertion):
 composer run test
 ```
 
-`composer run test` menjalankan `scripts/run-tests.php`, yang memakai interpreter PHP pemanggil Composer. Bila `mysqli` tidak aktif di php.ini interpreter tersebut, skrip menjalankan ulang PHP dengan `-d extension=mysqli`; bila tetap gagal, skrip berhenti dengan pesan yang menyebut binary PHP dan php.ini penyebabnya. Alternatif langsung:
+`composer run test` menjalankan `scripts/run-tests.php`, yang memakai interpreter PHP pemanggil Composer dan meneruskan argumen apa pun ke PHPUnit (mis. `composer run test -- --filter HashTest`). Skrip memindahkan direktori kerja ke root proyek agar `phpunit.dist.xml` selalu ditemukan, dan mencari binary PHPUnit mengikuti aturan Composer (`COMPOSER_BIN_DIR`, `config.bin-dir`/`vendor-dir` di `composer.json`, PATH, lalu default `vendor/bin`).
+
+Secara default skrip menjalankan PHPUnit persis seperti `vendor/bin/phpunit`, jadi konfigurasi dan fallback bawaan CodeIgniter (SQLite3 `:memory:` di `Config\Database::$tests`) tetap berlaku. Bila test gagal karena `mysqli` tidak aktif di php.ini, test diulang dengan `-d extension=mysqli`; bila ekstensi itu tetap tidak bisa dimuat, skrip berhenti dengan pesan yang menyebut binary PHP dan php.ini penyebabnya. Alternatif langsung:
 
 ```
 vendor/bin/phpunit
