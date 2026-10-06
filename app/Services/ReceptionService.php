@@ -51,15 +51,26 @@ class ReceptionService
         $db->transBegin();
 
         try {
+            $referenceNo = trim((string) $payload['reference_no']);
+            $supplierId  = (int) $payload['supplier_id'];
+            $receivedAt  = Time::parse($payload['received_at'], 'Asia/Jakarta')->toDateTimeString();
+            $items       = $this->mapItems($payload['items']);
+
             $receptionId = $this->receptions->insertReception([
-                'reference_no' => trim((string) $payload['reference_no']),
-                'supplier_id'  => (int) $payload['supplier_id'],
-                'received_at'  => Time::parse($payload['received_at'], 'Asia/Jakarta')->toDateTimeString(),
+                'reference_no' => $referenceNo,
+                'supplier_id'  => $supplierId,
+                'received_at'  => $receivedAt,
                 'created_by'   => $actorId,
             ]);
 
-            $this->receptions->replaceItems($receptionId, $this->mapItems($payload['items']));
-            $this->receptions->log($receptionId, $actorId, 'CREATE');
+            $this->receptions->replaceItems($receptionId, $items);
+            $this->receptions->log(
+                $receptionId,
+                $actorId,
+                'CREATE',
+                null,
+                $this->snapshot($referenceNo, $supplierId, $receivedAt, $items),
+            );
 
             $db->transCommit();
 
@@ -102,15 +113,33 @@ class ReceptionService
                 return ['ok' => false, 'errors' => $errors, 'status' => 422];
             }
 
+            $referenceNo = trim((string) $payload['reference_no']);
+            $supplierId  = (int) $payload['supplier_id'];
+            $receivedAt  = Time::parse($payload['received_at'], 'Asia/Jakarta')->toDateTimeString();
+            $items       = $this->mapItems($payload['items']);
+
+            $before = $this->snapshot(
+                $reception['reference_no'],
+                $reception['supplier_id'],
+                $reception['received_at'],
+                $this->receptions->itemsOf($id),
+            );
+
             $this->receptions->updateReception($id, [
-                'reference_no' => trim((string) $payload['reference_no']),
-                'supplier_id'  => (int) $payload['supplier_id'],
-                'received_at'  => Time::parse($payload['received_at'], 'Asia/Jakarta')->toDateTimeString(),
+                'reference_no' => $referenceNo,
+                'supplier_id'  => $supplierId,
+                'received_at'  => $receivedAt,
                 'updated_by'   => (int) $actor['id'],
             ]);
 
-            $this->receptions->replaceItems($id, $this->mapItems($payload['items']));
-            $this->receptions->log($id, (int) $actor['id'], 'UPDATE');
+            $this->receptions->replaceItems($id, $items);
+            $this->receptions->log(
+                $id,
+                (int) $actor['id'],
+                'UPDATE',
+                $before,
+                $this->snapshot($referenceNo, $supplierId, $receivedAt, $items),
+            );
 
             $db->transCommit();
 
@@ -130,5 +159,30 @@ class ReceptionService
             'expires_on'  => $item['expires_on'],
             'quantity'    => (int) $item['quantity'],
         ], array_values($items));
+    }
+
+    /**
+     * Snapshot ternormalisasi untuk audit: item diurutkan agar perbandingan
+     * before/after stabil meski urutan kiriman berbeda.
+     *
+     * @param list<array{medicine_id: int, batch_no: string, expires_on: string, quantity: int}> $items
+     */
+    private function snapshot(string $referenceNo, int $supplierId, string $receivedAt, array $items): array
+    {
+        $items = array_map(static fn (array $item): array => [
+            'medicine_id' => (int) $item['medicine_id'],
+            'batch_no'    => $item['batch_no'],
+            'expires_on'  => $item['expires_on'],
+            'quantity'    => (int) $item['quantity'],
+        ], $items);
+
+        usort($items, static fn (array $a, array $b): int => [$a['medicine_id'], $a['batch_no']] <=> [$b['medicine_id'], $b['batch_no']]);
+
+        return [
+            'reference_no' => $referenceNo,
+            'supplier_id'  => $supplierId,
+            'received_at'  => $receivedAt,
+            'items'        => $items,
+        ];
     }
 }

@@ -190,7 +190,14 @@
                                     "pm.test('dua item tersimpan', function () { pm.expect(body.data.items.length).to.eql(2); });",
                                     "pm.test('pembuat adalah petugas', function () { pm.expect(body.data.created_by_name).to.eql('Dewi Petugas'); });",
                                     "pm.test('belum pernah diubah', function () { pm.expect(body.data.updated_by).to.be.null; });",
-                                    "pm.test('log CREATE tercatat', function () { pm.expect(body.data.logs[0].action).to.eql('CREATE'); });"
+                                    "pm.test('log CREATE tercatat', function () { pm.expect(body.data.logs[0].action).to.eql('CREATE'); });",
+                                    "pm.test('log CREATE tanpa snapshot sebelum', function () { pm.expect(body.data.logs[0].data_before).to.be.null; });",
+                                    "pm.test('log CREATE menyimpan snapshot sesudah', function () {",
+                                    "    const after = body.data.logs[0].data_after;",
+                                    "    pm.expect(after.reference_no).to.eql('PB-001');",
+                                    "    pm.expect(after.items.length).to.eql(2);",
+                                    "    pm.expect(after.items[0].quantity).to.eql(10);",
+                                    "});"
                                 ]
                             }
                         }
@@ -352,7 +359,15 @@
                                     "pm.test('status 200', function () { pm.response.to.have.status(200); });",
                                     "const updated = pm.response.json().data;",
                                     "pm.test('tersisa dua item', function () { pm.expect(updated.items.length).to.eql(2); });",
-                                    "pm.test('pengubah terakhir tercatat', function () { pm.expect(updated.updated_by).to.not.be.null; });"
+                                    "pm.test('pengubah terakhir tercatat', function () { pm.expect(updated.updated_by).to.not.be.null; });",
+                                    "pm.test('log UPDATE menyimpan before/after', function () {",
+                                    "    const log = updated.logs[updated.logs.length - 1];",
+                                    "    pm.expect(log.action).to.eql('UPDATE');",
+                                    "    pm.expect(log.data_before.items.length).to.eql(2);",
+                                    "    pm.expect(log.data_after.items.length).to.eql(2);",
+                                    "    pm.expect(log.data_before.items[0].quantity).to.eql(10);",
+                                    "    pm.expect(log.data_after.items[0].quantity).to.eql(7);",
+                                    "});"
                                 ]
                             }
                         }

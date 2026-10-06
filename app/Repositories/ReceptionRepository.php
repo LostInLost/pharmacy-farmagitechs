@@ -73,11 +73,13 @@ class ReceptionRepository
             ->findAll();
 
         return array_map(static fn (array $row): array => [
-            'id'         => (int) $row['id'],
-            'actor_id'   => (int) $row['actor_id'],
-            'actor_name' => $row['actor_name'],
-            'action'     => $row['action'],
-            'created_at' => $row['created_at'],
+            'id'          => (int) $row['id'],
+            'actor_id'    => (int) $row['actor_id'],
+            'actor_name'  => $row['actor_name'],
+            'action'      => $row['action'],
+            'data_before' => $row['data_before'],
+            'data_after'  => $row['data_after'],
+            'created_at'  => $row['created_at'],
         ], $rows);
     }
 
@@ -104,12 +106,14 @@ class ReceptionRepository
         $this->items->insertBatch($rows);
     }
 
-    public function log(int $receptionId, int $actorId, string $action): void
+    public function log(int $receptionId, int $actorId, string $action, ?array $before, ?array $after): void
     {
         $this->logs->insert([
             'reception_id' => $receptionId,
             'actor_id'     => $actorId,
             'action'       => $action,
+            'data_before'  => $before,
+            'data_after'   => $after,
         ]);
     }
 

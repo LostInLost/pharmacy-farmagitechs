@@ -10,8 +10,13 @@ class ReceptionLogModel extends Model
     protected $table         = 'reception_logs';
     protected $primaryKey    = 'id';
     protected $returnType    = 'array';
-    protected $allowedFields = ['reception_id', 'actor_id', 'action', 'created_at'];
+    protected $allowedFields = ['reception_id', 'actor_id', 'action', 'data_before', 'data_after', 'created_at'];
     protected $useTimestamps = false;
+
+    protected array $casts = [
+        'data_before' => '?json-array',
+        'data_after'  => '?json-array',
+    ];
 
     protected $beforeInsert      = ['stampCreated'];
     protected $beforeInsertBatch = ['stampCreatedBatch'];

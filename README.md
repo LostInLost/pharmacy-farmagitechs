@@ -77,6 +77,10 @@ Validasi penerimaan yang berlaku: `reference_no` wajib dan unik; pemasok dan oba
 
 CSRF aktif untuk form web dan dikecualikan untuk `/api/*` agar endpoint dapat diuji langsung dari Postman.
 
+Audit trail: setiap aksi buat/ubah menulis satu baris `reception_logs` berisi `reception_id`, `actor_id`, `action`, dan waktu, ditambah kolom `data_before`/`data_after` (JSON) berisi snapshot penerimaan sebelum dan sesudah perubahan. Kolom snapshot adalah tambahan di atas syarat minimal soal (soal menyebut isi sebelum/sesudah "tidak diwajibkan") dan dipakai agar perubahan yang menggeser stok tetap dapat ditelusuri; tanpa itu, item yang dihapus saat `PUT` hilang tanpa jejak karena `reception_items` selalu diganti penuh. `data_before` bernilai `null` pada `CREATE`, dan `PUT` identik tetap tercatat dengan `data_before == data_after`. Log tidak ikut terhapus saat penerimaan dihapus (FK `ON DELETE RESTRICT`), berbeda dari `reception_items` yang memakai `CASCADE`. Detail kontrak snapshot ada di [`docs/database.md`](docs/database.md).
+
+Log tetap **reception-scoped**, bukan tabel audit generik: `receptions` adalah satu-satunya entitas yang dapat ditulis aplikasi (POST/PUT), sedangkan `medicines`, `suppliers`, `seed_batch_stock`, dan `stock_usage` hanya dibaca dari lampiran dan pengelolaan master data tidak diminta soal. Tabel generik `(entity_type, entity_id)` akan menghilangkan foreign key ke entitas yang diaudit — padahal penjelasan FK justru diminta soal. Jalur generalisasi bila nanti ada domain tulis kedua didokumentasikan di `docs/database.md`.
+
 Contoh request membuat penerimaan (setelah login, kirim cookie session):
 
 ```
@@ -102,13 +106,13 @@ GET /api/stocks?on_date=2026-10-03
 
 ## 6. Pengujian dan Verifikasi
 
-Pengujian otomatis (37 test, 93 assertion):
+Pengujian otomatis (44 test, 116 assertion):
 
 ```
 vendor/bin/phpunit
 ```
 
-Mencakup: skenario 1-5 soal, angka laporan stok contoh soal, batas `expires_on` sama dengan `on_date`, isolasi rollback, stamping timestamp, autentikasi, dan helper hash. Test berjalan pada database `pharmacy_farmagitechs_test` (lihat `database.tests.*` di `.env`), sehingga tidak menyentuh data development.
+Mencakup: skenario 1-5 soal, angka laporan stok contoh soal, batas `expires_on` sama dengan `on_date`, isolasi rollback, stamping timestamp, autentikasi, audit trail (snapshot before/after), dan helper hash. Test berjalan pada database `pharmacy_farmagitechs_test` (lihat `database.tests.*` di `.env`), sehingga tidak menyentuh data development.
 
 Verifikasi manual:
 
@@ -128,8 +132,8 @@ Asumsi dan batasan saat ini:
 
 Tersedia di [`postman/`](postman):
 
-- `Pharmacy-Farmagitechs.postman_collection.json` — 23 request dalam 4 folder
-- `Local.postman_environment.json` — variabel `base_url` (`http://localhost:8080`), `receipt_id`, `foreign_receipt_id`
+- `Pharmacy-Farmagitechs.postman_collection.json` — 23 request dalam 4 folder (51 assertion)
+- `Local.postman_environment.json` — variabel `base_url` (`http://localhost:8080`). `receipt_id` dan `foreign_receipt_id` di-set otomatis oleh collection saat request berjalan, jadi tidak perlu diisi di environment.
 
 Cara menjalankan:
 

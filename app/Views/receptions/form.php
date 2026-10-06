@@ -58,13 +58,32 @@
     <section class="card">
         <h2>Riwayat Aksi</h2>
         <table>
-            <thead><tr><th>Waktu</th><th>Aksi</th><th>Petugas</th></tr></thead>
+            <thead><tr><th>Waktu</th><th>Aksi</th><th>Petugas</th><th>Perubahan</th></tr></thead>
             <tbody>
             <?php foreach ($reception['logs'] as $log): ?>
                 <tr>
                     <td><?= esc($log['created_at']) ?></td>
                     <td><?= esc($log['action']) ?></td>
                     <td><?= esc($log['actor_name'] ?? '-') ?></td>
+                    <td>
+                        <?php if ($log['data_before'] === null && $log['data_after'] === null): ?>
+                            -
+                        <?php else: ?>
+                            <?php
+                            $before = $log['data_before'];
+                            $after  = $log['data_after'];
+                            $summary = $log['action'] === 'CREATE'
+                                ? 'Penerimaan dibuat'
+                                : ($before === $after ? 'Tidak ada perubahan' : 'Isi penerimaan berubah');
+                            ?>
+                            <details>
+                                <summary><?= esc($summary) ?></summary>
+                                <pre>Sebelum: <?= esc(json_encode($before, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) ?>
+
+Sesudah: <?= esc(json_encode($after, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) ?></pre>
+                            </details>
+                        <?php endif ?>
+                    </td>
                 </tr>
             <?php endforeach ?>
             </tbody>
