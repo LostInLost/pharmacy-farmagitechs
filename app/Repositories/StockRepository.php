@@ -18,27 +18,24 @@ class StockRepository
      */
     public function batches(): array
     {
-        $sql = <<<'SQL'
-            SELECT
-                t.medicine_id,
-                t.batch_no,
-                MAX(t.expires_on) AS expires_on,
-                SUM(t.seed_qty + t.received_qty - t.used_qty) AS quantity
-            FROM (
-                SELECT medicine_id, batch_no, expires_on, quantity AS seed_qty, 0 AS received_qty, 0 AS used_qty
-                FROM seed_batch_stock
-                UNION ALL
-                SELECT medicine_id, batch_no, expires_on, 0, quantity, 0
-                FROM reception_items
-                UNION ALL
-                SELECT medicine_id, batch_no, NULL, 0, 0, quantity
-                FROM stock_usage
-            ) t
-            GROUP BY t.medicine_id, t.batch_no
-            ORDER BY t.medicine_id, expires_on
-            SQL;
+        $db = db_connect();
 
-        $rows = db_connect()->query($sql)->getResultArray();
+        $seed = $db->table('seed_batch_stock')
+            ->select('medicine_id, batch_no, expires_on, quantity AS seed_qty, 0 AS received_qty, 0 AS used_qty', false);
+
+        $received = $db->table('reception_items')
+            ->select('medicine_id, batch_no, expires_on, 0 AS seed_qty, quantity AS received_qty, 0 AS used_qty', false);
+
+        $used = $db->table('stock_usage')
+            ->select('medicine_id, batch_no, NULL AS expires_on, 0 AS seed_qty, 0 AS received_qty, quantity AS used_qty', false);
+
+        $rows = $db->newQuery()
+            ->fromSubquery($seed->unionAll($received)->unionAll($used), 't')
+            ->select('t.medicine_id, t.batch_no, MAX(t.expires_on) AS expires_on, SUM(t.seed_qty + t.received_qty - t.used_qty) AS quantity', false)
+            ->groupBy('t.medicine_id, t.batch_no')
+            ->orderBy('t.medicine_id, expires_on')
+            ->get()
+            ->getResultArray();
 
         return array_map(static fn (array $row): array => [
             'medicine_id' => (int) $row['medicine_id'],

@@ -6,8 +6,6 @@ use CodeIgniter\Database\Migration;
 
 class AddAuditPayloadToReceptionLogs extends Migration
 {
-    private const FK_NAME = 'reception_logs_reception_id_foreign';
-
     public function up()
     {
         $this->forge->addColumn('reception_logs', [
@@ -28,38 +26,19 @@ class AddAuditPayloadToReceptionLogs extends Migration
     /**
      * Jejak audit tidak boleh ikut terhapus saat penerimaan dihapus,
      * sehingga ON DELETE dipisahkan dari CASCADE milik reception_items.
+     *
+     * Memakai Forge, bukan SQL mentah, supaya tetap jalan di SQLite:
+     * MySQL memakai ALTER TABLE, SQLite membangun ulang tabel.
      */
     private function replaceReceptionForeignKey(string $onDelete): void
     {
-        $table = $this->db->DBPrefix . 'reception_logs';
-
-        if ($this->foreignKeyExists($table, self::FK_NAME)) {
-            $this->db->query(sprintf(
-                'ALTER TABLE %s DROP FOREIGN KEY %s',
-                $this->db->escapeIdentifiers($table),
-                $this->db->escapeIdentifiers(self::FK_NAME),
-            ));
+        foreach ($this->db->getForeignKeyData('reception_logs') as $name => $foreignKey) {
+            if (in_array('reception_id', (array) $foreignKey->column_name, true)) {
+                $this->forge->dropForeignKey('reception_logs', $name);
+            }
         }
 
-        $this->db->query(sprintf(
-            'ALTER TABLE %s ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s(%s) ON DELETE %s ON UPDATE CASCADE',
-            $this->db->escapeIdentifiers($table),
-            $this->db->escapeIdentifiers(self::FK_NAME),
-            $this->db->escapeIdentifiers('reception_id'),
-            $this->db->escapeIdentifiers($this->db->DBPrefix . 'receptions'),
-            $this->db->escapeIdentifiers('id'),
-            $onDelete,
-        ));
-    }
-
-    private function foreignKeyExists(string $table, string $name): bool
-    {
-        $row = $this->db->query(
-            'SELECT CONSTRAINT_NAME FROM information_schema.TABLE_CONSTRAINTS'
-            . ' WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND CONSTRAINT_NAME = ? AND CONSTRAINT_TYPE = ?',
-            [$table, $name, 'FOREIGN KEY'],
-        )->getRowArray();
-
-        return $row !== null;
+        $this->forge->addForeignKey('reception_id', 'receptions', 'id', 'CASCADE', $onDelete);
+        $this->forge->processIndexes('reception_logs');
     }
 }
