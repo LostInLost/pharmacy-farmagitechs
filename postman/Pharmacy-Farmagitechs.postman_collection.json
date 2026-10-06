@@ -1,15 +1,72 @@
 {
     "info": {
         "name": "Pharmacy Farmagitechs",
-        "description": "Koleksi API penerimaan obat dan laporan stok. Login menyimpan cookie session otomatis sehingga request berikutnya memakai sesi yang sama.\n\nUrutan folder penting:\n1. Auth - menyiapkan sesi (item terakhir: login petugas)\n2. Stocks - dijalankan sebelum ada penerimaan baru karena memeriksa angka baseline soal\n3. Receipts - alur buat/ubah penerimaan\n4. Unauthenticated - dijalankan paling akhir karena sengaja memakai cookie tidak valid",
+        "description": "Koleksi API penerimaan obat dan laporan stok. Login menyimpan cookie session otomatis sehingga request berikutnya memakai sesi yang sama.\n\nCSRF: seluruh POST/PUT wajib menyertakan header X-CSRF-TOKEN. Cookie csrf_cookie_name terbit saat GET /login (item 0.1); script level koleksi mengirim token itu pada setiap request dan menyimpan token terbaru dari response karena token berotasi setiap mutasi berhasil.\n\nUrutan folder penting:\n0. Bootstrap CSRF - menerbitkan cookie csrf_cookie_name\n1. Auth - menyiapkan sesi (item terakhir: login petugas)\n2. Stocks - dijalankan sebelum ada penerimaan baru karena memeriksa angka baseline soal\n3. Receipts - alur buat/ubah penerimaan\n4. Unauthenticated - dijalankan paling akhir karena sengaja memakai cookie tidak valid",
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
     },
+    "event": [
+        {
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "// Sertakan token CSRF pada setiap request. Sumber utama adalah cookie",
+                    "// csrf_cookie_name yang terbit saat GET /login dan diperbarui setiap mutasi.",
+                    "const token = pm.cookies.get('csrf_cookie_name') || pm.collectionVariables.get('csrf_token');",
+                    "if (token) {",
+                    "    pm.collectionVariables.set('csrf_token', token);",
+                    "    pm.request.headers.upsert({ key: 'X-CSRF-TOKEN', value: token });",
+                    "}"
+                ]
+            }
+        },
+        {
+            "listen": "test",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "// Token berotasi setiap mutasi berhasil; simpan nilai terbaru dari response",
+                    "// header supaya request berikutnya memakai token yang sah.",
+                    "const fresh = pm.response.headers.get('X-CSRF-TOKEN');",
+                    "if (fresh) { pm.collectionVariables.set('csrf_token', fresh); }"
+                ]
+            }
+        }
+    ],
     "variable": [
         { "key": "base_url", "value": "http://localhost:8080", "type": "string" },
         { "key": "receipt_id", "value": "1", "type": "string" },
-        { "key": "foreign_receipt_id", "value": "2", "type": "string" }
+        { "key": "foreign_receipt_id", "value": "2", "type": "string" },
+        { "key": "csrf_token", "value": "", "type": "string" }
     ],
     "item": [
+        {
+            "name": "0. Bootstrap CSRF",
+            "item": [
+                {
+                    "name": "0.1 Ambil cookie csrf_cookie_name",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 200', function () { pm.response.to.have.status(200); });",
+                                    "const token = pm.cookies.get('csrf_cookie_name');",
+                                    "pm.test('cookie CSRF terbit', function () { pm.expect(token).to.be.a('string').and.not.empty; });",
+                                    "pm.collectionVariables.set('csrf_token', token);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "url": { "raw": "{{base_url}}/login", "host": ["{{base_url}}"], "path": ["login"] },
+                        "description": "Halaman login adalah titik masuk token CSRF: GET ini menerbitkan cookie csrf_cookie_name yang dipakai seluruh request berikutnya. Wajib dijalankan paling awal (mis. lewat newman --folder atau run berurutan)."
+                    }
+                }
+            ]
+        },
         {
             "name": "1. Auth",
             "item": [
@@ -446,49 +503,91 @@
                     }
                 },
                 {
-                    "name": "3.11 Ubah penerimaan orang lain sebagai petugas (403)",
+                    "name": "3.11 Login supervisor (persiapan uji hak akses)",
                     "event": [
-                        {
-                            "listen": "prerequest",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "// Supervisor membuat penerimaan, lalu petugas mencoba mengubahnya.",
-                                    "const baseUrl = pm.variables.get('base_url');",
-                                    "const payload = JSON.stringify({",
-                                    "    reference_no: 'PB-SUP-' + Date.now(),",
-                                    "    supplier_id: 1,",
-                                    "    received_at: '2026-10-04T10:00:00+07:00',",
-                                    "    items: [{ medicine_id: 102, batch_no: 'AMX-2601', expires_on: '2027-06-30', quantity: 5 }]",
-                                    "});",
-                                    "pm.sendRequest({",
-                                    "    url: baseUrl + '/api/login', method: 'POST',",
-                                    "    header: { 'Content-Type': 'application/json' },",
-                                    "    body: { mode: 'raw', raw: JSON.stringify({ username: 'supervisor', password: 'supervisor123' }) }",
-                                    "}, function (err) {",
-                                    "    if (err) { console.log('login supervisor gagal:', err); return; }",
-                                    "    pm.sendRequest({",
-                                    "        url: baseUrl + '/api/receipts', method: 'POST',",
-                                    "        header: { 'Content-Type': 'application/json' },",
-                                    "        body: { mode: 'raw', raw: payload }",
-                                    "    }, function (err2, res2) {",
-                                    "        if (err2) { console.log('buat penerimaan gagal:', err2); return; }",
-                                    "        pm.collectionVariables.set('foreign_receipt_id', res2.json().data.id);",
-                                    "        pm.sendRequest({",
-                                    "            url: baseUrl + '/api/login', method: 'POST',",
-                                    "            header: { 'Content-Type': 'application/json' },",
-                                    "            body: { mode: 'raw', raw: JSON.stringify({ username: 'petugas', password: 'petugas123' }) }",
-                                    "        }, function (err3) { if (err3) { console.log('login petugas gagal:', err3); } });",
-                                    "    });",
-                                    "});"
-                                ]
-                            }
-                        },
                         {
                             "listen": "test",
                             "script": {
                                 "type": "text/javascript",
-                                "exec": ["pm.test('status 403', function () { pm.response.to.have.status(403); });"]
+                                "exec": [
+                                    "pm.test('status 200', function () { pm.response.to.have.status(200); });",
+                                    "pm.test('role supervisor', function () { pm.expect(pm.response.json().user.role).to.eql('supervisor'); });"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "body": { "mode": "raw", "raw": "{\n  \"username\": \"supervisor\",\n  \"password\": \"supervisor123\"\n}" },
+                        "url": { "raw": "{{base_url}}/api/login", "host": ["{{base_url}}"], "path": ["api", "login"] },
+                        "description": "Menyiapkan sesi supervisor untuk membuat penerimaan milik orang lain."
+                    }
+                },
+                {
+                    "name": "3.12 Supervisor membuat penerimaan orang lain (persiapan)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 201', function () { pm.response.to.have.status(201); });",
+                                    "const body = pm.response.json();",
+                                    "pm.collectionVariables.set('foreign_receipt_id', body.data.id);",
+                                    "pm.collectionVariables.set('foreign_reference', body.data.reference_no);",
+                                    "pm.test('pembuat adalah supervisor', function () { pm.expect(body.data.created_by_name).to.eql('Rina Supervisor'); });"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reference_no\": \"PB-SUP-{{$timestamp}}\",\n  \"supplier_id\": 1,\n  \"received_at\": \"2026-10-04T10:00:00+07:00\",\n  \"items\": [\n    {\"medicine_id\": 102, \"batch_no\": \"AMX-2601\", \"expires_on\": \"2027-06-30\", \"quantity\": 5}\n  ]\n}"
+                        },
+                        "url": { "raw": "{{base_url}}/api/receipts", "host": ["{{base_url}}"], "path": ["api", "receipts"] },
+                        "description": "Membuat penerimaan atas nama supervisor; id-nya dipakai item berikutnya. Nomor referensi memakai timestamp agar aman dijalankan berulang."
+                    }
+                },
+                {
+                    "name": "3.13 Login petugas kembali",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 200', function () { pm.response.to.have.status(200); });",
+                                    "pm.test('role reception', function () { pm.expect(pm.response.json().user.role).to.eql('reception'); });"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "body": { "mode": "raw", "raw": "{\n  \"username\": \"petugas\",\n  \"password\": \"petugas123\"\n}" },
+                        "url": { "raw": "{{base_url}}/api/login", "host": ["{{base_url}}"], "path": ["api", "login"] },
+                        "description": "Memulihkan sesi petugas sebelum uji penolakan hak akses."
+                    }
+                },
+                {
+                    "name": "3.14 Ubah penerimaan orang lain sebagai petugas (403)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 403', function () { pm.response.to.have.status(403); });",
+                                    "pm.test('bukan 403 CSRF', function () {",
+                                    "    const body = pm.response.json();",
+                                    "    pm.expect(body.error).to.not.eql('csrf');",
+                                    "});"
+                                ]
                             }
                         }
                     ],
@@ -497,14 +596,14 @@
                         "header": [{ "key": "Content-Type", "value": "application/json" }],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"reference_no\": \"PB-SUP\",\n  \"supplier_id\": 1,\n  \"received_at\": \"2026-10-04T10:00:00+07:00\",\n  \"items\": [\n    {\"medicine_id\": 102, \"batch_no\": \"AMX-2601\", \"expires_on\": \"2027-06-30\", \"quantity\": 99}\n  ]\n}"
+                            "raw": "{\n  \"reference_no\": \"PB-SUP-1\",\n  \"supplier_id\": 1,\n  \"received_at\": \"2026-10-04T10:00:00+07:00\",\n  \"items\": [\n    {\"medicine_id\": 102, \"batch_no\": \"AMX-2601\", \"expires_on\": \"2027-06-30\", \"quantity\": 99}\n  ]\n}"
                         },
                         "url": {
                             "raw": "{{base_url}}/api/receipts/{{foreign_receipt_id}}",
                             "host": ["{{base_url}}"],
                             "path": ["api", "receipts", "{{foreign_receipt_id}}"]
                         },
-                        "description": "Prascript membuat penerimaan sebagai supervisor lalu login sebagai petugas; PUT harus ditolak 403 tanpa mengubah data."
+                        "description": "Petugas mengubah penerimaan milik supervisor; harus ditolak 403 oleh policy, bukan oleh CSRF."
                     }
                 }
             ]
@@ -516,25 +615,40 @@
                     "name": "4.1 Buat penerimaan tanpa login (401)",
                     "event": [
                         {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "// Header Cookie manual menimpa cookie jar, jadi cookie CSRF yang sah",
+                                    "// harus disertakan eksplisit agar request gagal di autentikasi, bukan CSRF.",
+                                    "const token = pm.cookies.get('csrf_cookie_name') || pm.collectionVariables.get('csrf_token');",
+                                    "pm.request.headers.upsert({ key: 'Cookie', value: 'ci_session=token-tidak-valid; csrf_cookie_name=' + token });",
+                                    "pm.request.headers.upsert({ key: 'X-CSRF-TOKEN', value: token });"
+                                ]
+                            }
+                        },
+                        {
                             "listen": "test",
                             "script": {
                                 "type": "text/javascript",
-                                "exec": ["pm.test('status 401', function () { pm.response.to.have.status(401); });"]
+                                "exec": [
+                                    "pm.test('status 401', function () { pm.response.to.have.status(401); });",
+                                    "pm.test('bukan kegagalan CSRF', function () {",
+                                    "    pm.expect(pm.response.json().error).to.not.eql('csrf');",
+                                    "});"
+                                ]
                             }
                         }
                     ],
                     "request": {
                         "method": "POST",
-                        "header": [
-                            { "key": "Content-Type", "value": "application/json" },
-                            { "key": "Cookie", "value": "ci_session=token-tidak-valid" }
-                        ],
+                        "header": [{ "key": "Content-Type", "value": "application/json" }],
                         "body": {
                             "mode": "raw",
                             "raw": "{\n  \"reference_no\": \"PB-NOAUTH\",\n  \"supplier_id\": 1,\n  \"received_at\": \"2026-10-03T10:00:00+07:00\",\n  \"items\": [\n    {\"medicine_id\": 101, \"batch_no\": \"PCT-2601\", \"expires_on\": \"2027-12-31\", \"quantity\": 1}\n  ]\n}"
                         },
                         "url": { "raw": "{{base_url}}/api/receipts", "host": ["{{base_url}}"], "path": ["api", "receipts"] },
-                        "description": "Header Cookie sengaja diisi token tidak valid agar request berjalan tanpa sesi sah."
+                        "description": "Token CSRF sah tetapi sesi tidak valid: filter autentikasi menolak dengan 401."
                     }
                 },
                 {
@@ -551,7 +665,82 @@
                     "request": {
                         "method": "GET",
                         "header": [{ "key": "Cookie", "value": "ci_session=token-tidak-valid" }],
-                        "url": { "raw": "{{base_url}}/api/stocks", "host": ["{{base_url}}"], "path": ["api", "stocks"] }
+                        "url": { "raw": "{{base_url}}/api/stocks", "host": ["{{base_url}}"], "path": ["api", "stocks"] },
+                        "description": "GET tidak dilindungi CSRF, sehingga penolakan datang murni dari autentikasi."
+                    }
+                },
+                {
+                    "name": "4.3 POST tanpa token CSRF (403)",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "// Hapus token yang biasanya disisipkan script koleksi agar request",
+                                    "// benar-benar dikirim tanpa X-CSRF-TOKEN.",
+                                    "pm.request.headers.remove('X-CSRF-TOKEN');"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 403', function () { pm.response.to.have.status(403); });",
+                                    "pm.test('penanda error csrf', function () { pm.expect(pm.response.json().error).to.eql('csrf'); });",
+                                    "pm.test('menyertakan token segar untuk percobaan ulang', function () {",
+                                    "    pm.expect(pm.response.headers.get('X-CSRF-TOKEN')).to.be.a('string').and.not.empty;",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reference_no\": \"PB-NOCSRF\",\n  \"supplier_id\": 1,\n  \"received_at\": \"2026-10-03T10:00:00+07:00\",\n  \"items\": [\n    {\"medicine_id\": 101, \"batch_no\": \"PCT-2601\", \"expires_on\": \"2027-12-31\", \"quantity\": 1}\n  ]\n}"
+                        },
+                        "url": { "raw": "{{base_url}}/api/receipts", "host": ["{{base_url}}"], "path": ["api", "receipts"] },
+                        "description": "Tanpa token CSRF, endpoint mutasi dijawab JSON 403 sebelum filter autentikasi berjalan."
+                    }
+                },
+                {
+                    "name": "4.4 POST dengan token CSRF tidak cocok (403)",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "// Token acak yang tidak sama dengan nilai cookie csrf_cookie_name.",
+                                    "pm.request.headers.upsert({ key: 'X-CSRF-TOKEN', value: 'token-palsu-tidak-cocok' });"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 403', function () { pm.response.to.have.status(403); });",
+                                    "pm.test('penanda error csrf', function () { pm.expect(pm.response.json().error).to.eql('csrf'); });"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reference_no\": \"PB-BADTOKEN\",\n  \"supplier_id\": 1,\n  \"received_at\": \"2026-10-03T10:00:00+07:00\",\n  \"items\": [\n    {\"medicine_id\": 101, \"batch_no\": \"PCT-2601\", \"expires_on\": \"2027-12-31\", \"quantity\": 1}\n  ]\n}"
+                        },
+                        "url": { "raw": "{{base_url}}/api/receipts", "host": ["{{base_url}}"], "path": ["api", "receipts"] },
+                        "description": "Token harus sama dengan nilai cookie csrf_cookie_name; token palsu ditolak 403."
                     }
                 }
             ]
