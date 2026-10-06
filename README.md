@@ -69,7 +69,13 @@ Kata sandi disimpan sebagai hash Argon2id (`Config\Hash`, dapat diubah lewat `ha
 | PUT | `/api/receipts/{id}` | Memperbarui penerimaan (keadaan akhir lengkap) | Session |
 | GET | `/api/stocks?on_date=YYYY-MM-DD` | Laporan stok per obat dan batch | Session |
 
-Status implementasi: pada tahap ini endpoint sudah terdaftar di router dan dilindungi filter `auth`; implementasi handler menyusul pada tahap backend berikutnya (saat ini mengembalikan `501`). Request tanpa login sudah ditolak: `401` JSON untuk path `/api/*` dan redirect ke `/login` untuk halaman web.
+Status implementasi: seluruh endpoint sudah berfungsi penuh. Autentikasi memakai session cookie (`ci_session`), sehingga request berikutnya setelah login cukup mengirim cookie tersebut. Request tanpa login ditolak: `401` JSON untuk path `/api/*` dan redirect ke `/login` untuk halaman web.
+
+Aturan hak ubah: petugas penerimaan hanya dapat mengubah penerimaan yang ia buat; supervisor dapat mengubah semua. Pelanggaran mengembalikan `403` tanpa mengubah penerimaan, stok, maupun log aksi. Identitas pembuat/pengubah diambil server dari sesi, bukan dari body request.
+
+Validasi penerimaan yang berlaku: `reference_no` wajib dan unik; pemasok dan obat harus ada serta aktif; `items` minimal satu baris; `quantity` bilangan bulat positif; kombinasi `(medicine_id, batch_no)` hanya sekali per penerimaan; `expires_on` konsisten untuk batch yang sama; dan `expires_on` harus lebih akhir daripada tanggal penerimaan (zona Asia/Jakarta). Kegagalan mengembalikan `422` dengan daftar pesan, dan seluruh perubahan dibatalkan.
+
+CSRF aktif untuk form web dan dikecualikan untuk `/api/*` agar endpoint dapat diuji langsung dari Postman.
 
 Contoh request membuat penerimaan (setelah login, kirim cookie session):
 
@@ -96,35 +102,58 @@ GET /api/stocks?on_date=2026-10-03
 
 ## 6. Pengujian dan Verifikasi
 
-Pengujian otomatis tersedia untuk helper hash: `vendor/bin/phpunit --filter HashTest`. Rencana skenario feature ada di [`tests/Feature/scenarios.md`](tests/Feature/scenarios.md).
+Pengujian otomatis (37 test, 93 assertion):
 
-Verifikasi manual yang sudah dapat dijalankan sekarang:
+```
+vendor/bin/phpunit
+```
 
-1. Dari database kosong, jalankan `php spark migrate` lalu `php spark db:seed DemoUsersSeeder`; pastikan kedua akun muncul di tabel `users` dengan hash Argon2id.
-2. Uji constraint: insert penerimaan dengan `supplier_id` tidak ada harus gagal (FK), insert dua item dengan kombinasi `(reception_id, medicine_id, batch_no)` sama harus gagal (unique), insert dua stok awal batch sama harus gagal (unique).
+Mencakup: skenario 1-5 soal, angka laporan stok contoh soal, batas `expires_on` sama dengan `on_date`, isolasi rollback, stamping timestamp, autentikasi, dan helper hash. Test berjalan pada database `pharmacy_farmagitechs_test` (lihat `database.tests.*` di `.env`), sehingga tidak menyentuh data development.
+
+Verifikasi manual:
+
+1. Dari database kosong, jalankan `php spark migrate`, `php spark db:seed DemoUsersSeeder`, lalu `php spark db:seed ProvisionalStockSeeder`.
+2. Jalankan `vendor/bin/phpunit`; semua test harus lulus.
 3. Jalankan `php spark migrate:rollback` lalu `php spark migrate` untuk memastikan migrasi turun dan naik bersih.
 4. Buka `/receptions` tanpa login; harus redirect ke `/login`. Akses `/api/stocks` tanpa login; harus `401` JSON.
 5. Jalankan `php spark routes` untuk memastikan seluruh path terdaftar dengan filter `auth`.
 
 Asumsi dan batasan saat ini:
 
-- Lampiran `Lampiran/seed_farmasi.sql` belum tersedia; struktur tabel seed dibuat provisional dari deskripsi soal dan akan direkonsiliasi saat lampiran diterima.
-- Belum ada UI berfungsi; view masih placeholder.
-- Belum ada logika bisnis penerimaan, stok, dan autentikasi (menyusul pada tahap backend).
+- Lampiran `Lampiran/seed_farmasi.sql` belum tersedia; `ProvisionalStockSeeder` memuat angka yang disebut soal (obat 101, 102, 103, 104, 106, 107) agar perhitungan stok dapat diverifikasi. Saat lampiran asli diterima, impor menggantikan isi tabel seed dan seeder provisional dilewati otomatis.
+- Obat di luar daftar contoh soal (105, dan obat lain dari 25 katalog) belum ada di seed provisional.
+- UI menyediakan 4 tampilan wajib (login, daftar/detail penerimaan, form penerimaan, daftar stok). Filter tanggal `on_date` di UI tersedia di halaman stok; angka contoh soal paling akurat diverifikasi lewat API.
 
 ## 7. Postman Collection
 
-Belum tersedia pada tahap ini. Rencana: satu collection JSON di `postman/` berisi folder Auth, Receipts, dan Stocks dengan variabel environment `base_url` (contoh `http://localhost:8080`) dan penyimpanan cookie session otomatis dari request login.
+Tersedia di [`postman/`](postman):
+
+- `Pharmacy-Farmagitechs.postman_collection.json` — 23 request dalam 4 folder
+- `Local.postman_environment.json` — variabel `base_url` (`http://localhost:8080`), `receipt_id`, `foreign_receipt_id`
+
+Cara menjalankan:
+
+1. Jalankan aplikasi (`php spark serve --port 8080`) dengan database baseline.
+2. Di Postman: Import kedua berkas, pilih environment `Pharmacy Farmagitechs - Local`.
+3. Jalankan folder secara berurutan: **1. Auth** → **2. Stocks** → **3. Receipts** → **4. Unauthenticated**.
+
+Urutan penting: folder **2. Stocks** memeriksa angka baseline sehingga harus dijalankan sebelum ada penerimaan baru, dan folder **4. Unauthenticated** sengaja memakai cookie tidak valid sehingga dijalankan paling akhir.
+
+Autentikasi memakai cookie session: request `1.4 Login petugas` menyimpan `ci_session` otomatis, dan Postman mengirimkannya pada request berikutnya. Jalur CLI:
+
+```
+node node_modules/newman/bin/newman.js run postman/Pharmacy-Farmagitechs.postman_collection.json -e postman/Local.postman_environment.json
+```
 
 ## Struktur Proyek
 
 ```
 app/
-  Config/         Konfigurasi termasuk peta permission hardcoded
+  Config/         Konfigurasi, peta permission hardcoded, konfigurasi hash
   Controllers/    Api/ dan Web/ hanya menerjemahkan HTTP
   Database/       Migrations/ dan Seeds/
   Filters/        AuthFilter (menolak request tanpa login)
-  Models/         CRUD tipis
+  Models/         CRUD tipis + model event stamping timestamp
   Policies/       Keputusan hak ubah
   Repositories/   Query database
   Services/       Logika transaksi
@@ -132,7 +161,9 @@ app/
   Views/          Tampilan web
   Helpers/        Helper lintas lapisan (Hash)
 docs/             Dokumentasi database dan konvensi kode
-tests/Feature/    Rencana skenario pengujian
+postman/          Postman collection dan environment
+public/assets/    CSS dan JS untuk UI
+tests/            Test otomatis (Feature, database, unit)
 ```
 
 Aturan lapisan ada di [`docs/conventions.md`](docs/conventions.md).

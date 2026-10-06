@@ -1,0 +1,545 @@
+{
+    "info": {
+        "name": "Pharmacy Farmagitechs",
+        "description": "Koleksi API penerimaan obat dan laporan stok. Login menyimpan cookie session otomatis sehingga request berikutnya memakai sesi yang sama.\n\nUrutan folder penting:\n1. Auth - menyiapkan sesi (item terakhir: login petugas)\n2. Stocks - dijalankan sebelum ada penerimaan baru karena memeriksa angka baseline soal\n3. Receipts - alur buat/ubah penerimaan\n4. Unauthenticated - dijalankan paling akhir karena sengaja memakai cookie tidak valid",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        { "key": "base_url", "value": "http://localhost:8080", "type": "string" },
+        { "key": "receipt_id", "value": "1", "type": "string" },
+        { "key": "foreign_receipt_id", "value": "2", "type": "string" }
+    ],
+    "item": [
+        {
+            "name": "1. Auth",
+            "item": [
+                {
+                    "name": "1.1 Login gagal (401)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": ["pm.test('status 401', function () { pm.response.to.have.status(401); });"]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "body": { "mode": "raw", "raw": "{\n  \"username\": \"petugas\",\n  \"password\": \"salah\"\n}" },
+                        "url": { "raw": "{{base_url}}/api/login", "host": ["{{base_url}}"], "path": ["api", "login"] }
+                    }
+                },
+                {
+                    "name": "1.2 Login supervisor",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 200', function () { pm.response.to.have.status(200); });",
+                                    "pm.test('role supervisor', function () { pm.expect(pm.response.json().user.role).to.eql('supervisor'); });",
+                                    "pm.test('password_hash tidak dikirim', function () { pm.expect(pm.response.json().user).to.not.have.property('password_hash'); });"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "body": { "mode": "raw", "raw": "{\n  \"username\": \"supervisor\",\n  \"password\": \"supervisor123\"\n}" },
+                        "url": { "raw": "{{base_url}}/api/login", "host": ["{{base_url}}"], "path": ["api", "login"] }
+                    }
+                },
+                {
+                    "name": "1.3 Logout",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": ["pm.test('status 200', function () { pm.response.to.have.status(200); });"]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": { "raw": "{{base_url}}/api/logout", "host": ["{{base_url}}"], "path": ["api", "logout"] }
+                    }
+                },
+                {
+                    "name": "1.4 Login petugas (sesi untuk folder berikutnya)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 200', function () { pm.response.to.have.status(200); });",
+                                    "pm.test('role reception', function () { pm.expect(pm.response.json().user.role).to.eql('reception'); });"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "body": { "mode": "raw", "raw": "{\n  \"username\": \"petugas\",\n  \"password\": \"petugas123\"\n}" },
+                        "url": { "raw": "{{base_url}}/api/login", "host": ["{{base_url}}"], "path": ["api", "login"] },
+                        "description": "Wajib dijalankan sebelum folder Stocks dan Receipts."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "2. Stocks",
+            "item": [
+                {
+                    "name": "2.1 Laporan stok baseline (on_date soal)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 200', function () { pm.response.to.have.status(200); });",
+                                    "const body = pm.response.json();",
+                                    "const find = (id) => body.medicines.find((m) => m.medicine_id === id);",
+                                    "pm.test('on_date dipakai', function () { pm.expect(body.on_date).to.eql('2026-10-03'); });",
+                                    "pm.test('obat 101 fisik 142', function () { pm.expect(find(101).physical_quantity).to.eql(142); });",
+                                    "pm.test('obat 101 tersedia 134', function () { pm.expect(find(101).available_quantity).to.eql(134); });",
+                                    "pm.test('obat 101 kedaluwarsa 8', function () { pm.expect(find(101).expired_quantity).to.eql(8); });",
+                                    "pm.test('obat 102 tersedia 16', function () { pm.expect(find(102).available_quantity).to.eql(16); });",
+                                    "pm.test('obat 103 tersedia 15', function () { pm.expect(find(103).available_quantity).to.eql(15); });",
+                                    "pm.test('obat 104 tersedia 3', function () { pm.expect(find(104).available_quantity).to.eql(3); });",
+                                    "pm.test('obat 106 fisik 0', function () { pm.expect(find(106).physical_quantity).to.eql(0); });",
+                                    "pm.test('obat 107 fisik 6 tersedia 0', function () {",
+                                    "    pm.expect(find(107).physical_quantity).to.eql(6);",
+                                    "    pm.expect(find(107).available_quantity).to.eql(0);",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/api/stocks?on_date=2026-10-03",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "stocks"],
+                            "query": [{ "key": "on_date", "value": "2026-10-03" }]
+                        },
+                        "description": "Harus dijalankan pada database baseline (belum ada penerimaan baru)."
+                    }
+                },
+                {
+                    "name": "2.2 Laporan stok tanpa on_date (default hari ini)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": ["pm.test('status 200', function () { pm.response.to.have.status(200); });"]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "url": { "raw": "{{base_url}}/api/stocks", "host": ["{{base_url}}"], "path": ["api", "stocks"] }
+                    }
+                },
+                {
+                    "name": "2.3 Laporan stok format tanggal salah (422)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": ["pm.test('status 422', function () { pm.response.to.have.status(422); });"]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/api/stocks?on_date=03-10-2026",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "stocks"],
+                            "query": [{ "key": "on_date", "value": "03-10-2026" }]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "3. Receipts",
+            "item": [
+                {
+                    "name": "3.1 Buat penerimaan (payload contoh soal)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 201', function () { pm.response.to.have.status(201); });",
+                                    "const body = pm.response.json();",
+                                    "if (body.data && body.data.id) { pm.collectionVariables.set('receipt_id', body.data.id); }",
+                                    "pm.test('dua item tersimpan', function () { pm.expect(body.data.items.length).to.eql(2); });",
+                                    "pm.test('pembuat adalah petugas', function () { pm.expect(body.data.created_by_name).to.eql('Dewi Petugas'); });",
+                                    "pm.test('belum pernah diubah', function () { pm.expect(body.data.updated_by).to.be.null; });",
+                                    "pm.test('log CREATE tercatat', function () { pm.expect(body.data.logs[0].action).to.eql('CREATE'); });"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reference_no\": \"PB-001\",\n  \"supplier_id\": 1,\n  \"received_at\": \"2026-10-03T10:00:00+07:00\",\n  \"items\": [\n    {\"medicine_id\": 101, \"batch_no\": \"PCT-2601\", \"expires_on\": \"2027-12-31\", \"quantity\": 10},\n    {\"medicine_id\": 104, \"batch_no\": \"IBU-2602\", \"expires_on\": \"2028-06-30\", \"quantity\": 5}\n  ]\n}"
+                        },
+                        "url": { "raw": "{{base_url}}/api/receipts", "host": ["{{base_url}}"], "path": ["api", "receipts"] }
+                    }
+                },
+                {
+                    "name": "3.2 Cek stok setelah penerimaan",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 200', function () { pm.response.to.have.status(200); });",
+                                    "const find = (id) => pm.response.json().medicines.find((m) => m.medicine_id === id);",
+                                    "pm.test('obat 101 tersedia 144', function () { pm.expect(find(101).available_quantity).to.eql(144); });",
+                                    "pm.test('obat 104 tersedia 8', function () { pm.expect(find(104).available_quantity).to.eql(8); });",
+                                    "pm.test('obat 101 kedaluwarsa tetap 8', function () { pm.expect(find(101).expired_quantity).to.eql(8); });"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/api/stocks?on_date=2026-10-03",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "stocks"],
+                            "query": [{ "key": "on_date", "value": "2026-10-03" }]
+                        }
+                    }
+                },
+                {
+                    "name": "3.3 Buat penerimaan - reference_no duplikat (422)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": ["pm.test('status 422', function () { pm.response.to.have.status(422); });"]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reference_no\": \"PB-001\",\n  \"supplier_id\": 1,\n  \"received_at\": \"2026-10-03T10:00:00+07:00\",\n  \"items\": [\n    {\"medicine_id\": 101, \"batch_no\": \"PCT-2601\", \"expires_on\": \"2027-12-31\", \"quantity\": 1}\n  ]\n}"
+                        },
+                        "url": { "raw": "{{base_url}}/api/receipts", "host": ["{{base_url}}"], "path": ["api", "receipts"] }
+                    }
+                },
+                {
+                    "name": "3.4 Buat penerimaan - batch kedaluwarsa pada hari penerimaan (422)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": ["pm.test('status 422', function () { pm.response.to.have.status(422); });"]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reference_no\": \"PB-EXP\",\n  \"supplier_id\": 1,\n  \"received_at\": \"2026-10-03T10:00:00+07:00\",\n  \"items\": [\n    {\"medicine_id\": 101, \"batch_no\": \"PCT-OLD\", \"expires_on\": \"2026-10-03\", \"quantity\": 1}\n  ]\n}"
+                        },
+                        "url": { "raw": "{{base_url}}/api/receipts", "host": ["{{base_url}}"], "path": ["api", "receipts"] }
+                    }
+                },
+                {
+                    "name": "3.5 Buat penerimaan - kedaluwarsa tidak konsisten (422)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": ["pm.test('status 422', function () { pm.response.to.have.status(422); });"]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reference_no\": \"PB-INC\",\n  \"supplier_id\": 1,\n  \"received_at\": \"2026-10-03T10:00:00+07:00\",\n  \"items\": [\n    {\"medicine_id\": 101, \"batch_no\": \"PCT-2601\", \"expires_on\": \"2029-01-01\", \"quantity\": 1}\n  ]\n}"
+                        },
+                        "url": { "raw": "{{base_url}}/api/receipts", "host": ["{{base_url}}"], "path": ["api", "receipts"] }
+                    }
+                },
+                {
+                    "name": "3.6 Daftar penerimaan",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 200', function () { pm.response.to.have.status(200); });",
+                                    "pm.test('ada data', function () { pm.expect(pm.response.json().data.length).to.be.above(0); });"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "url": { "raw": "{{base_url}}/api/receipts", "host": ["{{base_url}}"], "path": ["api", "receipts"] }
+                    }
+                },
+                {
+                    "name": "3.7 Detail penerimaan",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 200', function () { pm.response.to.have.status(200); });",
+                                    "const detail = pm.response.json().data;",
+                                    "pm.test('punya item dan log', function () {",
+                                    "    pm.expect(detail.items).to.be.an('array');",
+                                    "    pm.expect(detail.logs).to.be.an('array');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/api/receipts/{{receipt_id}}",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "receipts", "{{receipt_id}}"]
+                        }
+                    }
+                },
+                {
+                    "name": "3.8 Ubah penerimaan (skenario 2 soal)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 200', function () { pm.response.to.have.status(200); });",
+                                    "const updated = pm.response.json().data;",
+                                    "pm.test('tersisa dua item', function () { pm.expect(updated.items.length).to.eql(2); });",
+                                    "pm.test('pengubah terakhir tercatat', function () { pm.expect(updated.updated_by).to.not.be.null; });"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PUT",
+                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reference_no\": \"PB-001\",\n  \"supplier_id\": 1,\n  \"received_at\": \"2026-10-03T10:00:00+07:00\",\n  \"items\": [\n    {\"medicine_id\": 101, \"batch_no\": \"PCT-2601\", \"expires_on\": \"2027-12-31\", \"quantity\": 7},\n    {\"medicine_id\": 103, \"batch_no\": \"SAL-2601\", \"expires_on\": \"2027-11-30\", \"quantity\": 3}\n  ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/receipts/{{receipt_id}}",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "receipts", "{{receipt_id}}"]
+                        }
+                    }
+                },
+                {
+                    "name": "3.9 Cek stok setelah perubahan",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 200', function () { pm.response.to.have.status(200); });",
+                                    "const find = (id) => pm.response.json().medicines.find((m) => m.medicine_id === id);",
+                                    "pm.test('obat 101 tersedia 141', function () { pm.expect(find(101).available_quantity).to.eql(141); });",
+                                    "pm.test('obat 103 tersedia 18', function () { pm.expect(find(103).available_quantity).to.eql(18); });",
+                                    "pm.test('obat 104 kembali 3', function () { pm.expect(find(104).available_quantity).to.eql(3); });"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/api/stocks?on_date=2026-10-03",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "stocks"],
+                            "query": [{ "key": "on_date", "value": "2026-10-03" }]
+                        }
+                    }
+                },
+                {
+                    "name": "3.10 Ubah penerimaan - kirim ulang identik (idempoten)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 200', function () { pm.response.to.have.status(200); });",
+                                    "const items = pm.response.json().data.items;",
+                                    "pm.test('tetap dua item', function () { pm.expect(items.length).to.eql(2); });",
+                                    "const qty = items.find((i) => i.medicine_id === 101).quantity;",
+                                    "pm.test('kuantitas tidak berlipat', function () { pm.expect(qty).to.eql(7); });"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PUT",
+                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reference_no\": \"PB-001\",\n  \"supplier_id\": 1,\n  \"received_at\": \"2026-10-03T10:00:00+07:00\",\n  \"items\": [\n    {\"medicine_id\": 101, \"batch_no\": \"PCT-2601\", \"expires_on\": \"2027-12-31\", \"quantity\": 7},\n    {\"medicine_id\": 103, \"batch_no\": \"SAL-2601\", \"expires_on\": \"2027-11-30\", \"quantity\": 3}\n  ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/receipts/{{receipt_id}}",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "receipts", "{{receipt_id}}"]
+                        },
+                        "description": "Jalankan berulang; stok tidak boleh berubah."
+                    }
+                },
+                {
+                    "name": "3.11 Ubah penerimaan orang lain sebagai petugas (403)",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "// Supervisor membuat penerimaan, lalu petugas mencoba mengubahnya.",
+                                    "const baseUrl = pm.variables.get('base_url');",
+                                    "const payload = JSON.stringify({",
+                                    "    reference_no: 'PB-SUP-' + Date.now(),",
+                                    "    supplier_id: 1,",
+                                    "    received_at: '2026-10-04T10:00:00+07:00',",
+                                    "    items: [{ medicine_id: 102, batch_no: 'AMX-2601', expires_on: '2027-06-30', quantity: 5 }]",
+                                    "});",
+                                    "pm.sendRequest({",
+                                    "    url: baseUrl + '/api/login', method: 'POST',",
+                                    "    header: { 'Content-Type': 'application/json' },",
+                                    "    body: { mode: 'raw', raw: JSON.stringify({ username: 'supervisor', password: 'supervisor123' }) }",
+                                    "}, function (err) {",
+                                    "    if (err) { console.log('login supervisor gagal:', err); return; }",
+                                    "    pm.sendRequest({",
+                                    "        url: baseUrl + '/api/receipts', method: 'POST',",
+                                    "        header: { 'Content-Type': 'application/json' },",
+                                    "        body: { mode: 'raw', raw: payload }",
+                                    "    }, function (err2, res2) {",
+                                    "        if (err2) { console.log('buat penerimaan gagal:', err2); return; }",
+                                    "        pm.collectionVariables.set('foreign_receipt_id', res2.json().data.id);",
+                                    "        pm.sendRequest({",
+                                    "            url: baseUrl + '/api/login', method: 'POST',",
+                                    "            header: { 'Content-Type': 'application/json' },",
+                                    "            body: { mode: 'raw', raw: JSON.stringify({ username: 'petugas', password: 'petugas123' }) }",
+                                    "        }, function (err3) { if (err3) { console.log('login petugas gagal:', err3); } });",
+                                    "    });",
+                                    "});"
+                                ]
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": ["pm.test('status 403', function () { pm.response.to.have.status(403); });"]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PUT",
+                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reference_no\": \"PB-SUP\",\n  \"supplier_id\": 1,\n  \"received_at\": \"2026-10-04T10:00:00+07:00\",\n  \"items\": [\n    {\"medicine_id\": 102, \"batch_no\": \"AMX-2601\", \"expires_on\": \"2027-06-30\", \"quantity\": 99}\n  ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/receipts/{{foreign_receipt_id}}",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "receipts", "{{foreign_receipt_id}}"]
+                        },
+                        "description": "Prascript membuat penerimaan sebagai supervisor lalu login sebagai petugas; PUT harus ditolak 403 tanpa mengubah data."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "4. Unauthenticated (jalankan paling akhir)",
+            "item": [
+                {
+                    "name": "4.1 Buat penerimaan tanpa login (401)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": ["pm.test('status 401', function () { pm.response.to.have.status(401); });"]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            { "key": "Content-Type", "value": "application/json" },
+                            { "key": "Cookie", "value": "ci_session=token-tidak-valid" }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reference_no\": \"PB-NOAUTH\",\n  \"supplier_id\": 1,\n  \"received_at\": \"2026-10-03T10:00:00+07:00\",\n  \"items\": [\n    {\"medicine_id\": 101, \"batch_no\": \"PCT-2601\", \"expires_on\": \"2027-12-31\", \"quantity\": 1}\n  ]\n}"
+                        },
+                        "url": { "raw": "{{base_url}}/api/receipts", "host": ["{{base_url}}"], "path": ["api", "receipts"] },
+                        "description": "Header Cookie sengaja diisi token tidak valid agar request berjalan tanpa sesi sah."
+                    }
+                },
+                {
+                    "name": "4.2 Laporan stok tanpa login (401)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": ["pm.test('status 401', function () { pm.response.to.have.status(401); });"]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [{ "key": "Cookie", "value": "ci_session=token-tidak-valid" }],
+                        "url": { "raw": "{{base_url}}/api/stocks", "host": ["{{base_url}}"], "path": ["api", "stocks"] }
+                    }
+                }
+            ]
+        }
+    ]
+}

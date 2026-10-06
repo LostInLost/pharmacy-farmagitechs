@@ -94,6 +94,12 @@ vendor/
 .harness/tmp/
 
 #-------------------------
+# Node (Postman collection runner)
+#-------------------------
+node_modules/
+package-lock.json
+
+#-------------------------
 # IDE / Development Files
 #-------------------------
 

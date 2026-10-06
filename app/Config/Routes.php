@@ -6,6 +6,9 @@ use CodeIgniter\Router\RouteCollection;
 
 $routes->get('/', static fn () => redirect()->to('/login'));
 
+$routes->get('login', 'Web\AuthPages::login');
+$routes->post('login', 'Web\AuthPages::attempt');
+
 $routes->group('', ['filter' => 'auth'], static function (RouteCollection $routes): void {
     $routes->get('logout', 'Web\AuthPages::logout');
     $routes->get('receptions', 'Web\ReceptionPages::index');
@@ -13,9 +16,6 @@ $routes->group('', ['filter' => 'auth'], static function (RouteCollection $route
     $routes->get('receptions/(:num)/edit', 'Web\ReceptionPages::form/$1');
     $routes->get('stocks', 'Web\StockPages::index');
 });
-
-$routes->get('login', 'Web\AuthPages::login');
-$routes->post('login', 'Api\AuthController::login');
 
 $routes->group('api', static function (RouteCollection $routes): void {
     $routes->post('login', 'Api\AuthController::login');
