@@ -6,6 +6,9 @@ dist/
 # dependencies
 node_modules/
 
+# konfigurasi pnpm lokal (store-dir per mesin)
+.npmrc
+
 # logs
 npm-debug.log*
 yarn-debug.log*

@@ -43,6 +43,7 @@ $routes->group('api', static function (RouteCollection $routes): void {
 
     $routes->group('', ['filter' => 'auth'], static function (RouteCollection $routes): void {
         $routes->post('logout', 'Api\AuthController::logout');
+        $routes->get('me', 'Api\AuthController::me');
 
         $routes->get('receipts', 'Api\ReceptionController::index');
         $routes->post('receipts', 'Api\ReceptionController::create');

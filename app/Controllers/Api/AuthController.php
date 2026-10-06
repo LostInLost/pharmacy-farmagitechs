@@ -46,4 +46,27 @@ class AuthController extends BaseApiController
             $this->response->setStatusCode(200)->setJSON(['message' => lang('Auth.api.logout')]),
         );
     }
+
+    /**
+     * Cek sesi untuk middleware SSR frontend Astro. GET aman dari CSRF
+     * (Security::verify melewatkan metode aman), jadi bisa dipanggil
+     * server-side dengan meneruskan header Cookie.
+     */
+    public function me()
+    {
+        $userId = session()->get('user_id');
+
+        if ($userId === null) {
+            return $this->respondError(lang('Auth.unauthenticated'), 401);
+        }
+
+        return $this->withFreshCsrf($this->response->setStatusCode(200)->setJSON([
+            'user' => [
+                'id'       => (int) $userId,
+                'name'     => (string) session()->get('user_name'),
+                'username' => (string) (session()->get('username') ?? ''),
+                'role'     => (string) session()->get('role'),
+            ],
+        ]));
+    }
 }

@@ -1,7 +1,9 @@
 # Frontend (Astro + shadcn/ui)
 
-Frontend Astro untuk aplikasi farmasi Farmagitechs. Login memakai session
-CodeIgniter 4 lewat `POST /api/login` (cookie `ci_session` + header CSRF).
+Frontend Astro (SSR, adapter Node) untuk aplikasi farmasi Farmagitechs.
+Login memakai session CodeIgniter 4 lewat `POST /api/login` (cookie
+`ci_session` + header CSRF). Guard rute dijalankan server-side lewat
+middleware berantai `sequence()`.
 
 ## Prasyarat
 
@@ -32,8 +34,9 @@ Buka `http://localhost:4321/login`.
 | Perintah | Fungsi |
 | --- | --- |
 | `pnpm dev` | Dev server di port 4321 |
-| `pnpm build` | Build produksi ke `dist/` |
+| `pnpm build` | Build produksi ke `dist/` (SSR) |
 | `pnpm preview` | Preview hasil build |
+| `node dist/server/entry.mjs` | Jalankan server SSR hasil build (env `HOST`/`PORT`) |
 | `pnpm typecheck` | `astro check` |
 | `pnpm lint` | ESLint |
 | `pnpm format` | Prettier |
@@ -56,14 +59,36 @@ src/
   layouts/
     base-layout.astro
   lib/
-    auth.ts       # login/logout + klasifikasi error
-    csrf.ts       # baca token CSRF dari cookie/header
-    utils.ts      # cn()
+    auth.ts         # login/logout + klasifikasi error
+    csrf.ts         # baca token CSRF dari cookie/header
+    server-auth.ts  # cek sesi dari server (GET /api/me)
+    utils.ts        # cn()
+  middleware.ts   # guard berantai: session → guest → authenticated
   pages/
-    index.astro   # redirect ke /login
-    login.astro   # halaman login (island LoginForm)
+    index.astro   # redirect pintar: login ↔ dashboard sesuai sesi
+    login.astro   # halaman tamu (island LoginForm)
     dashboard.astro
 ```
+
+## Middleware (guard berantai)
+
+`src/middleware.ts` memakai `sequence()` dari `astro:middleware`, jadi tiap
+tahap punya satu tanggung jawab dan dipanggil berurutan:
+
+1. **`session`** — memanggil `GET {API}/api/me` dengan header `Cookie`
+   browser diteruskan apa adanya, lalu mengisi `locals.user` (tipe ada di
+   `src/env.d.ts`). Aset statis (`/_astro/`, favicon) dilewati agar tidak
+   membanjiri backend. Backend mati → `locals.user = null` (fail-closed).
+2. **`guest`** — rute tamu (`/login`): pengguna yang sudah masuk dialihkan
+   ke `PUBLIC_POST_LOGIN_PATH`.
+3. **`authenticated`** — **deny-by-default**: semua rute di luar daftar
+   publik (`/login`, favicon, aset) wajib login; tamu dialihkan ke `/login`.
+   Halaman baru otomatis terlindungi tanpa daftar manual.
+
+Konsekuensi: SSR wajib aktif (`output: "server"` + `adapter: node`), dan
+middleware hanya berjalan lewat dev server atau `node dist/server/entry.mjs`
+— bukan sebagai file statis. `GET /api/me` dipilih sebagai pengecekan
+sesi karena metode aman lolos CSRF dan mengembalikan data user sekaligus.
 
 ## Alur login
 

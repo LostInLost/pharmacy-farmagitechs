@@ -35,6 +35,7 @@ class AuthService
         session()->set([
             'user_id'   => (int) $user['id'],
             'user_name' => $user['name'],
+            'username'  => $user['username'] ?? '',
             'role'      => $user['role'],
         ]);
     }

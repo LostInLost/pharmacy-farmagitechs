@@ -99,6 +99,9 @@ vendor/
 node_modules/
 package-lock.json
 
+# Store pnpm lokal (artefak cache, bukan bagian proyek)
+.pnpm-store/
+
 #-------------------------
 # IDE / Development Files
 #-------------------------

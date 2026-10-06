@@ -1,3 +1,6 @@
 ---
-return Astro.redirect("/login")
+import { POST_LOGIN_PATH } from "@/lib/auth"
+
+// `/` cerdas: locals sudah diisi middleware `session`, tanpa fetch ganda.
+return Astro.redirect(Astro.locals.user ? POST_LOGIN_PATH : "/login")
 ---
