@@ -100,21 +100,6 @@ node_modules/
 package-lock.json
 
 #-------------------------
-# Frontend (Astro, pnpm)
-#-------------------------
-frontend/node_modules/
-frontend/dist/
-frontend/.astro/
-frontend/.env
-frontend/.env.local
-frontend/.env.*.local
-frontend/.vercel/
-frontend/.netlify/
-frontend/.pnpm-debug.log
-frontend/package-lock.json
-frontend/yarn.lock
-
-#-------------------------
 # IDE / Development Files
 #-------------------------
 
