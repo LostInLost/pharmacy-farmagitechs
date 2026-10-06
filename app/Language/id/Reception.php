@@ -88,5 +88,10 @@ return [
         'contact_failed' => 'Tidak dapat menghubungi server.',
         'saved_redirect' => 'Tersimpan. Mengalihkan ke daftar penerimaan...',
         'remove'         => 'hapus',
+        'load_failed'    => 'Gagal memuat data.',
+        'not_found'      => 'Penerimaan tidak ditemukan.',
+        'forbidden'      => 'Anda tidak berhak mengubah penerimaan ini.',
+        'never_updated'  => 'belum pernah diubah',
+        'not_allowed'    => 'tidak berhak',
     ],
 ];

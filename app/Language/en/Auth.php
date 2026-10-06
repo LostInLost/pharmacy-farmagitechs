@@ -17,4 +17,9 @@ return [
     ],
 
     'unauthenticated' => 'Unauthenticated.',
+
+    'js' => [
+        'login_failed'   => 'Wrong username or password.',
+        'contact_failed' => 'Cannot reach the server.',
+    ],
 ];

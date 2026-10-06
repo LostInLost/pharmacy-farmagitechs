@@ -16,4 +16,10 @@ return [
     'csrf' => [
         'failed' => 'Sesi formulir sudah kedaluwarsa. Muat ulang halaman lalu coba lagi.',
     ],
+
+    'js' => [
+        'loading'        => 'Memuat...',
+        'contact_failed' => 'Tidak dapat menghubungi server.',
+        'session_expired' => 'Sesi berakhir. Mengalihkan ke halaman masuk...',
+    ],
 ];

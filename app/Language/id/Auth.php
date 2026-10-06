@@ -17,4 +17,9 @@ return [
     ],
 
     'unauthenticated' => 'Belum masuk.',
+
+    'js' => [
+        'login_failed'   => 'Username atau kata sandi salah.',
+        'contact_failed' => 'Tidak dapat menghubungi server.',
+    ],
 ];

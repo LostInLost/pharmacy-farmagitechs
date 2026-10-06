@@ -30,4 +30,13 @@ return [
     'api' => [
         'invalid_date' => 'on_date must be in YYYY-MM-DD format.',
     ],
+
+    'js' => [
+        'load_failed'      => 'Failed to load the stock report.',
+        'contact_failed'   => 'Cannot reach the server.',
+        'no_batch'         => 'no batches yet',
+        'batch_count'      => '{0} batches',
+        'status_available' => 'available',
+        'status_expired'   => 'expired',
+    ],
 ];

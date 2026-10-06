@@ -88,5 +88,10 @@ return [
         'contact_failed' => 'Cannot reach the server.',
         'saved_redirect' => 'Saved. Redirecting to the reception list...',
         'remove'         => 'remove',
+        'load_failed'    => 'Failed to load data.',
+        'not_found'      => 'Reception not found.',
+        'forbidden'      => 'You are not allowed to update this reception.',
+        'never_updated'  => 'never updated',
+        'not_allowed'    => 'not allowed',
     ],
 ];

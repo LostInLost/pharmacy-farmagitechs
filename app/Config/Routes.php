@@ -7,7 +7,6 @@ use CodeIgniter\Router\RouteCollection;
 $routes->get('/', static fn () => redirect()->to('/login'));
 
 $routes->get('login', 'Web\AuthPages::login');
-$routes->post('login', 'Web\AuthPages::attempt');
 
 $routes->group('', ['filter' => 'auth'], static function (RouteCollection $routes): void {
     $routes->post('logout', 'Web\AuthPages::logout');
@@ -29,5 +28,8 @@ $routes->group('api', static function (RouteCollection $routes): void {
         $routes->put('receipts/(:num)', 'Api\ReceptionController::update/$1');
 
         $routes->get('stocks', 'Api\StockController::index');
+
+        $routes->get('references/suppliers', 'Api\ReferenceController::suppliers');
+        $routes->get('references/medicines', 'Api\ReferenceController::medicines');
     });
 });

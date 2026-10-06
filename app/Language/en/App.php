@@ -16,4 +16,10 @@ return [
     'csrf' => [
         'failed' => 'Your form session has expired. Reload the page and try again.',
     ],
+
+    'js' => [
+        'loading'        => 'Loading...',
+        'contact_failed' => 'Cannot reach the server.',
+        'session_expired' => 'Session expired. Redirecting to sign in...',
+    ],
 ];

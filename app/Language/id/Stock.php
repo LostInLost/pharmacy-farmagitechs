@@ -30,4 +30,13 @@ return [
     'api' => [
         'invalid_date' => 'on_date harus berformat YYYY-MM-DD.',
     ],
+
+    'js' => [
+        'load_failed'      => 'Gagal memuat laporan stok.',
+        'contact_failed'   => 'Tidak dapat menghubungi server.',
+        'no_batch'         => 'belum ada batch',
+        'batch_count'      => '{0} batch',
+        'status_available' => 'tersedia',
+        'status_expired'   => 'kedaluwarsa',
+    ],
 ];
