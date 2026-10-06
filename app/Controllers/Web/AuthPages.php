@@ -31,7 +31,7 @@ class AuthPages extends Controller
         $user = $this->auth->attempt($username, $password);
 
         if ($user === null) {
-            return redirect()->back()->withInput()->with('error', 'Username atau kata sandi salah.');
+            return redirect()->back()->withInput()->with('error', lang('Auth.login.failed'));
         }
 
         $this->auth->login($user);

@@ -1,0 +1,33 @@
+<?php
+
+return [
+    'title' => 'Laporan Stok',
+
+    'filter' => [
+        'on_date'  => 'Tanggal pemeriksaan kedaluwarsa',
+        'show'     => 'Tampilkan',
+        'hint'     => 'Jumlah stok selalu dihitung dari seluruh transaksi tersimpan; tanggal hanya menentukan status kedaluwarsa.',
+    ],
+
+    'table' => [
+        'code'      => 'Kode',
+        'medicine'  => 'Obat',
+        'unit'      => 'Satuan',
+        'physical'  => 'Fisik',
+        'available' => 'Tersedia',
+        'expired'   => 'Kedaluwarsa',
+        'batches'   => 'Batch',
+        'batch_no'  => 'Batch',
+        'expires_on' => 'Kedaluwarsa',
+        'quantity'  => 'Jumlah',
+        'status'    => 'Status',
+        'no_batch'  => 'belum ada batch',
+        'batch_count' => '{0} batch',
+        'status_available' => 'tersedia',
+        'status_expired'   => 'kedaluwarsa',
+    ],
+
+    'api' => [
+        'invalid_date' => 'on_date harus berformat YYYY-MM-DD.',
+    ],
+];

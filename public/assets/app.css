@@ -1,82 +1,26 @@
-:root {
-    --line: #d5d9e0;
-    --ink: #1c2430;
-    --muted: #5b6673;
-    --accent: #1b6ec2;
-    --danger: #b3261e;
-    --ok: #146c43;
-}
+/*
+ * Lapisan tema tipis di atas Bootstrap 5.
+ * Komponen dasar (tabel, form, tombol, alert, badge) memakai class Bootstrap;
+ * file ini hanya menambahkan penyesuaian kecil yang belum dicakup Bootstrap.
+ */
 
-* { box-sizing: border-box; }
-
-body {
-    margin: 0;
-    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
-    color: var(--ink);
-    background: #f6f7f9;
-}
-
-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    padding: 12px 20px;
-    background: #fff;
-    border-bottom: 1px solid var(--line);
-}
-
-header nav { display: flex; align-items: center; gap: 14px; }
-header nav a { color: var(--accent); text-decoration: none; }
-header nav a:hover { text-decoration: underline; }
-header .who { color: var(--muted); font-size: 13px; }
-
-main { max-width: 1080px; margin: 0 auto; padding: 20px; }
-
-h1 { font-size: 22px; margin: 0 0 16px; }
-h2 { font-size: 17px; margin: 24px 0 10px; }
-
-table { width: 100%; border-collapse: collapse; background: #fff; }
-th, td { padding: 8px 10px; border: 1px solid var(--line); text-align: left; vertical-align: top; }
-th { background: #eef1f5; font-weight: 600; }
-td.num, th.num { text-align: right; }
-
-form.card, section.card {
-    background: #fff;
-    border: 1px solid var(--line);
-    border-radius: 6px;
-    padding: 16px;
-    margin-bottom: 16px;
-}
-
-label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
-input, select { width: 100%; padding: 7px 9px; border: 1px solid var(--line); border-radius: 4px; font: inherit; }
-input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
-
-.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
-.row-actions { margin-top: 12px; display: flex; gap: 10px; align-items: center; }
-
-button {
-    padding: 8px 14px;
-    border: 1px solid var(--accent);
-    border-radius: 4px;
-    background: var(--accent);
-    color: #fff;
-    font: inherit;
+details > summary {
     cursor: pointer;
 }
-button.secondary { background: #fff; color: var(--accent); }
-button.link { background: none; border: none; color: var(--danger); padding: 0; cursor: pointer; text-decoration: underline; }
 
-.alert { padding: 10px 12px; border-radius: 4px; margin-bottom: 14px; }
-.alert.error { background: #fdecea; border: 1px solid #f5c2c0; color: var(--danger); }
-.alert.ok { background: #e8f5ee; border: 1px solid #b7dfc9; color: var(--ok); }
-.alert ul { margin: 6px 0 0 18px; padding: 0; }
+details pre {
+    white-space: pre-wrap;
+    word-break: break-word;
+}
 
-.muted { color: var(--muted); font-size: 13px; }
-.badge { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: 12px; border: 1px solid var(--line); background: #f1f3f6; }
-.badge.expired { background: #fdecea; border-color: #f5c2c0; color: var(--danger); }
-.badge.available { background: #e8f5ee; border-color: #b7dfc9; color: var(--ok); }
+/* Fallback dasar bila CSS Bootstrap dari CDN gagal dimuat. */
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
 
-details { margin-top: 6px; }
-summary { cursor: pointer; color: var(--accent); }
+th, td {
+    padding: 0.5rem 0.625rem;
+    border: 1px solid #dee2e6;
+    vertical-align: top;
+}

@@ -25,7 +25,7 @@ class ReceptionController extends BaseApiController
         $reception = $this->receptions->detail((int) $id);
 
         if ($reception === null) {
-            return $this->respondError('Penerimaan tidak ditemukan.', 404);
+            return $this->respondError(lang('Reception.api.not_found'), 404);
         }
 
         return $this->response->setStatusCode(200)->setJSON(['data' => $reception]);
@@ -39,11 +39,11 @@ class ReceptionController extends BaseApiController
         $result = $this->receptions->create($payload, $actorId);
 
         if (! $result['ok']) {
-            return $this->respondError('Validasi gagal.', $result['status'], ['errors' => $result['errors']]);
+            return $this->respondError(lang('Reception.api.validation_failed'), $result['status'], ['errors' => $result['errors']]);
         }
 
         return $this->response->setStatusCode(201)->setJSON([
-            'message' => 'Penerimaan dibuat.',
+            'message' => lang('Reception.api.created'),
             'data'    => $this->receptions->detail($result['id']),
         ]);
     }
@@ -59,11 +59,11 @@ class ReceptionController extends BaseApiController
         $result = $this->receptions->update((int) $id, $payload, $actor);
 
         if (! $result['ok']) {
-            return $this->respondError($result['errors'][0] ?? 'Gagal.', $result['status'], ['errors' => $result['errors']]);
+            return $this->respondError($result['errors'][0] ?? lang('Reception.api.failed'), $result['status'], ['errors' => $result['errors']]);
         }
 
         return $this->response->setStatusCode(200)->setJSON([
-            'message' => 'Penerimaan diperbarui.',
+            'message' => lang('Reception.api.updated'),
             'data'    => $this->receptions->detail((int) $id),
         ]);
     }

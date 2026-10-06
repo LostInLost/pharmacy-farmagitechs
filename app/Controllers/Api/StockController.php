@@ -18,7 +18,7 @@ class StockController extends BaseApiController
         $onDate = $this->request->getGet('on_date');
 
         if (is_string($onDate) && trim($onDate) !== '' && ! $this->isValidDate($onDate)) {
-            return $this->respondError('on_date harus berformat YYYY-MM-DD.', 422);
+            return $this->respondError(lang('Stock.api.invalid_date'), 422);
         }
 
         return $this->response->setStatusCode(200)->setJSON($this->stocks->report($onDate));

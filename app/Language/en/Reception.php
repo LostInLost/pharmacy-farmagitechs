@@ -1,0 +1,92 @@
+<?php
+
+return [
+    'title' => [
+        'list' => 'Receptions',
+        'new'  => 'New Reception',
+        'edit' => 'Reception Detail & Edit',
+    ],
+
+    'table' => [
+        'reference'      => 'Reference',
+        'supplier'       => 'Supplier',
+        'received_at'    => 'Received',
+        'created_by'     => 'Created by',
+        'updated_by'     => 'Last updated by',
+        'actions'        => 'Actions',
+        'never_updated'  => 'never updated',
+        'not_allowed'    => 'not allowed',
+        'empty'          => 'No receptions yet.',
+        'edit'           => 'Edit',
+        'add'            => 'Add Reception',
+    ],
+
+    'form' => [
+        'reference_no'  => 'Reference No',
+        'supplier'      => 'Supplier',
+        'choose'        => '- select -',
+        'received_at'   => 'Received at',
+        'items'         => 'Items',
+        'medicine'      => 'Medicine',
+        'batch_no'      => 'Batch No',
+        'expires_on'    => 'Expires on',
+        'quantity'      => 'Quantity',
+        'add_row'       => 'Add row',
+        'save'          => 'Save',
+        'back'          => 'Back',
+    ],
+
+    'log' => [
+        'title'            => 'Action History',
+        'time'             => 'Time',
+        'action'           => 'Action',
+        'actor'            => 'Officer',
+        'changes'          => 'Changes',
+        'created'          => 'Reception created',
+        'changed'          => 'Reception content changed',
+        'unchanged'        => 'No changes',
+        'before'           => 'Before',
+        'after'            => 'After',
+    ],
+
+    'flash' => [
+        'not_found'   => 'Reception not found.',
+        'not_allowed' => 'You are not allowed to update this reception.',
+    ],
+
+    'api' => [
+        'not_found'         => 'Reception not found.',
+        'created'           => 'Reception created.',
+        'updated'           => 'Reception updated.',
+        'validation_failed' => 'Validation failed.',
+        'failed'            => 'Failed.',
+        'store_failed'      => 'Failed to save reception: {0}',
+        'update_failed'     => 'Failed to update reception: {0}',
+        'forbidden'         => 'You are not allowed to update this reception.',
+    ],
+
+    'validation' => [
+        'reference_required'    => 'reference_no is required.',
+        'reference_taken'       => 'reference_no {0} is already used by another reception.',
+        'supplier_not_found'    => 'Supplier not found.',
+        'supplier_inactive'     => 'Supplier is inactive.',
+        'received_at_invalid'   => 'received_at must be a valid date-time.',
+        'items_required'        => 'items must contain at least one row.',
+        'line'                  => 'Line {0}',
+        'medicine_not_found'    => '{0}: medicine not found.',
+        'medicine_inactive'     => '{0}: medicine is inactive.',
+        'batch_required'        => '{0}: batch_no is required.',
+        'quantity_invalid'      => '{0}: quantity must be a positive integer.',
+        'expires_on_invalid'    => '{0}: expires_on must be a date in YYYY-MM-DD format.',
+        'batch_duplicated'      => '{0}: the medicine and batch_no {1} combination appears more than once.',
+        'expires_before_receipt' => '{0}: expires_on must be later than the reception date.',
+        'batch_expiry_conflict' => 'Batch {0} of medicine {1} is already recorded with expiry {2}, not {3}.',
+    ],
+
+    'js' => [
+        'save_failed'    => 'Failed to save.',
+        'contact_failed' => 'Cannot reach the server.',
+        'saved_redirect' => 'Saved. Redirecting to the reception list...',
+        'remove'         => 'remove',
+    ],
+];

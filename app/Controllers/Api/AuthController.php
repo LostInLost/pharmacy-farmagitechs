@@ -21,19 +21,19 @@ class AuthController extends BaseApiController
         $password = (string) ($payload['password'] ?? '');
 
         if ($username === '' || $password === '') {
-            return $this->respondError('Username dan kata sandi wajib diisi.', 422);
+            return $this->respondError(lang('Auth.api.required'), 422);
         }
 
         $user = $this->auth->attempt($username, $password);
 
         if ($user === null) {
-            return $this->respondError('Kredensial tidak valid.', 401);
+            return $this->respondError(lang('Auth.api.invalid'), 401);
         }
 
         $this->auth->login($user);
 
         return $this->response->setStatusCode(200)->setJSON([
-            'message' => 'Login berhasil.',
+            'message' => lang('Auth.api.success'),
             'user'    => $user,
         ]);
     }
@@ -42,6 +42,6 @@ class AuthController extends BaseApiController
     {
         $this->auth->logout();
 
-        return $this->response->setStatusCode(200)->setJSON(['message' => 'Logout berhasil.']);
+        return $this->response->setStatusCode(200)->setJSON(['message' => lang('Auth.api.logout')]);
     }
 }

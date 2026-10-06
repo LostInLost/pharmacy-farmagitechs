@@ -13,7 +13,7 @@ class StockPages extends Controller
         $report = (new StockService())->report(is_string($onDate) ? $onDate : null);
 
         return view('stocks/index', [
-            'title'    => 'Laporan Stok',
+            'title'    => lang('Stock.title'),
             'onDate'   => $report['on_date'],
             'medicines' => $report['medicines'],
         ]);

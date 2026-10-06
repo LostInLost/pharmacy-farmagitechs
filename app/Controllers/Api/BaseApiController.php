@@ -16,6 +16,6 @@ abstract class BaseApiController extends Controller
 
     protected function notImplemented()
     {
-        return $this->respondError('Not implemented yet.', 501);
+        return $this->respondError(lang('App.api.not_implemented'), 501);
     }
 }

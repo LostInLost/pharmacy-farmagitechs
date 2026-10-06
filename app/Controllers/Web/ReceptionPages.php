@@ -25,7 +25,7 @@ class ReceptionPages extends Controller
         ];
 
         return view('receptions/index', [
-            'title'       => 'Penerimaan',
+            'title'       => lang('Reception.title.list'),
             'receptions'  => $this->receptions->list(),
             'actor'       => $actor,
             'permissions' => new \Config\Permissions(),
@@ -42,15 +42,15 @@ class ReceptionPages extends Controller
         $reception = $id === null ? null : $this->receptions->detail((int) $id);
 
         if ($id !== null && $reception === null) {
-            return redirect()->to('/receptions')->with('error', 'Penerimaan tidak ditemukan.');
+            return redirect()->to('/receptions')->with('error', lang('Reception.flash.not_found'));
         }
 
         if ($reception !== null && ! (new ReceptionPolicy())->canUpdate($actor, $reception)) {
-            return redirect()->to('/receptions')->with('error', 'Anda tidak berhak mengubah penerimaan ini.');
+            return redirect()->to('/receptions')->with('error', lang('Reception.flash.not_allowed'));
         }
 
         return view('receptions/form', [
-            'title'     => $id === null ? 'Penerimaan Baru' : 'Detail & Ubah Penerimaan',
+            'title'     => $id === null ? lang('Reception.title.new') : lang('Reception.title.edit'),
             'reception' => $reception,
             'canEdit'   => true,
             'suppliers' => (new SupplierModel())->where('is_active', 1)->orderBy('name')->findAll(),

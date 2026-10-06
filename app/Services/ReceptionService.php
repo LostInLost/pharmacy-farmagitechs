@@ -78,7 +78,7 @@ class ReceptionService
         } catch (Throwable $e) {
             $db->transRollback();
 
-            return ['ok' => false, 'errors' => ['Gagal menyimpan penerimaan: ' . $e->getMessage()], 'status' => 500];
+            return ['ok' => false, 'errors' => [lang('Reception.api.store_failed', [$e->getMessage()])], 'status' => 500];
         }
     }
 
@@ -96,13 +96,13 @@ class ReceptionService
             if ($reception === null) {
                 $db->transRollback();
 
-                return ['ok' => false, 'errors' => ['Penerimaan tidak ditemukan.'], 'status' => 404];
+                return ['ok' => false, 'errors' => [lang('Reception.api.not_found')], 'status' => 404];
             }
 
             if (! $this->policy->canUpdate($actor, $reception)) {
                 $db->transRollback();
 
-                return ['ok' => false, 'errors' => ['Anda tidak berhak mengubah penerimaan ini.'], 'status' => 403];
+                return ['ok' => false, 'errors' => [lang('Reception.api.forbidden')], 'status' => 403];
             }
 
             $errors = $this->validator->validate($payload, $id);
@@ -147,7 +147,7 @@ class ReceptionService
         } catch (Throwable $e) {
             $db->transRollback();
 
-            return ['ok' => false, 'errors' => ['Gagal memperbarui penerimaan: ' . $e->getMessage()], 'status' => 500];
+            return ['ok' => false, 'errors' => [lang('Reception.api.update_failed', [$e->getMessage()])], 'status' => 500];
         }
     }
 

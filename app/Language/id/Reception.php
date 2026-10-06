@@ -1,0 +1,92 @@
+<?php
+
+return [
+    'title' => [
+        'list' => 'Penerimaan',
+        'new'  => 'Penerimaan Baru',
+        'edit' => 'Detail & Ubah Penerimaan',
+    ],
+
+    'table' => [
+        'reference'      => 'Reference',
+        'supplier'       => 'Pemasok',
+        'received_at'    => 'Diterima',
+        'created_by'     => 'Pembuat',
+        'updated_by'     => 'Pengubah terakhir',
+        'actions'        => 'Aksi',
+        'never_updated'  => 'belum pernah diubah',
+        'not_allowed'    => 'tidak berhak',
+        'empty'          => 'Belum ada penerimaan.',
+        'edit'           => 'Ubah',
+        'add'            => 'Tambah Penerimaan',
+    ],
+
+    'form' => [
+        'reference_no'  => 'Reference No',
+        'supplier'      => 'Pemasok',
+        'choose'        => '- pilih -',
+        'received_at'   => 'Diterima pada',
+        'items'         => 'Item',
+        'medicine'      => 'Obat',
+        'batch_no'      => 'Batch No',
+        'expires_on'    => 'Kedaluwarsa',
+        'quantity'      => 'Jumlah',
+        'add_row'       => 'Tambah baris',
+        'save'          => 'Simpan',
+        'back'          => 'Kembali',
+    ],
+
+    'log' => [
+        'title'            => 'Riwayat Aksi',
+        'time'             => 'Waktu',
+        'action'           => 'Aksi',
+        'actor'            => 'Petugas',
+        'changes'          => 'Perubahan',
+        'created'          => 'Penerimaan dibuat',
+        'changed'          => 'Isi penerimaan berubah',
+        'unchanged'        => 'Tidak ada perubahan',
+        'before'           => 'Sebelum',
+        'after'            => 'Sesudah',
+    ],
+
+    'flash' => [
+        'not_found'   => 'Penerimaan tidak ditemukan.',
+        'not_allowed' => 'Anda tidak berhak mengubah penerimaan ini.',
+    ],
+
+    'api' => [
+        'not_found'         => 'Penerimaan tidak ditemukan.',
+        'created'           => 'Penerimaan dibuat.',
+        'updated'           => 'Penerimaan diperbarui.',
+        'validation_failed' => 'Validasi gagal.',
+        'failed'            => 'Gagal.',
+        'store_failed'      => 'Gagal menyimpan penerimaan: {0}',
+        'update_failed'     => 'Gagal memperbarui penerimaan: {0}',
+        'forbidden'         => 'Anda tidak berhak mengubah penerimaan ini.',
+    ],
+
+    'validation' => [
+        'reference_required'    => 'reference_no wajib diisi.',
+        'reference_taken'       => 'reference_no {0} sudah dipakai penerimaan lain.',
+        'supplier_not_found'    => 'Pemasok tidak ditemukan.',
+        'supplier_inactive'     => 'Pemasok tidak aktif.',
+        'received_at_invalid'   => 'received_at harus berupa tanggal-waktu yang valid.',
+        'items_required'        => 'items harus berisi setidaknya satu baris.',
+        'line'                  => 'Baris {0}',
+        'medicine_not_found'    => '{0}: obat tidak ditemukan.',
+        'medicine_inactive'     => '{0}: obat tidak aktif.',
+        'batch_required'        => '{0}: batch_no wajib diisi.',
+        'quantity_invalid'      => '{0}: quantity harus bilangan bulat positif.',
+        'expires_on_invalid'    => '{0}: expires_on harus berupa tanggal YYYY-MM-DD.',
+        'batch_duplicated'      => '{0}: kombinasi obat dan batch_no {1} muncul lebih dari sekali.',
+        'expires_before_receipt' => '{0}: expires_on harus lebih akhir daripada tanggal penerimaan.',
+        'batch_expiry_conflict' => 'Batch {0} obat {1} sudah tercatat dengan kedaluwarsa {2}, bukan {3}.',
+    ],
+
+    'js' => [
+        'save_failed'    => 'Gagal menyimpan.',
+        'contact_failed' => 'Tidak dapat menghubungi server.',
+        'saved_redirect' => 'Tersimpan. Mengalihkan ke daftar penerimaan...',
+        'remove'         => 'hapus',
+    ],
+];

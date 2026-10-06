@@ -23,27 +23,27 @@ class ReceptionValidator
 
         $referenceNo = trim((string) ($payload['reference_no'] ?? ''));
         if ($referenceNo === '') {
-            $errors[] = 'reference_no wajib diisi.';
+            $errors[] = lang('Reception.validation.reference_required');
         } elseif ($this->referenceNoTaken($referenceNo, $receptionId)) {
-            $errors[] = "reference_no {$referenceNo} sudah dipakai penerimaan lain.";
+            $errors[] = lang('Reception.validation.reference_taken', [$referenceNo]);
         }
 
         $supplierId = (int) ($payload['supplier_id'] ?? 0);
         $supplier   = $supplierId > 0 ? $this->suppliers->find($supplierId) : null;
         if ($supplier === null) {
-            $errors[] = 'Pemasok tidak ditemukan.';
+            $errors[] = lang('Reception.validation.supplier_not_found');
         } elseif ((int) $supplier['is_active'] !== 1) {
-            $errors[] = 'Pemasok tidak aktif.';
+            $errors[] = lang('Reception.validation.supplier_inactive');
         }
 
         $receivedAt = $this->parseReceivedAt($payload['received_at'] ?? null);
         if ($receivedAt === null) {
-            $errors[] = 'received_at harus berupa tanggal-waktu yang valid.';
+            $errors[] = lang('Reception.validation.received_at_invalid');
         }
 
         $items = $payload['items'] ?? null;
         if (! is_array($items) || $items === []) {
-            $errors[] = 'items harus berisi setidaknya satu baris.';
+            $errors[] = lang('Reception.validation.items_required');
 
             return $errors;
         }
@@ -51,48 +51,48 @@ class ReceptionValidator
         $seenBatches = [];
 
         foreach ($items as $index => $item) {
-            $line = 'Baris ' . ($index + 1);
+            $line = lang('Reception.validation.line', [$index + 1]);
 
             $medicineId = (int) ($item['medicine_id'] ?? 0);
             $medicine   = $medicineId > 0 ? $this->medicines->find($medicineId) : null;
 
             if ($medicine === null) {
-                $errors[] = "{$line}: obat tidak ditemukan.";
+                $errors[] = lang('Reception.validation.medicine_not_found', [$line]);
 
                 continue;
             }
 
             if ((int) $medicine['is_active'] !== 1) {
-                $errors[] = "{$line}: obat tidak aktif.";
+                $errors[] = lang('Reception.validation.medicine_inactive', [$line]);
             }
 
             $batchNo = trim((string) ($item['batch_no'] ?? ''));
             if ($batchNo === '') {
-                $errors[] = "{$line}: batch_no wajib diisi.";
+                $errors[] = lang('Reception.validation.batch_required', [$line]);
             }
 
             $quantity = $item['quantity'] ?? null;
             if (! is_int($quantity) && ! (is_string($quantity) && ctype_digit($quantity))) {
-                $errors[] = "{$line}: quantity harus bilangan bulat positif.";
+                $errors[] = lang('Reception.validation.quantity_invalid', [$line]);
             } elseif ((int) $quantity <= 0) {
-                $errors[] = "{$line}: quantity harus bilangan bulat positif.";
+                $errors[] = lang('Reception.validation.quantity_invalid', [$line]);
             }
 
             $expiresOn = $this->parseDate($item['expires_on'] ?? null);
             if ($expiresOn === null) {
-                $errors[] = "{$line}: expires_on harus berupa tanggal YYYY-MM-DD.";
+                $errors[] = lang('Reception.validation.expires_on_invalid', [$line]);
             }
 
             if ($batchNo !== '' && $expiresOn !== null) {
                 $key = $medicineId . '|' . $batchNo;
 
                 if (isset($seenBatches[$key])) {
-                    $errors[] = "{$line}: kombinasi obat dan batch_no {$batchNo} muncul lebih dari sekali.";
+                    $errors[] = lang('Reception.validation.batch_duplicated', [$line, $batchNo]);
                 }
                 $seenBatches[$key] = $expiresOn;
 
                 if ($receivedAt !== null && $expiresOn <= $receivedAt->toDateString()) {
-                    $errors[] = "{$line}: expires_on harus lebih akhir daripada tanggal penerimaan.";
+                    $errors[] = lang('Reception.validation.expires_before_receipt', [$line]);
                 }
             }
         }
@@ -117,7 +117,7 @@ class ReceptionValidator
             $existing = $this->knownExpiry((int) $medicineId, $batchNo);
 
             if ($existing !== null && $existing !== $expiresOn) {
-                $errors[] = "Batch {$batchNo} obat {$medicineId} sudah tercatat dengan kedaluwarsa {$existing}, bukan {$expiresOn}.";
+                $errors[] = lang('Reception.validation.batch_expiry_conflict', [$batchNo, $medicineId, $existing, $expiresOn]);
             }
         }
 

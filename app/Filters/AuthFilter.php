@@ -19,7 +19,7 @@ class AuthFilter implements FilterInterface
         if (str_starts_with($path, '/api/')) {
             return service('response')
                 ->setStatusCode(401)
-                ->setJSON(['message' => 'Unauthenticated.']);
+                ->setJSON(['message' => lang('Auth.unauthenticated')]);
         }
 
         return redirect()->to('/login');
