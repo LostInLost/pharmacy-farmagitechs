@@ -106,18 +106,24 @@ GET /api/stocks?on_date=2026-10-03
 
 ## 6. Pengujian dan Verifikasi
 
-Pengujian otomatis (44 test, 116 assertion):
+Pengujian otomatis (60 test, 144 assertion):
+
+```
+composer run test
+```
+
+`composer run test` menjalankan `scripts/run-tests.php`, yang memakai interpreter PHP pemanggil Composer. Bila `mysqli` tidak aktif di php.ini interpreter tersebut, skrip menjalankan ulang PHP dengan `-d extension=mysqli`; bila tetap gagal, skrip berhenti dengan pesan yang menyebut binary PHP dan php.ini penyebabnya. Alternatif langsung:
 
 ```
 vendor/bin/phpunit
 ```
 
-Mencakup: skenario 1-5 soal, angka laporan stok contoh soal, batas `expires_on` sama dengan `on_date`, isolasi rollback, stamping timestamp, autentikasi, audit trail (snapshot before/after), dan helper hash. Test berjalan pada database `pharmacy_farmagitechs_test` (lihat `database.tests.*` di `.env`), sehingga tidak menyentuh data development.
+Mencakup: skenario 1-5 soal, angka laporan stok contoh soal, batas `expires_on` sama dengan `on_date`, isolasi rollback, stamping timestamp, autentikasi, audit trail (snapshot before/after), dan helper hash. Test berjalan pada database `pharmacy_farmagitechs_test` (lihat `database.tests.*` di `.env`), sehingga tidak menyentuh data development. Laporan coverage tidak diaktifkan di `phpunit.dist.xml` agar mesin tanpa driver coverage tidak gagal; jalankan `vendor/bin/phpunit --coverage-text` bila driver Xdebug/PCOV tersedia.
 
 Verifikasi manual:
 
 1. Dari database kosong, jalankan `php spark migrate`, `php spark db:seed DemoUsersSeeder`, lalu `php spark db:seed ProvisionalStockSeeder`.
-2. Jalankan `vendor/bin/phpunit`; semua test harus lulus.
+2. Jalankan `composer run test`; semua test harus lulus.
 3. Jalankan `php spark migrate:rollback` lalu `php spark migrate` untuk memastikan migrasi turun dan naik bersih.
 4. Buka `/receptions` tanpa login; harus redirect ke `/login`. Akses `/api/stocks` tanpa login; harus `401` JSON.
 5. Jalankan `php spark routes` untuk memastikan seluruh path terdaftar dengan filter `auth`.
@@ -167,6 +173,7 @@ app/
 docs/             Dokumentasi database dan konvensi kode
 postman/          Postman collection dan environment
 public/assets/    CSS dan JS untuk UI
+scripts/          Runner `composer run test` (menangani ekstensi mysqli)
 tests/            Test otomatis (Feature, database, unit)
 ```
 

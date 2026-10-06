@@ -38,6 +38,6 @@
         "sort-packages": true
     },
     "scripts": {
-        "test": "phpunit"
+        "test": "@php scripts/run-tests.php"
     }
 }

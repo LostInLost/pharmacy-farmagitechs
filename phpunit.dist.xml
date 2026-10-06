@@ -11,14 +11,11 @@
     failOnWarning="true"
     cacheDirectory="build/.phpunit.cache"
 >
-    <coverage pathCoverage="false" ignoreDeprecatedCodeUnits="true">
-        <report>
-            <clover outputFile="build/logs/clover.xml"/>
-            <html outputDirectory="build/logs/html"/>
-            <php outputFile="build/logs/coverage.serialized"/>
-            <text outputFile="php://stdout" showUncoveredFiles="false"/>
-        </report>
-    </coverage>
+    <!-- Laporan coverage bersifat opsional dan butuh driver (Xdebug/PCOV):
+         aktifkan lewat CLI, mis. `vendor/bin/phpunit` dengan opsi coverage
+         text. Blok report tidak diaktifkan di sini karena tanpa driver
+         PHPUnit memunculkan warning yang menjadi kegagalan test
+         (failOnWarning="true"). -->
 
     <testsuites>
         <testsuite name="App">
