@@ -32,16 +32,18 @@ class AuthController extends BaseApiController
 
         $this->auth->login($user);
 
-        return $this->response->setStatusCode(200)->setJSON([
+        return $this->withFreshCsrf($this->response->setStatusCode(200)->setJSON([
             'message' => lang('Auth.api.success'),
             'user'    => $user,
-        ]);
+        ]));
     }
 
     public function logout()
     {
         $this->auth->logout();
 
-        return $this->response->setStatusCode(200)->setJSON(['message' => lang('Auth.api.logout')]);
+        return $this->withFreshCsrf(
+            $this->response->setStatusCode(200)->setJSON(['message' => lang('Auth.api.logout')]),
+        );
     }
 }

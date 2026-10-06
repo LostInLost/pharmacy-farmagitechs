@@ -91,6 +91,46 @@
         window.scrollTo(0, 0);
     }
 
+    const CSRF_HEADER = 'X-CSRF-TOKEN';
+
+    function csrfToken() {
+        const meta = document.querySelector('meta[name="csrf-token"]');
+        return meta ? meta.content : '';
+    }
+
+    function storeFreshToken(response) {
+        const fresh = response.headers.get(CSRF_HEADER);
+        const meta = document.querySelector('meta[name="csrf-token"]');
+
+        if (fresh && meta) {
+            meta.content = fresh;
+        }
+
+        return fresh;
+    }
+
+    function send(url, method, payload, isRetry) {
+        return fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': csrfToken()
+            },
+            body: JSON.stringify(payload)
+        }).then(function (response) {
+            const fresh = storeFreshToken(response);
+
+            return response.json().then(function (body) {
+                if (response.status === 403 && body.error === 'csrf' && !isRetry && fresh) {
+                    return send(url, method, payload, true);
+                }
+
+                return { status: response.status, body: body };
+            });
+        });
+    }
+
     document.getElementById('add-row').addEventListener('click', function () { addRow(); });
 
     form.addEventListener('submit', function (event) {
@@ -106,18 +146,7 @@
         const url = data.id === null ? data.endpoints.create : data.endpoints.update + data.id;
         const method = data.id === null ? 'POST' : 'PUT';
 
-        fetch(url, {
-            method: method,
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: JSON.stringify(payload)
-        }).then(function (response) {
-            return response.json().then(function (body) {
-                return { status: response.status, body: body };
-            });
-        }).then(function (result) {
+        send(url, method, payload, false).then(function (result) {
             if (result.status >= 200 && result.status < 300) {
                 showSuccess(i18n.savedRedirect || '');
                 window.setTimeout(function () { window.location.href = data.redirectUrl; }, 800);

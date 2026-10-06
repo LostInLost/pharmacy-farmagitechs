@@ -21,7 +21,9 @@ class StockController extends BaseApiController
             return $this->respondError(lang('Stock.api.invalid_date'), 422);
         }
 
-        return $this->response->setStatusCode(200)->setJSON($this->stocks->report($onDate));
+        return $this->withFreshCsrf(
+            $this->response->setStatusCode(200)->setJSON($this->stocks->report($onDate)),
+        );
     }
 
     private function isValidDate(string $value): bool

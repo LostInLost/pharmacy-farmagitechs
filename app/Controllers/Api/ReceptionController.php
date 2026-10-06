@@ -15,9 +15,9 @@ class ReceptionController extends BaseApiController
 
     public function index()
     {
-        return $this->response->setStatusCode(200)->setJSON([
+        return $this->withFreshCsrf($this->response->setStatusCode(200)->setJSON([
             'data' => $this->receptions->list(),
-        ]);
+        ]));
     }
 
     public function show($id = null)
@@ -28,7 +28,7 @@ class ReceptionController extends BaseApiController
             return $this->respondError(lang('Reception.api.not_found'), 404);
         }
 
-        return $this->response->setStatusCode(200)->setJSON(['data' => $reception]);
+        return $this->withFreshCsrf($this->response->setStatusCode(200)->setJSON(['data' => $reception]));
     }
 
     public function create()
@@ -42,10 +42,10 @@ class ReceptionController extends BaseApiController
             return $this->respondError(lang('Reception.api.validation_failed'), $result['status'], ['errors' => $result['errors']]);
         }
 
-        return $this->response->setStatusCode(201)->setJSON([
+        return $this->withFreshCsrf($this->response->setStatusCode(201)->setJSON([
             'message' => lang('Reception.api.created'),
             'data'    => $this->receptions->detail($result['id']),
-        ]);
+        ]));
     }
 
     public function update($id = null)
@@ -62,9 +62,9 @@ class ReceptionController extends BaseApiController
             return $this->respondError($result['errors'][0] ?? lang('Reception.api.failed'), $result['status'], ['errors' => $result['errors']]);
         }
 
-        return $this->response->setStatusCode(200)->setJSON([
+        return $this->withFreshCsrf($this->response->setStatusCode(200)->setJSON([
             'message' => lang('Reception.api.updated'),
             'data'    => $this->receptions->detail((int) $id),
-        ]);
+        ]));
     }
 }
