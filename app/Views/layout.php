@@ -19,8 +19,8 @@ $isReceptions    = str_starts_with($currentPath, 'receptions');
 $isStocks        = str_starts_with($currentPath, 'stocks');
 
 // Menu sidebar mengikuti contoh resmi Bootstrap "Sidebars": brand di atas,
-// daftar nav-pills di tengah, blok pengguna + keluar di bawah. Tambah menu
-// baru cukup dengan menambah entri di sini; urutan array = urutan tampil.
+// daftar nav-pills di tengah, blok pengguna + keluar menempel di dasar.
+// Tambah menu baru cukup dengan menambah entri di sini; urutan array = urutan tampil.
 $navItems = [
     [
         'href'   => site_url('receptions'),
@@ -83,26 +83,37 @@ $navItems = [
                             </li>
                         <?php endforeach ?>
                     </ul>
-                    <hr>
-                    <div class="d-flex align-items-center gap-2 mb-3">
-                        <span class="app-avatar rounded-circle bg-primary text-white" aria-hidden="true"><?= esc(mb_strtoupper(mb_substr((string) session()->get('user_name'), 0, 1))) ?></span>
-                        <div class="lh-sm text-truncate">
-                            <div class="fw-semibold text-truncate"><?= esc(session()->get('user_name')) ?></div>
-                            <div class="small text-body-secondary text-truncate"><?= esc(session()->get('role')) ?></div>
+                    <?php /* mt-auto: blok pengguna menempel di dasar sidebar, bukan menggantung di bawah menu. */ ?>
+                    <div class="mt-auto pt-3">
+                        <hr>
+                        <div class="d-flex align-items-center gap-2 mb-3">
+                            <span class="app-avatar rounded-circle bg-primary text-white" aria-hidden="true"><?= esc(mb_strtoupper(mb_substr((string) session()->get('user_name'), 0, 1))) ?></span>
+                            <div class="lh-sm text-truncate">
+                                <div class="fw-semibold text-truncate"><?= esc(session()->get('user_name')) ?></div>
+                                <div class="small text-body-secondary text-truncate"><?= esc(session()->get('role')) ?></div>
+                            </div>
                         </div>
+                        <form method="post" action="<?= site_url('logout') ?>" class="d-grid">
+                            <?= csrf_field() ?>
+                            <button type="submit" class="btn btn-outline-secondary btn-sm">
+                                <?= lang_html('App.nav.logout') ?>
+                            </button>
+                        </form>
                     </div>
-                    <form method="post" action="<?= site_url('logout') ?>" class="d-grid">
-                        <?= csrf_field() ?>
-                        <button type="submit" class="btn btn-outline-secondary btn-sm">
-                            <?= lang_html('App.nav.logout') ?>
-                        </button>
-                    </form>
                 </div>
             </div>
         </aside>
-        <main class="container py-4 flex-grow-1">
-            <?= $this->renderSection('content') ?>
-        </main>
+        <?php /* Footer ikut kolom konten (di samping sidebar), bukan melebar di bawah sidebar. */ ?>
+        <div class="app-main d-flex flex-column flex-grow-1">
+            <main class="container py-4 flex-grow-1">
+                <?= $this->renderSection('content') ?>
+            </main>
+            <footer class="border-top bg-white py-3">
+                <div class="container text-muted small">
+                    <?= lang_html('App.brand') ?>
+                </div>
+            </footer>
+        </div>
     </div>
 <?php else: ?>
     <nav class="navbar navbar-dark bg-primary">
@@ -115,12 +126,12 @@ $navItems = [
     <main class="container py-4 flex-grow-1">
         <?= $this->renderSection('content') ?>
     </main>
+    <footer class="border-top bg-white py-3">
+        <div class="container text-muted small">
+            <?= lang_html('App.brand') ?>
+        </div>
+    </footer>
 <?php endif ?>
-<footer class="border-top bg-white py-3">
-    <div class="container text-muted small">
-        <?= lang_html('App.brand') ?>
-    </div>
-</footer>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
         crossorigin="anonymous"></script>

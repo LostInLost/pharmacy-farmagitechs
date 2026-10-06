@@ -91,6 +91,35 @@ final class SidebarNavigationTest extends CIUnitTestCase
         $result->assertSee('reception');
     }
 
+    public function testFooterStaysInsideContentColumnNotUnderSidebar(): void
+    {
+        $result = $this->withSession($this->actor())->get('/receptions');
+
+        // Footer ikut kolom konten (di samping sidebar)...
+        $this->assertTrue($result->seeXPath(
+            '//div[contains(@class, "app-main")]/footer'
+        ));
+
+        // ...bukan anak langsung shell, yang membuatnya membentang di bawah sidebar.
+        $this->assertFalse($result->seeXPath(
+            '//div[contains(@class, "app-shell")]/footer'
+        ));
+    }
+
+    public function testProfileBlockIsPinnedToSidebarBottom(): void
+    {
+        $result = $this->withSession($this->actor())->get('/receptions');
+
+        // Blok pengguna dibungkus mt-auto agar menempel di dasar sidebar,
+        // bukan menggantung tepat di bawah daftar menu.
+        $this->assertTrue($result->seeXPath(
+            '//aside[@id="appSidebar"]//div[contains(@class, "mt-auto")]//span[contains(@class, "app-avatar")]'
+        ));
+        $this->assertTrue($result->seeXPath(
+            '//aside[@id="appSidebar"]//div[contains(@class, "mt-auto")]//form[contains(@action, "/logout")]'
+        ));
+    }
+
     public function testHamburgerOpensSidebarDrawerOnSmallScreens(): void
     {
         $result = $this->withSession($this->actor())->get('/receptions');
