@@ -80,7 +80,10 @@ class Security extends BaseConfig
      *
      * Redirect to previous page with error on failure.
      *
+     * Dinonaktifkan: penanganan kegagalan token dilakukan oleh
+     * App\Filters\CsrfFilter agar /api/* menerima JSON 403, bukan redirect.
+     *
      * @see https://codeigniter4.github.io/userguide/libraries/security.html#redirection-on-failure
      */
-    public bool $redirect = (ENVIRONMENT === 'production');
+    public bool $redirect = false;
 }

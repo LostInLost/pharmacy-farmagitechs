@@ -12,4 +12,8 @@ return [
     'api' => [
         'not_implemented' => 'Belum diimplementasikan.',
     ],
+
+    'csrf' => [
+        'failed' => 'Sesi formulir sudah kedaluwarsa. Muat ulang halaman lalu coba lagi.',
+    ],
 ];

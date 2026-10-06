@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="<?= csrf_hash() ?>">
     <title><?= esc($title ?? lang('App.brand')) ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
           rel="stylesheet"
@@ -43,9 +44,12 @@ $isStocks = str_starts_with($currentPath, 'stocks');
                     <span class="navbar-text small">
                         <?= esc(session()->get('user_name')) ?> (<?= esc(session()->get('role')) ?>)
                     </span>
-                    <a class="btn btn-outline-light btn-sm" href="<?= site_url('logout') ?>">
-                        <?= lang_html('App.nav.logout') ?>
-                    </a>
+                    <form method="post" action="<?= site_url('logout') ?>" class="d-inline">
+                        <?= csrf_field() ?>
+                        <button type="submit" class="btn btn-outline-light btn-sm">
+                            <?= lang_html('App.nav.logout') ?>
+                        </button>
+                    </form>
                 </div>
             </div>
         <?php endif ?>

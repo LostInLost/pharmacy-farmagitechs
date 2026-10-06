@@ -12,4 +12,8 @@ return [
     'api' => [
         'not_implemented' => 'Not implemented yet.',
     ],
+
+    'csrf' => [
+        'failed' => 'Your form session has expired. Reload the page and try again.',
+    ],
 ];

@@ -10,7 +10,7 @@ $routes->get('login', 'Web\AuthPages::login');
 $routes->post('login', 'Web\AuthPages::attempt');
 
 $routes->group('', ['filter' => 'auth'], static function (RouteCollection $routes): void {
-    $routes->get('logout', 'Web\AuthPages::logout');
+    $routes->post('logout', 'Web\AuthPages::logout');
     $routes->get('receptions', 'Web\ReceptionPages::index');
     $routes->get('receptions/new', 'Web\ReceptionPages::form');
     $routes->get('receptions/(:num)/edit', 'Web\ReceptionPages::form/$1');

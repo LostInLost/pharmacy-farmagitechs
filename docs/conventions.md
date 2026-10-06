@@ -7,7 +7,7 @@
 - Repository (`app/Repositories`) menyembunyikan Query Builder. Service tidak tahu nama tabel.
 - Policy (`app/Policies`) memegang keputusan hak ubah. Dipanggil service sebelum write, di dalam transaksi.
 - Validator (`app/Validation`) memusatkan aturan validasi payload.
-- Filter (`app/Filters`) hanya menangani autentikasi (menolak request tanpa login).
+- Filter (`app/Filters`) menangani autentikasi (`AuthFilter`) dan kegagalan CSRF (`CsrfFilter`). Tidak ada logika bisnis di sini.
 
 ## Gaya
 

@@ -3,9 +3,9 @@
 namespace Config;
 
 use App\Filters\AuthFilter;
+use App\Filters\CsrfFilter;
 use CodeIgniter\Config\Filters as BaseFilters;
 use CodeIgniter\Filters\Cors;
-use CodeIgniter\Filters\CSRF;
 use CodeIgniter\Filters\DebugToolbar;
 use CodeIgniter\Filters\ForceHTTPS;
 use CodeIgniter\Filters\Honeypot;
@@ -27,7 +27,7 @@ class Filters extends BaseFilters
      */
     public array $aliases = [
         'auth'          => AuthFilter::class,
-        'csrf'          => CSRF::class,
+        'csrf'          => CsrfFilter::class,
         'toolbar'       => DebugToolbar::class,
         'honeypot'      => Honeypot::class,
         'invalidchars'  => InvalidChars::class,
@@ -75,7 +75,7 @@ class Filters extends BaseFilters
     public array $globals = [
         'before' => [
             // 'honeypot',
-            'csrf' => ['except' => ['api/*']],
+            'csrf',
             // 'invalidchars',
         ],
         'after' => [
