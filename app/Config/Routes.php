@@ -6,7 +6,7 @@ use CodeIgniter\Router\RouteCollection;
 
 $routes->get('/', static fn () => redirect()->to('/login'));
 
-$routes->get('login', 'Web\AuthPages::login');
+$routes->get('login', 'Web\AuthPages::login', ['filter' => 'guest']);
 
 $routes->group('', ['filter' => 'auth'], static function (RouteCollection $routes): void {
     $routes->post('logout', 'Web\AuthPages::logout');
@@ -17,7 +17,7 @@ $routes->group('', ['filter' => 'auth'], static function (RouteCollection $route
 });
 
 $routes->group('api', static function (RouteCollection $routes): void {
-    $routes->post('login', 'Api\AuthController::login');
+    $routes->post('login', 'Api\AuthController::login', ['filter' => 'guest']);
 
     $routes->group('', ['filter' => 'auth'], static function (RouteCollection $routes): void {
         $routes->post('logout', 'Api\AuthController::logout');

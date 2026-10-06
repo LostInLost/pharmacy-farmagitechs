@@ -16,7 +16,15 @@ return [
         'logout'   => 'Logout berhasil.',
     ],
 
-    'unauthenticated' => 'Belum masuk.',
+    'unauthenticated'       => 'Belum masuk.',
+    'already_authenticated' => 'Sudah masuk.',
+
+    'already' => [
+        'title'   => 'Sudah Masuk',
+        'message' => 'Anda sudah masuk. Silakan lanjut ke halaman penerimaan atau keluar untuk mengganti akun.',
+        'back'    => 'Kembali ke Penerimaan',
+        'logout'  => 'Keluar',
+    ],
 
     'js' => [
         'login_failed'   => 'Username atau kata sandi salah.',

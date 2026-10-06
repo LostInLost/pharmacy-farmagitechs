@@ -61,7 +61,7 @@ Kata sandi disimpan sebagai hash Argon2id (`Config\Hash`, dapat diubah lewat `ha
 
 | Metode | Path | Fungsi | Autentikasi |
 | --- | --- | --- | --- |
-| POST | `/api/login` | Login, mengembalikan JSON | Tidak perlu |
+| POST | `/api/login` | Login, mengembalikan JSON | Tidak perlu (ditolak `403` bila sudah login) |
 | POST | `/api/logout` | Logout | Session |
 | GET | `/api/receipts` | Daftar seluruh penerimaan | Session |
 | POST | `/api/receipts` | Membuat penerimaan beserta seluruh item | Session |
@@ -73,7 +73,7 @@ Kata sandi disimpan sebagai hash Argon2id (`Config\Hash`, dapat diubah lewat `ha
 
 Halaman web (`/login`, `/receptions`, `/receptions/new`, `/receptions/{id}/edit`, `/stocks`) tidak mengambil data sendiri: controller Web hanya merender cangkang + objek `window.FARMASI_BOOT` (endpoint, string bahasa), dan jQuery di `public/assets/js/` (bootstrap `app.js`, pustaka bersama `lib/`, satu file per halaman di `pages/`) memanggil endpoint di atas. `GET /api/receipts` menyertakan `can_update` per baris agar UI tahu kapan menampilkan tombol Ubah; penegakan hak tetap di server (`ReceptionPolicy` via service).
 
-Status implementasi: seluruh endpoint sudah berfungsi penuh. Autentikasi memakai session cookie (`ci_session`), sehingga request berikutnya setelah login cukup mengirim cookie tersebut. Request tanpa login ditolak: `401` JSON untuk path `/api/*` dan redirect ke `/login` untuk halaman web.
+Status implementasi: seluruh endpoint sudah berfungsi penuh. Autentikasi memakai session cookie (`ci_session`), sehingga request berikutnya setelah login cukup mengirim cookie tersebut. Request tanpa login ditolak: `401` JSON untuk path `/api/*` dan redirect ke `/login` untuk halaman web. Sebaliknya, rute tamu (`GET /login` dan `POST /api/login`) dilindungi filter `guest`: pengguna yang sudah login menerima `403` — halaman error "Sudah Masuk" berisi tautan ke `/receptions` untuk web, JSON `{"message": "..."}` (beserta header `X-CSRF-TOKEN` terbaru) untuk `/api/*`.
 
 Aturan hak ubah: petugas penerimaan hanya dapat mengubah penerimaan yang ia buat; supervisor dapat mengubah semua. Pelanggaran mengembalikan `403` tanpa mengubah penerimaan, stok, maupun log aksi. Identitas pembuat/pengubah diambil server dari sesi, bukan dari body request.
 
@@ -133,7 +133,8 @@ Verifikasi manual:
 3. Jalankan `php spark migrate:rollback` lalu `php spark migrate` untuk memastikan migrasi turun dan naik bersih.
 4. Buka `/receptions` tanpa login; harus redirect ke `/login`. Akses `/api/stocks` tanpa login; harus `401` JSON.
 5. `POST /api/receipts` tanpa header `X-CSRF-TOKEN`; harus `403` JSON berisi `"error": "csrf"` walau sudah login. Ulangi dengan token dari cookie `csrf_cookie_name` (didapat dari `GET /login`); harus lolos ke validasi (`422`).
-6. Jalankan `php spark routes` untuk memastikan seluruh path terdaftar dengan filter `auth`.
+6. Login, lalu buka `/login`; harus `403` halaman "Sudah Masuk" (bukan redirect). `POST /api/login` dengan sesi aktif harus `403` JSON `{"message": "Sudah masuk."}`.
+7. Jalankan `php spark routes` untuk memastikan seluruh path terdaftar: `auth` untuk halaman/endpoint privat dan `guest` untuk `/login` dan `POST /api/login`.
 
 Asumsi dan batasan saat ini:
 
@@ -145,7 +146,7 @@ Asumsi dan batasan saat ini:
 
 Tersedia di [`postman/`](postman):
 
-- `Pharmacy-Farmagitechs.postman_collection.json` — 28 request dalam 5 folder (72 assertion)
+- `Pharmacy-Farmagitechs.postman_collection.json` — 30 request dalam 5 folder (74 assertion)
 - `Local.postman_environment.json` — variabel `base_url` (`http://localhost:8080`). `receipt_id` dan `foreign_receipt_id` di-set otomatis oleh collection saat request berjalan, jadi tidak perlu diisi di environment.
 
 Cara menjalankan:
@@ -154,7 +155,7 @@ Cara menjalankan:
 2. Di Postman: Import kedua berkas, pilih environment `Pharmacy Farmagitechs - Local`.
 3. Jalankan folder secara berurutan: **0. Bootstrap CSRF** → **1. Auth** → **2. Stocks** → **3. Receipts** → **4. Unauthenticated**.
 
-Urutan penting: folder **0. Bootstrap CSRF** menerbitkan cookie `csrf_cookie_name` yang dipakai seluruh request berikutnya; folder **2. Stocks** memeriksa angka baseline sehingga harus dijalankan sebelum ada penerimaan baru; dan folder **4. Unauthenticated** sengaja memakai cookie tidak valid sehingga dijalankan paling akhir.
+Urutan penting: folder **0. Bootstrap CSRF** menerbitkan cookie `csrf_cookie_name` yang dipakai seluruh request berikutnya; folder **2. Stocks** memeriksa angka baseline sehingga harus dijalankan sebelum ada penerimaan baru; dan folder **4. Unauthenticated** sengaja memakai cookie tidak valid sehingga dijalankan paling akhir. Karena `POST /api/login` ditolak saat sesi masih aktif, setiap pergantian akun (mis. petugas → supervisor) didahului `POST /api/logout`.
 
 Autentikasi memakai cookie session: request `1.4 Login petugas` menyimpan `ci_session` otomatis, dan Postman mengirimkannya pada request berikutnya. Script level koleksi menyisipkan header `X-CSRF-TOKEN` dari cookie `csrf_cookie_name` pada setiap request, lalu menyimpan nilai terbaru dari header response karena token berotasi tiap mutasi. Jalur CLI:
 
@@ -169,7 +170,7 @@ app/
   Config/         Konfigurasi, peta permission hardcoded, konfigurasi hash
   Controllers/    Api/ menerjemahkan HTTP; Web/ hanya cangkang halaman + boot object
   Database/       Migrations/ dan Seeds/
-  Filters/        AuthFilter (menolak request tanpa login) dan CsrfFilter (403 JSON untuk /api/*)
+  Filters/        AuthFilter (menolak request tanpa login), GuestFilter (menolak rute tamu saat sudah login), dan CsrfFilter (403 JSON untuk /api/*)
   Models/         CRUD tipis + model event stamping timestamp
   Policies/       Keputusan hak ubah
   Repositories/   Query database

@@ -803,7 +803,35 @@
                     }
                 },
                 {
-                    "name": "3.11 Login supervisor (persiapan uji hak akses)",
+                    "name": "3.11 Logout petugas (bersihkan sesi sebelum ganti akun)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 200', function () { pm.response.to.have.status(200); });"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": {
+                            "raw": "{{base_url}}/api/logout",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "logout"
+                            ]
+                        },
+                        "description": "Filter guest menolak login saat sesi masih aktif, jadi sesi petugas diakhiri dulu sebelum login sebagai supervisor."
+                    }
+                },
+                {
+                    "name": "3.12 Login supervisor (persiapan uji hak akses)",
                     "event": [
                         {
                             "listen": "test",
@@ -842,7 +870,7 @@
                     }
                 },
                 {
-                    "name": "3.12 Supervisor membuat penerimaan orang lain (persiapan)",
+                    "name": "3.13 Supervisor membuat penerimaan orang lain (persiapan)",
                     "event": [
                         {
                             "listen": "test",
@@ -884,7 +912,35 @@
                     }
                 },
                 {
-                    "name": "3.13 Login petugas kembali",
+                    "name": "3.14 Logout supervisor (bersihkan sesi sebelum kembali ke petugas)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 200', function () { pm.response.to.have.status(200); });"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": {
+                            "raw": "{{base_url}}/api/logout",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "logout"
+                            ]
+                        },
+                        "description": "Menutup sesi supervisor agar login petugas berikutnya tidak ditolak filter guest."
+                    }
+                },
+                {
+                    "name": "3.15 Login petugas kembali",
                     "event": [
                         {
                             "listen": "test",
@@ -923,7 +979,7 @@
                     }
                 },
                 {
-                    "name": "3.14 Ubah penerimaan orang lain sebagai petugas (403)",
+                    "name": "3.16 Ubah penerimaan orang lain sebagai petugas (403)",
                     "event": [
                         {
                             "listen": "test",

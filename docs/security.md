@@ -31,10 +31,21 @@
 
 `csrf` berjalan sebagai filter global *sebelum* filter route `auth`. Konsekuensinya, `POST` tanpa token **dan** tanpa sesi dijawab `403` (bukan `401`). Ini disengaja: permintaan yang tidak membawa bukti berasal dari origin yang sah tidak perlu diproses lebih jauh.
 
+### Rute tamu (filter `guest`)
+
+`GET /login` dan `POST /api/login` memakai filter `guest` (`App\Filters\GuestFilter`), kebalikan `auth`: keduanya menolak permintaan yang **sudah** login.
+
+- Web (`GET /login`) → `403` dengan view `auth/already_authenticated.php` berisi tautan ke `/receptions` dan tombol keluar, bukan redirect diam-diam. Redirect 302 dari halaman login menyulitkan pengguna memahami kenapa form tidak muncul.
+- API (`POST /api/login`) → `403` JSON `{"message": "Sudah masuk."}` beserta header `X-CSRF-TOKEN` berisi token terbaru, mengikuti kontrak "setiap response API membawa token segar" (`BaseApiController::withFreshCsrf()`). Tanpa header itu, klien yang ditolak akan memakai token basi pada request berikutnya dan tertahan `403 csrf`.
+- Pengecekan login inline di `Web\AuthPages::login()` dihapus agar filter menjadi satu-satunya sumber kebenaran.
+
+Konsekuensi: klien harus mengakhiri sesi (`POST /api/logout`) sebelum berganti akun; koleksi Postman melakukan ini di item `3.11` dan `3.14`.
+
 ### Konsekuensi untuk klien
 
 - Klien API harus memulai dari `GET /login` untuk memperoleh cookie CSRF sebelum `POST /api/login`.
 - Klien wajib menyimpan token terbaru dari header response dan memakainya pada request berikutnya; memakai ulang token lama menghasilkan `403`.
+- Pergantian akun harus lewat logout dulu: `POST /api/login` saat sesi masih aktif dijawab `403` oleh filter `guest`.
 - Logout web hanya tersedia lewat `POST /logout` (dilindungi CSRF), bukan `GET`.
 
 ### Batas yang belum ditangani

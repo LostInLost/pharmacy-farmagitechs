@@ -9,10 +9,6 @@ class AuthPages extends Controller
 {
     public function login()
     {
-        if (session()->get('user_id') !== null) {
-            return redirect()->to('/receptions');
-        }
-
         return view('auth/login', ['title' => lang('Auth.login.title')]);
     }
 
