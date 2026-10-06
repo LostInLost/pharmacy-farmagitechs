@@ -7,6 +7,16 @@ use CodeIgniter\Config\BaseConfig;
 /**
  * Cross-Origin Resource Sharing (CORS) Configuration
  *
+ * Hanya origin frontend (dev server Astro, http://localhost:4321) yang
+ * diizinkan — tanpa wildcard, sesuai prinsip least privilege. Nilai header
+ * `Access-Control-Allow-Origin` tidak pernah diambil dari request, jadi
+ * origin asing tidak mungkin ter-echo.
+ *
+ * Catatan cookie: frontend (localhost:4321) dan backend (localhost:8080)
+ * berbagi host `localhost`, sehingga keduanya same-site (port tidak
+ * menentukan site) dan cookie session `ci_session` (SameSite=Lax) tetap
+ * terkirim pada fetch lintas origin dengan `credentials: 'include'`.
+ *
  * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
  */
 class Cors extends BaseConfig
@@ -26,80 +36,40 @@ class Cors extends BaseConfig
      */
     public array $default = [
         /**
-         * Origins for the `Access-Control-Allow-Origin` header.
-         *
-         * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Origin
-         *
-         * E.g.:
-         *   - ['http://localhost:8080']
-         *   - ['https://www.example.com']
+         * Origin frontend saja. Origin dihitung dari skema + host + port.
+         * Tambahkan origin produksi frontend di sini saat deploy.
          */
-        'allowedOrigins' => [],
+        'allowedOrigins' => [
+            'http://localhost:4321',
+        ],
 
-        /**
-         * Origin regex patterns for the `Access-Control-Allow-Origin` header.
-         *
-         * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Origin
-         *
-         * NOTE: A pattern specified here is part of a regular expression. It will
-         *       be actually `#\A<pattern>\z#`.
-         *
-         * E.g.:
-         *   - ['https://\w+\.example\.com']
-         */
         'allowedOriginsPatterns' => [],
 
         /**
-         * Weather to send the `Access-Control-Allow-Credentials` header.
-         *
-         * The Access-Control-Allow-Credentials response header tells browsers whether
-         * the server allows cross-origin HTTP requests to include credentials.
-         *
-         * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Credentials
+         * Wajib true: frontend mengirim cookie session `ci_session` dan
+         * cookie CSRF pada setiap request (fetch `credentials: 'include'`).
          */
-        'supportsCredentials' => false,
+        'supportsCredentials' => true,
 
         /**
-         * Set headers to allow.
-         *
-         * The Access-Control-Allow-Headers response header is used in response to
-         * a preflight request which includes the Access-Control-Request-Headers to
-         * indicate which HTTP headers can be used during the actual request.
-         *
-         * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Headers
+         * Header yang dikirim frontend: `Content-Type: application/json`
+         * (tidak termasuk safelisted) dan `X-CSRF-TOKEN`.
          */
-        'allowedHeaders' => [],
+        'allowedHeaders' => ['Content-Type', 'X-CSRF-TOKEN'],
 
         /**
-         * Set headers to expose.
-         *
-         * The Access-Control-Expose-Headers response header allows a server to
-         * indicate which response headers should be made available to scripts running
-         * in the browser, in response to a cross-origin request.
-         *
-         * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Expose-Headers
+         * Token CSRF berotasi setiap mutasi; frontend harus bisa membaca
+         * nilai terbaru dari header respons, sehingga header ini diekspos.
          */
-        'exposedHeaders' => [],
+        'exposedHeaders' => ['X-CSRF-TOKEN'],
 
         /**
-         * Set methods to allow.
-         *
-         * The Access-Control-Allow-Methods response header specifies one or more
-         * methods allowed when accessing a resource in response to a preflight
-         * request.
-         *
-         * E.g.:
-         *   - ['GET', 'POST', 'PUT', 'DELETE']
-         *
-         * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Methods
+         * Metode yang dipakai API saat ini: GET (stok/receipts/referensi),
+         * POST (login/logout/receipts), PUT (update receipts), OPTIONS
+         * (preflight).
          */
-        'allowedMethods' => [],
+        'allowedMethods' => ['GET', 'POST', 'PUT', 'OPTIONS'],
 
-        /**
-         * Set how many seconds the results of a preflight request can be cached.
-         *
-         * @see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Max-Age
-         */
         'maxAge' => 7200,
     ];
 }

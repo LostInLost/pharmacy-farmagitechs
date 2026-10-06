@@ -76,11 +76,20 @@ class Filters extends BaseFilters
      */
     public array $globals = [
         'before' => [
+            // CORS dijalankan sebelum CSRF: respons penolakan CSRF (403 JSON
+            // + header token segar) harus tetap membawa header CORS, kalau
+            // tidak browser memblokir responsnya dan frontend lintas origin
+            // (Astro di :4321) tidak bisa membaca token untuk mengulang
+            // request.
+            'cors',
             // 'honeypot',
             'csrf',
             // 'invalidchars',
         ],
         'after' => [
+            // Menjaga header CORS tetap ada bila controller mengembalikan
+            // objek response baru (mis. redirect), bukan response bersama.
+            'cors',
             // 'honeypot',
             // 'secureheaders',
         ],

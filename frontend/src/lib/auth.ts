@@ -1,7 +1,6 @@
 import {
   CSRF_HEADER,
   bootstrapCsrfToken,
-  readCsrfToken,
   readCsrfTokenFromResponse,
 } from "./csrf"
 
@@ -92,7 +91,8 @@ export async function login(
     let body = await parseBody(response)
 
     if (isCsrfError(response.status, body)) {
-      token = readCsrfTokenFromResponse(response) ?? readCsrfToken()
+      // Token sudah berotasi; header respons membawa nilai terbaru.
+      token = readCsrfTokenFromResponse(response)
       response = await postLogin(username, password, token)
       body = await parseBody(response)
     }
@@ -141,7 +141,7 @@ export async function logout(): Promise<void> {
     let response = await send(token)
 
     if (response.status === 403) {
-      const fresh = readCsrfTokenFromResponse(response) ?? readCsrfToken()
+      const fresh = readCsrfTokenFromResponse(response)
       response = await send(fresh)
     }
   } catch {

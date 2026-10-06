@@ -3,46 +3,42 @@
  *
  * Backend memakai `csrfProtection = 'cookie'` dengan `regenerate = true`:
  * token berotasi setiap permintaan mutasi, jadi nilai terbaru harus selalu
- * diambil dari cookie `csrf_cookie_name` (non-HttpOnly) atau dari header
- * respons `X-CSRF-TOKEN`, bukan dari session cookie.
+ * diambil dari header respons `X-CSRF-TOKEN` (diekspos lewat CORS).
+ *
+ * Cookie `csrf_cookie_name` bersifat HttpOnly (warisan `Config\Cookie`
+ * `$httponly = true`), sehingga `document.cookie` tidak bisa membacanya —
+ * token awal diambil dari endpoint bootstrap `GET /api/csrf`.
  */
 
 export const CSRF_HEADER = "X-CSRF-TOKEN"
-export const CSRF_COOKIE = "csrf_cookie_name"
-
-function readCookie(name: string): string | null {
-  if (typeof document === "undefined") return null
-
-  const match = document.cookie
-    .split("; ")
-    .find((row) => row.startsWith(`${name}=`))
-
-  return match ? decodeURIComponent(match.slice(name.length + 1)) : null
-}
-
-export function readCsrfToken(): string | null {
-  return readCookie(CSRF_COOKIE)
-}
 
 export function readCsrfTokenFromResponse(response: Response): string | null {
   return response.headers.get(CSRF_HEADER)
 }
 
 /**
- * Ambil token awal: cookie lebih dulu, lalu fallback ke halaman backend
- * yang men-set cookie CSRF baru.
+ * Ambil token awal dari `GET {API}/api/csrf`. Endpoint ini publik (di luar
+ * filter auth) dan mengembalikan token pada header `X-CSRF-TOKEN` serta
+ * body `{ token }`. Responsnya juga men-set cookie CSRF baru bila belum ada.
  */
 export async function bootstrapCsrfToken(
   apiBaseUrl: string
 ): Promise<string | null> {
-  const fromCookie = readCsrfToken()
-  if (fromCookie) return fromCookie
-
   try {
-    const response = await fetch(`${apiBaseUrl}/login`, {
+    const response = await fetch(`${apiBaseUrl}/api/csrf`, {
       credentials: "include",
+      headers: { Accept: "application/json" },
+      cache: "no-store",
     })
-    return readCsrfTokenFromResponse(response) ?? readCsrfToken()
+
+    const fromHeader = readCsrfTokenFromResponse(response)
+    if (fromHeader) return fromHeader
+
+    const body = (await response.json().catch(() => null)) as {
+      token?: string
+    } | null
+
+    return body?.token ?? null
   } catch {
     return null
   }

@@ -67,8 +67,9 @@ src/
 
 ## Alur login
 
-1. Token CSRF dibaca dari cookie `csrf_cookie_name`; bila belum ada,
-   fallback ke `GET {API}/login` lalu ambil header `X-CSRF-TOKEN`.
+1. Token CSRF diambil dari `GET {API}/api/csrf` (header `X-CSRF-TOKEN`,
+   body `{ token }`). Cookie CSRF bersifat HttpOnly, jadi JavaScript tidak
+   bisa membacanya.
 2. `POST {API}/api/login` dengan `credentials: 'include'` + header
    `X-CSRF-TOKEN`.
 3. Token berotasi setiap mutasi (`regenerate = true`). Bila respons 403
@@ -77,12 +78,29 @@ src/
 4. Respons dipetakan: 422 (wajib isi), 401 (kredensial salah), 403 tanpa
    `error: csrf` (sudah login — `GuestFilter`), 5xx/network (server).
 
+## CORS
+
+Backend sudah dikonfigurasi untuk origin frontend saja (lihat
+`app/Config/Cors.php` dan `app/Config/Filters.php` di root repo):
+
+- `allowedOrigins` = `http://localhost:4321` (origin dev Astro), tanpa
+  wildcard; origin asing tidak pernah di-echo.
+- `supportsCredentials = true` — cookie session ikut terkirim.
+- `allowedHeaders` = `Content-Type`, `X-CSRF-TOKEN`;
+  `exposedHeaders` = `X-CSRF-TOKEN` agar token rotasi terbaca JavaScript.
+- Filter `cors` global dijalankan sebelum `csrf`, sehingga respons 403 CSRF
+  tetap membawa header CORS (jalur retry token).
+- Rute `OPTIONS api/(:any)` disediakan untuk preflight; rute `GET api/csrf`
+  untuk bootstrap token.
+
+Frontend (`localhost:4321`) dan backend (`localhost:8080`) berbagi host
+`localhost`, jadi keduanya same-site dan cookie `SameSite=Lax` tetap
+terkirim. Saat deploy, tambahkan origin frontend produksi ke
+`allowedOrigins` (jangan pakai wildcard).
+
 ## Catatan
 
-- Cookie session `ci_session` bersifat HttpOnly; hanya `csrf_cookie_name`
-  yang bisa dibaca JavaScript.
-- Bila backend memblokir cookie lintas origin, jalankan frontend dan backend
-  pada origin yang sama (proxy) atau aktifkan CORS + `supportsCredentials`
-  di `app/Config/Cors.php`.
+- Cookie session `ci_session` maupun cookie CSRF `csrf_cookie_name`
+  keduanya HttpOnly; token CSRF selalu diambil lewat header respons.
 - Jangan membuat `package-lock.json`/`yarn.lock` di folder ini; paket
   dikelola pnpm (`pnpm-lock.yaml`).
