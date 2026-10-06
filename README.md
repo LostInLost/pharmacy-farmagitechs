@@ -28,7 +28,7 @@ Catatan: tabel `suppliers`, `medicines`, `seed_batch_stock`, dan `stock_usage` d
 
 ## 3. Cara Menjalankan Aplikasi
 
-1. Salin `env` menjadi `.env`, lalu sesuaikan bagian database:
+1. Salin `.env.example` menjadi `.env` (`copy .env.example .env` di Windows, `cp .env.example .env` di Linux/macOS). Semua baris di berkas contoh masih dikomentari, jadi hapus tanda `#` pada baris yang dipakai, lalu sesuaikan bagian database:
 
    ```
    database.default.hostname = localhost
