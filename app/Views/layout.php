@@ -65,7 +65,7 @@ $navItems = [
             <div class="offcanvas-body d-flex flex-column">
                 <div class="app-sidebar-inner">
                     <div class="d-flex align-items-center mb-3">
-                        <a class="app-sidebar-brand d-flex align-items-center me-auto link-dark text-decoration-none"
+                        <a class="app-sidebar-brand d-flex align-items-center me-auto link-body-emphasis text-decoration-none"
                            href="<?= site_url('receptions') ?>">
                             <span class="fs-5 fw-semibold"><?= lang_html('App.brand') ?></span>
                         </a>
