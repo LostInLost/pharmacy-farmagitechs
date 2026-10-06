@@ -55,7 +55,7 @@ Dua akun dibuat oleh `DemoUsersSeeder`:
 | Rina Supervisor | `supervisor` | `supervisor@farmagitechs.test` | `supervisor123` | Supervisor farmasi |
 | Dewi Petugas | `petugas` | `petugas@farmagitechs.test` | `petugas123` | Petugas penerimaan |
 
-Kata sandi disimpan sebagai hash Argon2id (`Config\Hash`, dapat diubah lewat `hash.algo` di `.env`; otomatis jatuh ke bcrypt bila Argon2 tidak tersedia di mesin tersebut). `email` wajib dan unik agar alur pemulihan kata sandi berbasis email dapat ditambahkan nanti; fitur pemulihan itu sendiri di luar cakupan tes. Autentikasi memakai session CodeIgniter 4: login lewat `POST /login` (form web) atau `POST /api/login` (JSON), logout lewat `POST /logout` (form web) atau `POST /api/logout`. Identitas pembuat/pengubah selalu diambil server dari session, bukan dari body request.
+Kata sandi disimpan sebagai hash Argon2id (`Config\Hash`, dapat diubah lewat `hash.algo` di `.env`; otomatis jatuh ke bcrypt bila Argon2 tidak tersedia di mesin tersebut). `email` wajib dan unik agar alur pemulihan kata sandi berbasis email dapat ditambahkan nanti; fitur pemulihan itu sendiri di luar cakupan tes. Autentikasi memakai session CodeIgniter 4: login lewat `POST /api/login` (JSON, dipakai form login via jQuery), logout lewat `POST /logout` (form web) atau `POST /api/logout`. Identitas pembuat/pengubah selalu diambil server dari session, bukan dari body request.
 
 ## 5. Endpoint Utama
 
@@ -68,6 +68,10 @@ Kata sandi disimpan sebagai hash Argon2id (`Config\Hash`, dapat diubah lewat `ha
 | GET | `/api/receipts/{id}` | Detail satu penerimaan | Session |
 | PUT | `/api/receipts/{id}` | Memperbarui penerimaan (keadaan akhir lengkap) | Session |
 | GET | `/api/stocks?on_date=YYYY-MM-DD` | Laporan stok per obat dan batch | Session |
+| GET | `/api/references/suppliers` | Dropdown pemasok aktif (`id`, `name`) | Session |
+| GET | `/api/references/medicines` | Dropdown obat aktif (`id`, `name`, `unit`) | Session |
+
+Halaman web (`/login`, `/receptions`, `/receptions/new`, `/receptions/{id}/edit`, `/stocks`) tidak mengambil data sendiri: controller Web hanya merender cangkang + objek `window.FARMASI_BOOT` (endpoint, string bahasa), dan jQuery di `public/assets/js/` (bootstrap `app.js`, pustaka bersama `lib/`, satu file per halaman di `pages/`) memanggil endpoint di atas. `GET /api/receipts` menyertakan `can_update` per baris agar UI tahu kapan menampilkan tombol Ubah; penegakan hak tetap di server (`ReceptionPolicy` via service).
 
 Status implementasi: seluruh endpoint sudah berfungsi penuh. Autentikasi memakai session cookie (`ci_session`), sehingga request berikutnya setelah login cukup mengirim cookie tersebut. Request tanpa login ditolak: `401` JSON untuk path `/api/*` dan redirect ke `/login` untuk halaman web.
 
@@ -106,7 +110,7 @@ GET /api/stocks?on_date=2026-10-03
 
 ## 6. Pengujian dan Verifikasi
 
-Pengujian otomatis (68 test, 159 assertion):
+Pengujian otomatis (69 test, 171 assertion):
 
 ```
 composer run test
@@ -120,7 +124,7 @@ Secara default skrip menjalankan PHPUnit persis seperti `vendor/bin/phpunit`, ja
 vendor/bin/phpunit
 ```
 
-Mencakup: skenario 1-5 soal, angka laporan stok contoh soal, batas `expires_on` sama dengan `on_date`, isolasi rollback, stamping timestamp, autentikasi, proteksi CSRF (token wajib, rotasi, tolak pakai ulang), audit trail (snapshot before/after), dan helper hash. Test berjalan pada database `pharmacy_farmagitechs_test` (lihat `database.tests.*` di `.env`), sehingga tidak menyentuh data development. Tanpa `.env` (mis. di CI), test otomatis memakai fallback SQLite3 `:memory:`; seluruh migrasi dan query aplikasi dijaga tetap portabel agar kedua driver sama-sama lulus. Laporan coverage tidak diaktifkan di `phpunit.dist.xml` agar mesin tanpa driver coverage tidak gagal; jalankan `vendor/bin/phpunit --coverage-text` bila driver Xdebug/PCOV tersedia.
+Mencakup: skenario 1-5 soal, angka laporan stok contoh soal, batas `expires_on` sama dengan `on_date`, isolasi rollback, stamping timestamp, autentikasi, proteksi CSRF (token wajib, rotasi, tolak pakai ulang), audit trail (snapshot before/after), endpoint references (hanya aktif, field minimal, butuh login), `can_update` di daftar, dan helper hash. Test berjalan pada database `pharmacy_farmagitechs_test` (lihat `database.tests.*` di `.env`), sehingga tidak menyentuh data development. Tanpa `.env` (mis. di CI), test otomatis memakai fallback SQLite3 `:memory:`; seluruh migrasi dan query aplikasi dijaga tetap portabel agar kedua driver sama-sama lulus. Laporan coverage tidak diaktifkan di `phpunit.dist.xml` agar mesin tanpa driver coverage tidak gagal; jalankan `vendor/bin/phpunit --coverage-text` bila driver Xdebug/PCOV tersedia.
 
 Verifikasi manual:
 
@@ -141,7 +145,7 @@ Asumsi dan batasan saat ini:
 
 Tersedia di [`postman/`](postman):
 
-- `Pharmacy-Farmagitechs.postman_collection.json` — 26 request dalam 5 folder (66 assertion)
+- `Pharmacy-Farmagitechs.postman_collection.json` — 28 request dalam 5 folder (72 assertion)
 - `Local.postman_environment.json` — variabel `base_url` (`http://localhost:8080`). `receipt_id` dan `foreign_receipt_id` di-set otomatis oleh collection saat request berjalan, jadi tidak perlu diisi di environment.
 
 Cara menjalankan:
@@ -163,7 +167,7 @@ node node_modules/newman/bin/newman.js run postman/Pharmacy-Farmagitechs.postman
 ```
 app/
   Config/         Konfigurasi, peta permission hardcoded, konfigurasi hash
-  Controllers/    Api/ dan Web/ hanya menerjemahkan HTTP
+  Controllers/    Api/ menerjemahkan HTTP; Web/ hanya cangkang halaman + boot object
   Database/       Migrations/ dan Seeds/
   Filters/        AuthFilter (menolak request tanpa login) dan CsrfFilter (403 JSON untuk /api/*)
   Models/         CRUD tipis + model event stamping timestamp
@@ -171,11 +175,11 @@ app/
   Repositories/   Query database
   Services/       Logika transaksi
   Validation/     Aturan validasi payload
-  Views/          Tampilan web
+  Views/          Cangkang web + objek window.FARMASI_BOOT (data diisi jQuery dari API)
   Helpers/        Helper lintas lapisan (Hash)
 docs/             Dokumentasi database, keamanan, dan konvensi kode
 postman/          Postman collection dan environment
-public/assets/    CSS dan JS untuk UI
+public/assets/    CSS dan JS untuk UI (`js/app.js`, `js/lib/`, `js/pages/`)
 scripts/          Runner `composer run test` (menangani ekstensi mysqli)
 tests/            Test otomatis (Feature, database, unit)
 ```

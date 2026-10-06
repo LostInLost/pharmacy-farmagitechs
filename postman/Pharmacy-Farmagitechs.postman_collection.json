@@ -34,10 +34,26 @@
         }
     ],
     "variable": [
-        { "key": "base_url", "value": "http://localhost:8080", "type": "string" },
-        { "key": "receipt_id", "value": "1", "type": "string" },
-        { "key": "foreign_receipt_id", "value": "2", "type": "string" },
-        { "key": "csrf_token", "value": "", "type": "string" }
+        {
+            "key": "base_url",
+            "value": "http://localhost:8080",
+            "type": "string"
+        },
+        {
+            "key": "receipt_id",
+            "value": "1",
+            "type": "string"
+        },
+        {
+            "key": "foreign_receipt_id",
+            "value": "2",
+            "type": "string"
+        },
+        {
+            "key": "csrf_token",
+            "value": "",
+            "type": "string"
+        }
     ],
     "item": [
         {
@@ -61,7 +77,15 @@
                     ],
                     "request": {
                         "method": "GET",
-                        "url": { "raw": "{{base_url}}/login", "host": ["{{base_url}}"], "path": ["login"] },
+                        "url": {
+                            "raw": "{{base_url}}/login",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "login"
+                            ]
+                        },
                         "description": "Halaman login adalah titik masuk token CSRF: GET ini menerbitkan cookie csrf_cookie_name yang dipakai seluruh request berikutnya. Wajib dijalankan paling awal (mis. lewat newman --folder atau run berurutan)."
                     }
                 }
@@ -77,15 +101,34 @@
                             "listen": "test",
                             "script": {
                                 "type": "text/javascript",
-                                "exec": ["pm.test('status 401', function () { pm.response.to.have.status(401); });"]
+                                "exec": [
+                                    "pm.test('status 401', function () { pm.response.to.have.status(401); });"
+                                ]
                             }
                         }
                     ],
                     "request": {
                         "method": "POST",
-                        "header": [{ "key": "Content-Type", "value": "application/json" }],
-                        "body": { "mode": "raw", "raw": "{\n  \"username\": \"petugas\",\n  \"password\": \"salah\"\n}" },
-                        "url": { "raw": "{{base_url}}/api/login", "host": ["{{base_url}}"], "path": ["api", "login"] }
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"username\": \"petugas\",\n  \"password\": \"salah\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/login",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "login"
+                            ]
+                        }
                     }
                 },
                 {
@@ -105,9 +148,26 @@
                     ],
                     "request": {
                         "method": "POST",
-                        "header": [{ "key": "Content-Type", "value": "application/json" }],
-                        "body": { "mode": "raw", "raw": "{\n  \"username\": \"supervisor\",\n  \"password\": \"supervisor123\"\n}" },
-                        "url": { "raw": "{{base_url}}/api/login", "host": ["{{base_url}}"], "path": ["api", "login"] }
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"username\": \"supervisor\",\n  \"password\": \"supervisor123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/login",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "login"
+                            ]
+                        }
                     }
                 },
                 {
@@ -117,13 +177,24 @@
                             "listen": "test",
                             "script": {
                                 "type": "text/javascript",
-                                "exec": ["pm.test('status 200', function () { pm.response.to.have.status(200); });"]
+                                "exec": [
+                                    "pm.test('status 200', function () { pm.response.to.have.status(200); });"
+                                ]
                             }
                         }
                     ],
                     "request": {
                         "method": "POST",
-                        "url": { "raw": "{{base_url}}/api/logout", "host": ["{{base_url}}"], "path": ["api", "logout"] }
+                        "url": {
+                            "raw": "{{base_url}}/api/logout",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "logout"
+                            ]
+                        }
                     }
                 },
                 {
@@ -142,9 +213,26 @@
                     ],
                     "request": {
                         "method": "POST",
-                        "header": [{ "key": "Content-Type", "value": "application/json" }],
-                        "body": { "mode": "raw", "raw": "{\n  \"username\": \"petugas\",\n  \"password\": \"petugas123\"\n}" },
-                        "url": { "raw": "{{base_url}}/api/login", "host": ["{{base_url}}"], "path": ["api", "login"] },
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"username\": \"petugas\",\n  \"password\": \"petugas123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/login",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "login"
+                            ]
+                        },
                         "description": "Wajib dijalankan sebelum folder Stocks dan Receipts."
                     }
                 }
@@ -184,9 +272,19 @@
                         "method": "GET",
                         "url": {
                             "raw": "{{base_url}}/api/stocks?on_date=2026-10-03",
-                            "host": ["{{base_url}}"],
-                            "path": ["api", "stocks"],
-                            "query": [{ "key": "on_date", "value": "2026-10-03" }]
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "stocks"
+                            ],
+                            "query": [
+                                {
+                                    "key": "on_date",
+                                    "value": "2026-10-03"
+                                }
+                            ]
                         },
                         "description": "Harus dijalankan pada database baseline (belum ada penerimaan baru)."
                     }
@@ -198,13 +296,24 @@
                             "listen": "test",
                             "script": {
                                 "type": "text/javascript",
-                                "exec": ["pm.test('status 200', function () { pm.response.to.have.status(200); });"]
+                                "exec": [
+                                    "pm.test('status 200', function () { pm.response.to.have.status(200); });"
+                                ]
                             }
                         }
                     ],
                     "request": {
                         "method": "GET",
-                        "url": { "raw": "{{base_url}}/api/stocks", "host": ["{{base_url}}"], "path": ["api", "stocks"] }
+                        "url": {
+                            "raw": "{{base_url}}/api/stocks",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "stocks"
+                            ]
+                        }
                     }
                 },
                 {
@@ -214,7 +323,9 @@
                             "listen": "test",
                             "script": {
                                 "type": "text/javascript",
-                                "exec": ["pm.test('status 422', function () { pm.response.to.have.status(422); });"]
+                                "exec": [
+                                    "pm.test('status 422', function () { pm.response.to.have.status(422); });"
+                                ]
                             }
                         }
                     ],
@@ -222,9 +333,79 @@
                         "method": "GET",
                         "url": {
                             "raw": "{{base_url}}/api/stocks?on_date=03-10-2026",
-                            "host": ["{{base_url}}"],
-                            "path": ["api", "stocks"],
-                            "query": [{ "key": "on_date", "value": "03-10-2026" }]
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "stocks"
+                            ],
+                            "query": [
+                                {
+                                    "key": "on_date",
+                                    "value": "03-10-2026"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "2.4 Dropdown pemasok (hanya aktif)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 200', function () { pm.response.to.have.status(200); });",
+                                    "pm.test('hanya pemasok aktif', function () { pm.expect(pm.response.json().data.length).to.eql(2); });",
+                                    "pm.test('field minimal id+name', function () { pm.expect(Object.keys(pm.response.json().data[0]).sort()).to.eql(['id', 'name']); });"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/api/references/suppliers",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "references",
+                                "suppliers"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "2.5 Dropdown obat (hanya aktif)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('status 200', function () { pm.response.to.have.status(200); });",
+                                    "pm.test('obat nonaktif 105 tidak ada', function () { pm.expect(pm.response.json().data.find((m) => m.id === 105)).to.be.undefined; });",
+                                    "pm.test('field minimal id+name+unit', function () { pm.expect(Object.keys(pm.response.json().data[0]).sort()).to.eql(['id', 'name', 'unit']); });"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{base_url}}/api/references/medicines",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "references",
+                                "medicines"
+                            ]
                         }
                     }
                 }
@@ -261,12 +442,26 @@
                     ],
                     "request": {
                         "method": "POST",
-                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
                         "body": {
                             "mode": "raw",
                             "raw": "{\n  \"reference_no\": \"PB-001\",\n  \"supplier_id\": 1,\n  \"received_at\": \"2026-10-03T10:00:00+07:00\",\n  \"items\": [\n    {\"medicine_id\": 101, \"batch_no\": \"PCT-2601\", \"expires_on\": \"2027-12-31\", \"quantity\": 10},\n    {\"medicine_id\": 104, \"batch_no\": \"IBU-2602\", \"expires_on\": \"2028-06-30\", \"quantity\": 5}\n  ]\n}"
                         },
-                        "url": { "raw": "{{base_url}}/api/receipts", "host": ["{{base_url}}"], "path": ["api", "receipts"] }
+                        "url": {
+                            "raw": "{{base_url}}/api/receipts",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "receipts"
+                            ]
+                        }
                     }
                 },
                 {
@@ -290,9 +485,19 @@
                         "method": "GET",
                         "url": {
                             "raw": "{{base_url}}/api/stocks?on_date=2026-10-03",
-                            "host": ["{{base_url}}"],
-                            "path": ["api", "stocks"],
-                            "query": [{ "key": "on_date", "value": "2026-10-03" }]
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "stocks"
+                            ],
+                            "query": [
+                                {
+                                    "key": "on_date",
+                                    "value": "2026-10-03"
+                                }
+                            ]
                         }
                     }
                 },
@@ -303,18 +508,34 @@
                             "listen": "test",
                             "script": {
                                 "type": "text/javascript",
-                                "exec": ["pm.test('status 422', function () { pm.response.to.have.status(422); });"]
+                                "exec": [
+                                    "pm.test('status 422', function () { pm.response.to.have.status(422); });"
+                                ]
                             }
                         }
                     ],
                     "request": {
                         "method": "POST",
-                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
                         "body": {
                             "mode": "raw",
                             "raw": "{\n  \"reference_no\": \"PB-001\",\n  \"supplier_id\": 1,\n  \"received_at\": \"2026-10-03T10:00:00+07:00\",\n  \"items\": [\n    {\"medicine_id\": 101, \"batch_no\": \"PCT-2601\", \"expires_on\": \"2027-12-31\", \"quantity\": 1}\n  ]\n}"
                         },
-                        "url": { "raw": "{{base_url}}/api/receipts", "host": ["{{base_url}}"], "path": ["api", "receipts"] }
+                        "url": {
+                            "raw": "{{base_url}}/api/receipts",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "receipts"
+                            ]
+                        }
                     }
                 },
                 {
@@ -324,18 +545,34 @@
                             "listen": "test",
                             "script": {
                                 "type": "text/javascript",
-                                "exec": ["pm.test('status 422', function () { pm.response.to.have.status(422); });"]
+                                "exec": [
+                                    "pm.test('status 422', function () { pm.response.to.have.status(422); });"
+                                ]
                             }
                         }
                     ],
                     "request": {
                         "method": "POST",
-                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
                         "body": {
                             "mode": "raw",
                             "raw": "{\n  \"reference_no\": \"PB-EXP\",\n  \"supplier_id\": 1,\n  \"received_at\": \"2026-10-03T10:00:00+07:00\",\n  \"items\": [\n    {\"medicine_id\": 101, \"batch_no\": \"PCT-OLD\", \"expires_on\": \"2026-10-03\", \"quantity\": 1}\n  ]\n}"
                         },
-                        "url": { "raw": "{{base_url}}/api/receipts", "host": ["{{base_url}}"], "path": ["api", "receipts"] }
+                        "url": {
+                            "raw": "{{base_url}}/api/receipts",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "receipts"
+                            ]
+                        }
                     }
                 },
                 {
@@ -345,18 +582,34 @@
                             "listen": "test",
                             "script": {
                                 "type": "text/javascript",
-                                "exec": ["pm.test('status 422', function () { pm.response.to.have.status(422); });"]
+                                "exec": [
+                                    "pm.test('status 422', function () { pm.response.to.have.status(422); });"
+                                ]
                             }
                         }
                     ],
                     "request": {
                         "method": "POST",
-                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
                         "body": {
                             "mode": "raw",
                             "raw": "{\n  \"reference_no\": \"PB-INC\",\n  \"supplier_id\": 1,\n  \"received_at\": \"2026-10-03T10:00:00+07:00\",\n  \"items\": [\n    {\"medicine_id\": 101, \"batch_no\": \"PCT-2601\", \"expires_on\": \"2029-01-01\", \"quantity\": 1}\n  ]\n}"
                         },
-                        "url": { "raw": "{{base_url}}/api/receipts", "host": ["{{base_url}}"], "path": ["api", "receipts"] }
+                        "url": {
+                            "raw": "{{base_url}}/api/receipts",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "receipts"
+                            ]
+                        }
                     }
                 },
                 {
@@ -375,7 +628,16 @@
                     ],
                     "request": {
                         "method": "GET",
-                        "url": { "raw": "{{base_url}}/api/receipts", "host": ["{{base_url}}"], "path": ["api", "receipts"] }
+                        "url": {
+                            "raw": "{{base_url}}/api/receipts",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "receipts"
+                            ]
+                        }
                     }
                 },
                 {
@@ -400,8 +662,14 @@
                         "method": "GET",
                         "url": {
                             "raw": "{{base_url}}/api/receipts/{{receipt_id}}",
-                            "host": ["{{base_url}}"],
-                            "path": ["api", "receipts", "{{receipt_id}}"]
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "receipts",
+                                "{{receipt_id}}"
+                            ]
                         }
                     }
                 },
@@ -431,15 +699,26 @@
                     ],
                     "request": {
                         "method": "PUT",
-                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
                         "body": {
                             "mode": "raw",
                             "raw": "{\n  \"reference_no\": \"PB-001\",\n  \"supplier_id\": 1,\n  \"received_at\": \"2026-10-03T10:00:00+07:00\",\n  \"items\": [\n    {\"medicine_id\": 101, \"batch_no\": \"PCT-2601\", \"expires_on\": \"2027-12-31\", \"quantity\": 7},\n    {\"medicine_id\": 103, \"batch_no\": \"SAL-2601\", \"expires_on\": \"2027-11-30\", \"quantity\": 3}\n  ]\n}"
                         },
                         "url": {
                             "raw": "{{base_url}}/api/receipts/{{receipt_id}}",
-                            "host": ["{{base_url}}"],
-                            "path": ["api", "receipts", "{{receipt_id}}"]
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "receipts",
+                                "{{receipt_id}}"
+                            ]
                         }
                     }
                 },
@@ -464,9 +743,19 @@
                         "method": "GET",
                         "url": {
                             "raw": "{{base_url}}/api/stocks?on_date=2026-10-03",
-                            "host": ["{{base_url}}"],
-                            "path": ["api", "stocks"],
-                            "query": [{ "key": "on_date", "value": "2026-10-03" }]
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "stocks"
+                            ],
+                            "query": [
+                                {
+                                    "key": "on_date",
+                                    "value": "2026-10-03"
+                                }
+                            ]
                         }
                     }
                 },
@@ -489,15 +778,26 @@
                     ],
                     "request": {
                         "method": "PUT",
-                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
                         "body": {
                             "mode": "raw",
                             "raw": "{\n  \"reference_no\": \"PB-001\",\n  \"supplier_id\": 1,\n  \"received_at\": \"2026-10-03T10:00:00+07:00\",\n  \"items\": [\n    {\"medicine_id\": 101, \"batch_no\": \"PCT-2601\", \"expires_on\": \"2027-12-31\", \"quantity\": 7},\n    {\"medicine_id\": 103, \"batch_no\": \"SAL-2601\", \"expires_on\": \"2027-11-30\", \"quantity\": 3}\n  ]\n}"
                         },
                         "url": {
                             "raw": "{{base_url}}/api/receipts/{{receipt_id}}",
-                            "host": ["{{base_url}}"],
-                            "path": ["api", "receipts", "{{receipt_id}}"]
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "receipts",
+                                "{{receipt_id}}"
+                            ]
                         },
                         "description": "Jalankan berulang; stok tidak boleh berubah."
                     }
@@ -518,9 +818,26 @@
                     ],
                     "request": {
                         "method": "POST",
-                        "header": [{ "key": "Content-Type", "value": "application/json" }],
-                        "body": { "mode": "raw", "raw": "{\n  \"username\": \"supervisor\",\n  \"password\": \"supervisor123\"\n}" },
-                        "url": { "raw": "{{base_url}}/api/login", "host": ["{{base_url}}"], "path": ["api", "login"] },
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"username\": \"supervisor\",\n  \"password\": \"supervisor123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/login",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "login"
+                            ]
+                        },
                         "description": "Menyiapkan sesi supervisor untuk membuat penerimaan milik orang lain."
                     }
                 },
@@ -543,12 +860,26 @@
                     ],
                     "request": {
                         "method": "POST",
-                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
                         "body": {
                             "mode": "raw",
                             "raw": "{\n  \"reference_no\": \"PB-SUP-{{$timestamp}}\",\n  \"supplier_id\": 1,\n  \"received_at\": \"2026-10-04T10:00:00+07:00\",\n  \"items\": [\n    {\"medicine_id\": 102, \"batch_no\": \"AMX-2601\", \"expires_on\": \"2027-06-30\", \"quantity\": 5}\n  ]\n}"
                         },
-                        "url": { "raw": "{{base_url}}/api/receipts", "host": ["{{base_url}}"], "path": ["api", "receipts"] },
+                        "url": {
+                            "raw": "{{base_url}}/api/receipts",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "receipts"
+                            ]
+                        },
                         "description": "Membuat penerimaan atas nama supervisor; id-nya dipakai item berikutnya. Nomor referensi memakai timestamp agar aman dijalankan berulang."
                     }
                 },
@@ -568,9 +899,26 @@
                     ],
                     "request": {
                         "method": "POST",
-                        "header": [{ "key": "Content-Type", "value": "application/json" }],
-                        "body": { "mode": "raw", "raw": "{\n  \"username\": \"petugas\",\n  \"password\": \"petugas123\"\n}" },
-                        "url": { "raw": "{{base_url}}/api/login", "host": ["{{base_url}}"], "path": ["api", "login"] },
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"username\": \"petugas\",\n  \"password\": \"petugas123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/login",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "login"
+                            ]
+                        },
                         "description": "Memulihkan sesi petugas sebelum uji penolakan hak akses."
                     }
                 },
@@ -593,15 +941,26 @@
                     ],
                     "request": {
                         "method": "PUT",
-                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
                         "body": {
                             "mode": "raw",
                             "raw": "{\n  \"reference_no\": \"PB-SUP-1\",\n  \"supplier_id\": 1,\n  \"received_at\": \"2026-10-04T10:00:00+07:00\",\n  \"items\": [\n    {\"medicine_id\": 102, \"batch_no\": \"AMX-2601\", \"expires_on\": \"2027-06-30\", \"quantity\": 99}\n  ]\n}"
                         },
                         "url": {
                             "raw": "{{base_url}}/api/receipts/{{foreign_receipt_id}}",
-                            "host": ["{{base_url}}"],
-                            "path": ["api", "receipts", "{{foreign_receipt_id}}"]
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "receipts",
+                                "{{foreign_receipt_id}}"
+                            ]
                         },
                         "description": "Petugas mengubah penerimaan milik supervisor; harus ditolak 403 oleh policy, bukan oleh CSRF."
                     }
@@ -642,12 +1001,26 @@
                     ],
                     "request": {
                         "method": "POST",
-                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
                         "body": {
                             "mode": "raw",
                             "raw": "{\n  \"reference_no\": \"PB-NOAUTH\",\n  \"supplier_id\": 1,\n  \"received_at\": \"2026-10-03T10:00:00+07:00\",\n  \"items\": [\n    {\"medicine_id\": 101, \"batch_no\": \"PCT-2601\", \"expires_on\": \"2027-12-31\", \"quantity\": 1}\n  ]\n}"
                         },
-                        "url": { "raw": "{{base_url}}/api/receipts", "host": ["{{base_url}}"], "path": ["api", "receipts"] },
+                        "url": {
+                            "raw": "{{base_url}}/api/receipts",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "receipts"
+                            ]
+                        },
                         "description": "Token CSRF sah tetapi sesi tidak valid: filter autentikasi menolak dengan 401."
                     }
                 },
@@ -658,14 +1031,30 @@
                             "listen": "test",
                             "script": {
                                 "type": "text/javascript",
-                                "exec": ["pm.test('status 401', function () { pm.response.to.have.status(401); });"]
+                                "exec": [
+                                    "pm.test('status 401', function () { pm.response.to.have.status(401); });"
+                                ]
                             }
                         }
                     ],
                     "request": {
                         "method": "GET",
-                        "header": [{ "key": "Cookie", "value": "ci_session=token-tidak-valid" }],
-                        "url": { "raw": "{{base_url}}/api/stocks", "host": ["{{base_url}}"], "path": ["api", "stocks"] },
+                        "header": [
+                            {
+                                "key": "Cookie",
+                                "value": "ci_session=token-tidak-valid"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/stocks",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "stocks"
+                            ]
+                        },
                         "description": "GET tidak dilindungi CSRF, sehingga penolakan datang murni dari autentikasi."
                     }
                 },
@@ -699,12 +1088,26 @@
                     ],
                     "request": {
                         "method": "POST",
-                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
                         "body": {
                             "mode": "raw",
                             "raw": "{\n  \"reference_no\": \"PB-NOCSRF\",\n  \"supplier_id\": 1,\n  \"received_at\": \"2026-10-03T10:00:00+07:00\",\n  \"items\": [\n    {\"medicine_id\": 101, \"batch_no\": \"PCT-2601\", \"expires_on\": \"2027-12-31\", \"quantity\": 1}\n  ]\n}"
                         },
-                        "url": { "raw": "{{base_url}}/api/receipts", "host": ["{{base_url}}"], "path": ["api", "receipts"] },
+                        "url": {
+                            "raw": "{{base_url}}/api/receipts",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "receipts"
+                            ]
+                        },
                         "description": "Tanpa token CSRF, endpoint mutasi dijawab JSON 403 sebelum filter autentikasi berjalan."
                     }
                 },
@@ -734,12 +1137,26 @@
                     ],
                     "request": {
                         "method": "POST",
-                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
                         "body": {
                             "mode": "raw",
                             "raw": "{\n  \"reference_no\": \"PB-BADTOKEN\",\n  \"supplier_id\": 1,\n  \"received_at\": \"2026-10-03T10:00:00+07:00\",\n  \"items\": [\n    {\"medicine_id\": 101, \"batch_no\": \"PCT-2601\", \"expires_on\": \"2027-12-31\", \"quantity\": 1}\n  ]\n}"
                         },
-                        "url": { "raw": "{{base_url}}/api/receipts", "host": ["{{base_url}}"], "path": ["api", "receipts"] },
+                        "url": {
+                            "raw": "{{base_url}}/api/receipts",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "receipts"
+                            ]
+                        },
                         "description": "Token harus sama dengan nilai cookie csrf_cookie_name; token palsu ditolak 403."
                     }
                 }

@@ -7,9 +7,7 @@
     </a>
 </div>
 
-<?php if (session()->getFlashdata('error')): ?>
-    <div class="alert alert-danger" role="alert"><?= esc(session()->getFlashdata('error')) ?></div>
-<?php endif ?>
+<div id="feedback"></div>
 
 <div class="card shadow-sm">
     <div class="table-responsive">
@@ -24,51 +22,32 @@
                 <th class="text-end"><?= lang_html('Reception.table.actions') ?></th>
             </tr>
             </thead>
-            <tbody>
-            <?php foreach ($receptions as $reception): ?>
-                <?php
-                $canEdit = (int) $reception['created_by'] === (int) $actor['id']
-                    || $permissions->roleHas($actor['role'], \Config\Permissions::RECEIPT_UPDATE_ANY);
-                ?>
-                <tr>
-                    <td>
-                        <a href="<?= site_url('receptions/' . $reception['id'] . '/edit') ?>"><?= esc($reception['reference_no']) ?></a>
-                    </td>
-                    <td><?= esc($reception['supplier_name'] ?? '-') ?></td>
-                    <td><?= esc($reception['received_at']) ?></td>
-                    <td>
-                        <?= esc($reception['created_by_name'] ?? '-') ?>
-                        <div class="text-muted small"><?= esc($reception['created_at']) ?></div>
-                    </td>
-                    <td>
-                        <?php if ($reception['updated_by'] === null): ?>
-                            <span class="text-muted"><?= lang_html('Reception.table.never_updated') ?></span>
-                        <?php else: ?>
-                            <?= esc($reception['updated_by_name'] ?? '-') ?>
-                            <div class="text-muted small"><?= esc($reception['updated_at']) ?></div>
-                        <?php endif ?>
-                    </td>
-                    <td class="text-end">
-                        <?php if ($canEdit): ?>
-                            <a class="btn btn-sm btn-outline-primary"
-                               href="<?= site_url('receptions/' . $reception['id'] . '/edit') ?>">
-                                <?= lang_html('Reception.table.edit') ?>
-                            </a>
-                        <?php else: ?>
-                            <span class="badge text-bg-secondary"><?= lang_html('Reception.table.not_allowed') ?></span>
-                        <?php endif ?>
-                    </td>
-                </tr>
-            <?php endforeach ?>
-            <?php if ($receptions === []): ?>
-                <tr>
-                    <td colspan="6" class="text-center text-muted py-4">
-                        <?= lang_html('Reception.table.empty') ?>
-                    </td>
-                </tr>
-            <?php endif ?>
+            <tbody id="receptions-tbody">
             </tbody>
         </table>
     </div>
 </div>
+<?= $this->endSection() ?>
+
+<?= $this->section('scripts') ?>
+<script>
+    window.FARMASI_BOOT = {
+        endpoints: {
+            receipts: '<?= site_url('api/receipts') ?>',
+            editBase: '<?= site_url('receptions') ?>/'
+        },
+        loginUrl: '<?= site_url('login') ?>',
+        i18n: {
+            loading: <?= json_encode(lang('App.js.loading'), JSON_UNESCAPED_UNICODE) ?>,
+            sessionExpired: <?= json_encode(lang('App.js.session_expired'), JSON_UNESCAPED_UNICODE) ?>,
+            contactFailed: <?= json_encode(lang('Reception.js.contact_failed'), JSON_UNESCAPED_UNICODE) ?>,
+            loadFailed: <?= json_encode(lang('Reception.js.load_failed'), JSON_UNESCAPED_UNICODE) ?>,
+            edit: <?= json_encode(lang('Reception.table.edit'), JSON_UNESCAPED_UNICODE) ?>,
+            empty: <?= json_encode(lang('Reception.table.empty'), JSON_UNESCAPED_UNICODE) ?>,
+            notAllowed: <?= json_encode(lang('Reception.js.not_allowed'), JSON_UNESCAPED_UNICODE) ?>,
+            neverUpdated: <?= json_encode(lang('Reception.js.never_updated'), JSON_UNESCAPED_UNICODE) ?>
+        }
+    };
+</script>
+<script src="<?= base_url('assets/js/pages/receptions.js') ?>"></script>
 <?= $this->endSection() ?>

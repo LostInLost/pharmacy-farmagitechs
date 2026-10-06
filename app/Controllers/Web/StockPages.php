@@ -2,20 +2,14 @@
 
 namespace App\Controllers\Web;
 
-use App\Services\StockService;
 use CodeIgniter\Controller;
 
 class StockPages extends Controller
 {
     public function index()
     {
-        $onDate = $this->request->getGet('on_date');
-        $report = (new StockService())->report(is_string($onDate) ? $onDate : null);
-
         return view('stocks/index', [
-            'title'    => lang('Stock.title'),
-            'onDate'   => $report['on_date'],
-            'medicines' => $report['medicines'],
+            'title' => lang('Stock.title'),
         ]);
     }
 }

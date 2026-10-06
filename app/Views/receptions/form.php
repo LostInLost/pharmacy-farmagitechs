@@ -6,29 +6,20 @@
 
 <form id="reception-form" class="card shadow-sm mb-4">
     <div class="card-body">
-        <?= csrf_field() ?>
         <div class="row g-3">
             <div class="col-md-4">
                 <label for="reference_no" class="form-label"><?= lang_html('Reception.form.reference_no') ?></label>
-                <input type="text" class="form-control" id="reference_no" name="reference_no" required
-                       value="<?= esc($reception['reference_no'] ?? '') ?>">
+                <input type="text" class="form-control" id="reference_no" name="reference_no" required>
             </div>
             <div class="col-md-4">
                 <label for="supplier_id" class="form-label"><?= lang_html('Reception.form.supplier') ?></label>
                 <select class="form-select" id="supplier_id" name="supplier_id" required>
                     <option value=""><?= lang_html('Reception.form.choose') ?></option>
-                    <?php foreach ($suppliers as $supplier): ?>
-                        <option value="<?= (int) $supplier['id'] ?>"
-                            <?= (int) ($reception['supplier_id'] ?? 0) === (int) $supplier['id'] ? 'selected' : '' ?>>
-                            <?= esc($supplier['name']) ?>
-                        </option>
-                    <?php endforeach ?>
                 </select>
             </div>
             <div class="col-md-4">
                 <label for="received_at" class="form-label"><?= lang_html('Reception.form.received_at') ?></label>
-                <input type="datetime-local" class="form-control" id="received_at" name="received_at" required
-                       value="<?= esc(isset($reception['received_at']) ? str_replace(' ', 'T', substr($reception['received_at'], 0, 16)) : '') ?>">
+                <input type="datetime-local" class="form-control" id="received_at" name="received_at" required>
             </div>
         </div>
 
@@ -58,73 +49,55 @@
     </div>
 </form>
 
-<?php if ($reception !== null && $reception['logs'] !== []): ?>
-    <section class="card shadow-sm">
-        <div class="card-body">
-            <h2 class="h5 mb-3"><?= lang_html('Reception.log.title') ?></h2>
-            <div class="table-responsive">
-                <table class="table table-striped align-middle mb-0">
-                    <thead class="table-light">
-                    <tr>
-                        <th><?= lang_html('Reception.log.time') ?></th>
-                        <th><?= lang_html('Reception.log.action') ?></th>
-                        <th><?= lang_html('Reception.log.actor') ?></th>
-                        <th><?= lang_html('Reception.log.changes') ?></th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <?php foreach ($reception['logs'] as $log): ?>
-                        <tr>
-                            <td><?= esc($log['created_at']) ?></td>
-                            <td><?= esc($log['action']) ?></td>
-                            <td><?= esc($log['actor_name'] ?? '-') ?></td>
-                            <td>
-                                <?php if ($log['data_before'] === null && $log['data_after'] === null): ?>
-                                    -
-                                <?php else: ?>
-                                    <?php
-                                    $before = $log['data_before'];
-                                    $after  = $log['data_after'];
-                                    $summary = $log['action'] === 'CREATE'
-                                        ? lang('Reception.log.created')
-                                        : ($before === $after ? lang('Reception.log.unchanged') : lang('Reception.log.changed'));
-                                    ?>
-                                    <details>
-                                        <summary><?= esc($summary) ?></summary>
-                                        <pre class="bg-light p-2 rounded small mb-0"><?= lang_html('Reception.log.before') ?>: <?= esc(json_encode($before, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) ?>
-
-<?= lang_html('Reception.log.after') ?>: <?= esc(json_encode($after, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) ?></pre>
-                                    </details>
-                                <?php endif ?>
-                            </td>
-                        </tr>
-                    <?php endforeach ?>
-                    </tbody>
-                </table>
-            </div>
+<section id="log-section" class="card shadow-sm" style="display: none;">
+    <div class="card-body">
+        <h2 class="h5 mb-3"><?= lang_html('Reception.log.title') ?></h2>
+        <div class="table-responsive">
+            <table class="table table-striped align-middle mb-0">
+                <thead class="table-light">
+                <tr>
+                    <th><?= lang_html('Reception.log.time') ?></th>
+                    <th><?= lang_html('Reception.log.action') ?></th>
+                    <th><?= lang_html('Reception.log.actor') ?></th>
+                    <th><?= lang_html('Reception.log.changes') ?></th>
+                </tr>
+                </thead>
+                <tbody id="log-tbody">
+                </tbody>
+            </table>
         </div>
-    </section>
-<?php endif ?>
+    </div>
+</section>
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
 <script>
-    window.RECEPTION_DATA = {
-        id: <?= $reception === null ? 'null' : (int) $reception['id'] ?>,
-        items: <?= json_encode($reception['items'] ?? [], JSON_UNESCAPED_UNICODE) ?>,
-        medicines: <?= json_encode(array_map(static fn ($m) => ['id' => (int) $m['id'], 'name' => $m['name'], 'unit' => $m['unit']], $medicines), JSON_UNESCAPED_UNICODE) ?>,
+    window.FARMASI_BOOT = {
+        receptionId: <?= $receptionId === null ? 'null' : (int) $receptionId ?>,
         endpoints: {
-            create: '<?= site_url('api/receipts') ?>',
-            update: '<?= site_url('api/receipts') ?>/'
+            receipts: '<?= site_url('api/receipts') ?>',
+            suppliers: '<?= site_url('api/references/suppliers') ?>',
+            medicines: '<?= site_url('api/references/medicines') ?>'
         },
+        loginUrl: '<?= site_url('login') ?>',
         redirectUrl: '<?= site_url('receptions') ?>',
         i18n: {
-            saveFailed: <?= json_encode(lang('Reception.js.save_failed'), JSON_UNESCAPED_UNICODE) ?>,
+            sessionExpired: <?= json_encode(lang('App.js.session_expired'), JSON_UNESCAPED_UNICODE) ?>,
             contactFailed: <?= json_encode(lang('Reception.js.contact_failed'), JSON_UNESCAPED_UNICODE) ?>,
+            saveFailed: <?= json_encode(lang('Reception.js.save_failed'), JSON_UNESCAPED_UNICODE) ?>,
             savedRedirect: <?= json_encode(lang('Reception.js.saved_redirect'), JSON_UNESCAPED_UNICODE) ?>,
-            remove: <?= json_encode(lang('Reception.js.remove'), JSON_UNESCAPED_UNICODE) ?>
+            remove: <?= json_encode(lang('Reception.js.remove'), JSON_UNESCAPED_UNICODE) ?>,
+            loadFailed: <?= json_encode(lang('Reception.js.load_failed'), JSON_UNESCAPED_UNICODE) ?>,
+            forbidden: <?= json_encode(lang('Reception.js.forbidden'), JSON_UNESCAPED_UNICODE) ?>,
+            back: <?= json_encode(lang('Reception.form.back'), JSON_UNESCAPED_UNICODE) ?>,
+            choose: <?= json_encode(lang('Reception.form.choose'), JSON_UNESCAPED_UNICODE) ?>,
+            logCreated: <?= json_encode(lang('Reception.log.created'), JSON_UNESCAPED_UNICODE) ?>,
+            logChanged: <?= json_encode(lang('Reception.log.changed'), JSON_UNESCAPED_UNICODE) ?>,
+            logUnchanged: <?= json_encode(lang('Reception.log.unchanged'), JSON_UNESCAPED_UNICODE) ?>,
+            logBefore: <?= json_encode(lang('Reception.log.before'), JSON_UNESCAPED_UNICODE) ?>,
+            logAfter: <?= json_encode(lang('Reception.log.after'), JSON_UNESCAPED_UNICODE) ?>
         }
     };
 </script>
-<script src="<?= base_url('assets/reception-form.js') ?>"></script>
+<script src="<?= base_url('assets/js/pages/reception-form.js') ?>"></script>
 <?= $this->endSection() ?>

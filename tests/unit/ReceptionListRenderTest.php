@@ -3,116 +3,59 @@
 use CodeIgniter\Test\CIUnitTestCase;
 
 /**
- * Menguji cabang render view yang sulit dijangkau lewat HTTP smoke test,
- * misalnya daftar kosong dan pembatasan hak ubah.
+ * View daftar kini cangkang: data diisi jQuery dari /api/*. Test ini
+ * mengunci struktur cangkang dan kontrak boot, bukan isi baris.
  *
  * @internal
  */
 final class ReceptionListRenderTest extends CIUnitTestCase
 {
-    /**
-     * @param list<array<string, mixed>> $receptions
-     */
-    private function render(array $receptions, array $actor): string
+    public function testListRendersShellWithBootObject(): void
     {
-        return view('receptions/index', [
-            'title'       => lang('Reception.title.list'),
-            'receptions'  => $receptions,
-            'actor'       => $actor,
-            'permissions' => new \Config\Permissions(),
+        $html = view('receptions/index', [
+            'title' => lang('Reception.title.list'),
         ]);
+
+        $this->assertStringContainsString('id="receptions-tbody"', $html);
+        $this->assertStringContainsString('id="feedback"', $html);
+        $this->assertStringContainsString('window.FARMASI_BOOT', $html);
+        $this->assertStringContainsString('assets/js/pages/receptions.js', $html);
+        $this->assertStringNotContainsString('PB-007', $html);
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    private function reception(int $createdBy): array
+    public function testFormRendersShellWithReceptionId(): void
     {
-        return [
-            'id'               => 7,
-            'reference_no'     => 'PB-007',
-            'supplier_name'    => 'PT Sehat Sentosa',
-            'received_at'      => '2026-10-03 10:00:00',
-            'created_by'       => $createdBy,
-            'created_by_name'  => 'Dewi Petugas',
-            'created_at'       => '2026-10-03 10:05:00',
-            'updated_by'       => null,
-            'updated_by_name'  => null,
-            'updated_at'       => null,
-        ];
+        $html = view('receptions/form', [
+            'title'       => lang('Reception.title.edit'),
+            'receptionId' => 7,
+        ]);
+
+        $this->assertStringContainsString('id="reception-form"', $html);
+        $this->assertStringContainsString('id="item-rows"', $html);
+        $this->assertStringContainsString('id="log-tbody"', $html);
+        $this->assertStringContainsString('receptionId: 7', $html);
+        $this->assertStringContainsString('assets/js/pages/reception-form.js', $html);
     }
 
-    public function testRendersEmptyState(): void
+    public function testFormRendersShellWithoutReceptionId(): void
     {
-        $html = $this->render([], ['id' => 1, 'role' => 'supervisor']);
+        $html = view('receptions/form', [
+            'title'       => lang('Reception.title.new'),
+            'receptionId' => null,
+        ]);
 
-        $this->assertStringContainsString('Belum ada penerimaan', $html);
+        $this->assertStringContainsString('receptionId: null', $html);
     }
 
-    public function testCreatorSeesEditButton(): void
-    {
-        $html = $this->render([$this->reception(2)], ['id' => 2, 'role' => 'reception']);
-
-        $this->assertStringContainsString('Ubah', $html);
-        $this->assertStringContainsString('btn-outline-primary', $html);
-        $this->assertStringNotContainsString('tidak berhak', $html);
-    }
-
-    public function testOtherReceptionOfficerSeesNotAllowedBadge(): void
-    {
-        $html = $this->render([$this->reception(99)], ['id' => 2, 'role' => 'reception']);
-
-        $this->assertStringContainsString('tidak berhak', $html);
-        $this->assertStringContainsString('text-bg-secondary', $html);
-    }
-
-    public function testSupervisorSeesEditButtonForSomeoneElsesReception(): void
-    {
-        $html = $this->render([$this->reception(99)], ['id' => 1, 'role' => 'supervisor']);
-
-        $this->assertStringContainsString('Ubah', $html);
-        $this->assertStringNotContainsString('tidak berhak', $html);
-    }
-
-    public function testRendersNeverUpdatedMarker(): void
-    {
-        $html = $this->render([$this->reception(2)], ['id' => 2, 'role' => 'reception']);
-
-        $this->assertStringContainsString('belum pernah diubah', $html);
-    }
-
-    public function testStockListRendersNoBatchState(): void
+    public function testStockRendersShellWithFilter(): void
     {
         $html = view('stocks/index', [
-            'title'     => lang('Stock.title'),
-            'onDate'    => '2026-10-06',
-            'medicines' => [[
-                'code' => 'X-1', 'name' => 'Uji', 'unit' => 'tablet',
-                'physical_quantity' => 0, 'available_quantity' => 0, 'expired_quantity' => 0,
-                'available_batches' => [], 'expired_batches' => [],
-            ]],
+            'title' => lang('Stock.title'),
         ]);
 
-        $this->assertStringContainsString('belum ada batch', $html);
-    }
-
-    public function testStockListRendersBatchBadges(): void
-    {
-        $html = view('stocks/index', [
-            'title'     => lang('Stock.title'),
-            'onDate'    => '2026-10-06',
-            'medicines' => [[
-                'code' => 'X-2', 'name' => 'Uji Dua', 'unit' => 'kapsul',
-                'physical_quantity' => 7, 'available_quantity' => 5, 'expired_quantity' => 2,
-                'available_batches' => [['batch_no' => 'B-AVAIL', 'expires_on' => '2027-01-01', 'quantity' => 5]],
-                'expired_batches'   => [['batch_no' => 'B-EXP', 'expires_on' => '2020-01-01', 'quantity' => 2]],
-            ]],
-        ]);
-
-        $this->assertStringContainsString('B-AVAIL', $html);
-        $this->assertStringContainsString('B-EXP', $html);
-        $this->assertStringContainsString('text-bg-success', $html);
-        $this->assertStringContainsString('text-bg-danger', $html);
-        $this->assertStringContainsString('2 batch', $html);
+        $this->assertStringContainsString('id="stocks-filter"', $html);
+        $this->assertStringContainsString('id="stocks-tbody"', $html);
+        $this->assertStringContainsString('window.FARMASI_BOOT', $html);
+        $this->assertStringContainsString('assets/js/pages/stocks.js', $html);
     }
 }
