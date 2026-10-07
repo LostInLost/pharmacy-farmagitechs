@@ -88,7 +88,7 @@ Dua akun dibuat oleh `DemoUsersSeeder`:
 | GET | `/api/stocks?on_date=YYYY-MM-DD` | Laporan stok per obat dan batch | Session |
 | GET | `/api/medicines?q=&status=` | Master obat: seluruh katalog (`status` = `all`/`active`/`inactive`) | Session |
 | POST | `/api/medicines` | Menambah obat | Session + supervisor |
-| GET | `/api/medicines/{id}` | Detail satu obat | Session |
+| GET | `/api/medicines/{id}` | Detail satu obat beserta riwayat aksinya (`logs`) | Session |
 | PUT | `/api/medicines/{id}` | Mengubah obat, termasuk status aktif/nonaktif | Session + supervisor |
 | GET | `/api/references/suppliers` | Dropdown pemasok aktif (`id`, `name`) | Session |
 | GET | `/api/references/medicines` | Dropdown obat aktif (`id`, `name`, `unit`) | Session |

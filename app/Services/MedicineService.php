@@ -30,9 +30,21 @@ class MedicineService
         return $this->medicines->findAll($q, $status);
     }
 
+    /**
+     * Detail + riwayat aksi. Daftar (`list()`) sengaja tanpa log: satu query
+     * riwayat per baris tidak sepadan untuk halaman katalog.
+     */
     public function detail(int $id): ?array
     {
-        return $this->medicines->find($id);
+        $medicine = $this->medicines->find($id);
+
+        if ($medicine === null) {
+            return null;
+        }
+
+        $medicine['logs'] = $this->audit->forEntity(AuditService::ENTITY_MEDICINE, $id);
+
+        return $medicine;
     }
 
     /**

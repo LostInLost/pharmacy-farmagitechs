@@ -3,8 +3,8 @@
 use CodeIgniter\Test\CIUnitTestCase;
 
 /**
- * Label aksi audit: nilai §BT§audit_logs.action§BT§ adalah kunci i18n itu sendiri
- * (§BT§Audit.receptions.action.create§BT§), dan labelnya tinggal diterjemahkan di
+ * Label aksi audit: nilai `audit_logs.action` adalah kunci i18n itu sendiri
+ * (`Audit.receptions.action.create`), dan labelnya tinggal diterjemahkan di
  * lapisan render. Berkas labelnya sengaja terpisah dari domain lain.
  *
  * @internal
@@ -43,6 +43,22 @@ final class AuditActionLabelTest extends CIUnitTestCase
         // (mis. baris medicine yang masih memakai token) tidak hilang.
         $this->assertSame('Audit.receptions.action.archived', lang('Audit.receptions.action.archived'));
         $this->assertSame('CREATE', lang('CREATE'));
+    }
+
+    public function testMedicineLabels(): void
+    {
+        // Entitas baru cukup menambah grupnya di berkas yang sama; tidak ada
+        // kolom ENUM yang perlu diubah saat master obat mulai diaudit.
+        $medicines = lang('Audit.medicines');
+
+        $this->assertIsArray($medicines);
+        $this->assertSame('Menambahkan data obat', lang('Audit.medicines.action.create', [], 'id'));
+        $this->assertSame('Mengubah data obat', lang('Audit.medicines.action.update', [], 'id'));
+        $this->assertSame('Menghapus data obat', lang('Audit.medicines.action.delete', [], 'id'));
+
+        $this->assertSame('Added medicine data', lang('Audit.medicines.action.create', [], 'en'));
+        $this->assertSame('Updated medicine data', lang('Audit.medicines.action.update', [], 'en'));
+        $this->assertSame('Deleted medicine data', lang('Audit.medicines.action.delete', [], 'en'));
     }
 
     public function testReceptionFileNoLongerCarriesActionLabels(): void

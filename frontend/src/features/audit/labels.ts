@@ -18,6 +18,9 @@ const ACTION_LABELS: Record<string, string> = {
   "Audit.receptions.action.create": "Menambahkan data penerimaan",
   "Audit.receptions.action.update": "Mengubah data penerimaan",
   "Audit.receptions.action.delete": "Menghapus data penerimaan",
+  "Audit.medicines.action.create": "Menambahkan data obat",
+  "Audit.medicines.action.update": "Mengubah data obat",
+  "Audit.medicines.action.delete": "Menghapus data obat",
 }
 
 /**

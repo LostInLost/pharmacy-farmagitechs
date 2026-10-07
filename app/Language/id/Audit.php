@@ -8,4 +8,12 @@ return [
             'delete' => 'Menghapus data penerimaan',
         ],
     ],
+
+    'medicines' => [
+        'action' => [
+            'create' => 'Menambahkan data obat',
+            'update' => 'Mengubah data obat',
+            'delete' => 'Menghapus data obat',
+        ],
+    ],
 ];

@@ -8,7 +8,7 @@ Dokumentasi koleksi Postman untuk seluruh API Farmagitechs: cara menjalankan, va
 
 | Berkas | Isi |
 | --- | --- |
-| [`Pharmacy-Farmagitechs.postman_collection.json`](../postman/Pharmacy-Farmagitechs.postman_collection.json) | 43 request dalam 6 folder, 104 assertion (blok `pm.test`) |
+| [`Pharmacy-Farmagitechs.postman_collection.json`](../postman/Pharmacy-Farmagitechs.postman_collection.json) | 44 request dalam 6 folder, 108 assertion (blok `pm.test`) |
 | [`Local.postman_environment.json`](../postman/Local.postman_environment.json) | Environment `Pharmacy Farmagitechs - Local`, berisi `base_url` |
 
 Keduanya ikut version control; tidak ada berkas lain yang perlu di-import.
@@ -48,7 +48,7 @@ Environment hanya berisi `base_url` (`http://localhost:8080`). Sisanya variabel 
 | `foreign_receipt_id` | `3.13` | `3.16` |
 | `foreign_reference` | `3.13` | disiapkan; belum dirujuk request lain (`3.16` memakai `reference_no` tetap) |
 | `medicine_code` | `4.6` | `4.7`, `4.10` |
-| `medicine_id` | `4.6` | `4.7`, `4.8`, `4.9` |
+| `medicine_id` | `4.6` | `4.7`, `4.8`, `4.9`, `4.13` |
 
 Menjalankan folder 3 atau 4 sebagian tetap butuh item pemicunya (mis. `3.1` sebelum `3.8`).
 
@@ -69,10 +69,10 @@ Ringkas — detail desain di [docs/security.md](security.md#proteksi-csrf):
 | **1. Auth** | 5 | 12 | Login gagal (`401`), login supervisor dan petugas beserta `permissions`, logout, `GET /api/me` |
 | **2. Stocks** | 5 | 19 | Angka baseline (101 fisik 142 / tersedia 134 / kedaluwarsa 8, 102=16, 103=15, 104=3, 106=0, 107 fisik 6 / tersedia 0), default `on_date`, format tanggal salah (`422`), dropdown hanya baris aktif |
 | **3. Receipts** | 16 | 39 | Create/update/list/detail, validasi (`422`), idempotensi, atribusi pembuat/pengubah, `403` hak ubah, efek ke stok |
-| **4. Medicines (master obat)** | 12 | 24 | Petugas baca tanpa tulis (`403`), supervisor tulis (`201`/`200`), nonaktif ≠ terhapus, kode duplikat (`422`) |
+| **4. Medicines (master obat)** | 13 | 28 | Petugas baca tanpa tulis (`403`), supervisor tulis (`201`/`200`), nonaktif ≠ terhapus, kode duplikat (`422`), riwayat audit di detail (`data.logs`) |
 | **5. Unauthenticated** | 4 | 8 | `401` tanpa sesi; `403` tanpa/keliru token CSRF, lengkap dengan token segar untuk percobaan ulang |
 
-Total: 43 request, 104 assertion.
+Total: 44 request, 108 assertion.
 
 ## 6. Bentuk respons dan error
 

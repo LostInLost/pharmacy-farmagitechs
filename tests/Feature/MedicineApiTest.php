@@ -330,4 +330,67 @@ final class MedicineApiTest extends CIUnitTestCase
         $result->assertStatus(403);
         $this->assertSame('csrf', $this->body($result)['error']);
     }
+
+    public function testDetailIncludesChronologicalLogs(): void
+    {
+        $created = $this->createAs($this->supervisor(), $this->payload());
+        $id      = (int) $this->body($created)['data']['id'];
+
+        $this->updateAs($this->supervisor(), $id, $this->payload([
+            'name'      => 'Obat Baru 250 mg tablet',
+            'is_active' => false,
+        ]))->assertStatus(200);
+
+        // Petugas punya medicine.view, jadi riwayatnya ikut terbaca.
+        $result = $this->withSession($this->petugas())->get('/api/medicines/' . $id);
+
+        $result->assertStatus(200);
+
+        $body = $this->body($result);
+
+        $this->assertFalse($body['can_write']);
+        $this->assertSame('OBT-NEW', $body['data']['code']);
+
+        $logs = $body['data']['logs'];
+
+        $this->assertCount(2, $logs);
+        $this->assertSame(
+            ['Audit.medicines.action.create', 'Audit.medicines.action.update'],
+            array_column($logs, 'action'),
+        );
+        $this->assertSame($this->supervisorId, $logs[0]['actor_id']);
+        $this->assertSame('Rina Supervisor', $logs[0]['actor_name']);
+        $this->assertNull($logs[0]['data_before']);
+        $this->assertSame('Obat Baru 500 mg tablet', $logs[1]['data_before']['name']);
+        $this->assertSame('Obat Baru 250 mg tablet', $logs[1]['data_after']['name']);
+        $this->assertTrue($logs[1]['data_before']['is_active']);
+        $this->assertFalse($logs[1]['data_after']['is_active']);
+    }
+
+    public function testListStaysLeanWithoutLogs(): void
+    {
+        $result = $this->withSession($this->petugas())->get('/api/medicines');
+
+        $result->assertStatus(200);
+        $this->assertArrayNotHasKey('logs', $this->body($result)['data'][0]);
+    }
+
+    public function testRejectedWriteWritesNoAudit(): void
+    {
+        $logsBefore = $this->db->table('audit_logs')->countAllResults();
+
+        // 403: petugas tidak punya medicine.write.
+        $this->createAs($this->petugas(), $this->payload(['code' => 'OBT-DITOLAK']))->assertStatus(403);
+
+        // 422: kode duplikat (case-insensitive mengikuti collation).
+        $this->createAs($this->supervisor(), $this->payload(['code' => 'obt-001']))->assertStatus(422);
+
+        // 422: payload tidak lengkap.
+        $this->createAs($this->supervisor(), ['code' => '', 'name' => '', 'unit' => ''])->assertStatus(422);
+
+        // 404: id yang tidak ada.
+        $this->updateAs($this->supervisor(), 999, $this->payload(['code' => 'OBT-X']))->assertStatus(404);
+
+        $this->assertSame($logsBefore, $this->db->table('audit_logs')->countAllResults());
+    }
 }
