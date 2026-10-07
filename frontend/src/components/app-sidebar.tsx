@@ -1,8 +1,6 @@
 import * as React from "react"
 
-import { NavDocuments } from "@/components/nav-documents"
 import { NavMain } from "@/components/nav-main"
-import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
 import {
   Sidebar,
@@ -17,75 +15,33 @@ import {
   LayoutDashboardIcon,
   PackageIcon,
   TruckIcon,
-  Settings2Icon,
-  CircleHelpIcon,
-  SearchIcon,
-  DatabaseIcon,
-  FileChartColumnIcon,
   CommandIcon,
 } from "lucide-react"
 
 import type { AuthUser } from "@/features/auth/schemas"
 
-type SessionUser = AuthUser
-
-const data = {
-  navMain: [
-    {
-      title: "Dashboard",
-      url: "#",
-      icon: <LayoutDashboardIcon />,
-    },
-    {
-      title: "Penerimaan",
-      url: "#",
-      icon: <TruckIcon />,
-    },
-    {
-      title: "Stok",
-      url: "#",
-      icon: <PackageIcon />,
-    },
-  ],
-  navSecondary: [
-    {
-      title: "Pengaturan",
-      url: "#",
-      icon: <Settings2Icon />,
-    },
-    {
-      title: "Bantuan",
-      url: "#",
-      icon: <CircleHelpIcon />,
-    },
-    {
-      title: "Cari",
-      url: "#",
-      icon: <SearchIcon />,
-    },
-  ],
-  documents: [
-    {
-      name: "Data Master",
-      url: "#",
-      icon: <DatabaseIcon />,
-    },
-    {
-      name: "Laporan",
-      url: "#",
-      icon: <FileChartColumnIcon />,
-    },
-  ],
-}
+const navMain = [
+  { title: "Dashboard", url: "/dashboard", icon: <LayoutDashboardIcon /> },
+  { title: "Penerimaan", url: "/receptions", icon: <TruckIcon /> },
+  { title: "Laporan Stok", url: "/stocks", icon: <PackageIcon /> },
+]
 
 export function AppSidebar({
   user,
+  pathname,
   onLogout,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
-  user: SessionUser
+  user: AuthUser
+  pathname: string
   onLogout: () => void
 }) {
+  // Halaman anak ikut menyalakan menu induknya, mis. /receptions/new.
+  const items = navMain.map((item) => ({
+    ...item,
+    isActive: pathname === item.url || pathname.startsWith(`${item.url}/`),
+  }))
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -104,9 +60,7 @@ export function AppSidebar({
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavDocuments items={data.documents} />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
+        <NavMain items={items} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser

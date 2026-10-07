@@ -15,6 +15,55 @@ export type JsonResult = {
   body: unknown
 }
 
+/**
+ * Kegagalan yang sudah siap ditampilkan.
+ *
+ * `message` — ringkasan tunggal untuk pengguna.
+ * `errors`  — rincian per aturan dari server (`errors[]`), kosong bila tidak ada.
+ */
+export type ApiFailure = {
+  ok: false
+  status: number
+  message: string
+  errors: string[]
+}
+
+export type ApiResult<T> = { ok: true; data: T } | ApiFailure
+
+export const NETWORK_MESSAGE = "Tidak dapat menghubungi server."
+
+/** Kegagalan jaringan (fetch melempar): status 0, tanpa rincian server. */
+export function networkFailure(): ApiFailure {
+  return { ok: false, status: 0, message: NETWORK_MESSAGE, errors: [] }
+}
+
+/** Respons sukses tapi bentuknya tidak dikenali skema. */
+export function unrecognizedFailure(status: number): ApiFailure {
+  return {
+    ok: false,
+    status,
+    message: "Respons server tidak dikenali.",
+    errors: [],
+  }
+}
+
+/** Terjemahkan respons gagal jadi pesan + rincian yang bisa dirender. */
+export function readFailure(
+  status: number,
+  body: unknown,
+  fallback: string
+): ApiFailure {
+  const parsed = apiErrorSchema.safeParse(body)
+  const message = parsed.success ? parsed.data.message : undefined
+
+  return {
+    ok: false,
+    status,
+    message: message ?? fallback,
+    errors: parsed.success ? (parsed.data.errors ?? []) : [],
+  }
+}
+
 function isCsrfFailure(status: number, body: unknown): boolean {
   if (status !== 403) return false
 

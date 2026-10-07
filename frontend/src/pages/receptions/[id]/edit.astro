@@ -1,0 +1,20 @@
+---
+import BaseLayout from "@/layouts/base-layout.astro"
+import { AppShell } from "@/components/app-shell"
+import { ReceptionForm } from "@/features/receptions/components/reception-form"
+
+// Segmen dinamis tidak dijamin numerik, sedangkan API hanya menerima angka.
+const raw = Astro.params.id ?? ""
+
+if (!/^\d+$/.test(raw)) {
+  return Astro.redirect("/receptions")
+}
+
+const receptionId = Number(raw)
+---
+
+<BaseLayout title="Ubah Penerimaan">
+  <AppShell user={Astro.locals.user} pathname={Astro.url.pathname} title="Detail & Ubah Penerimaan">
+    <ReceptionForm client:load receptionId={receptionId} />
+  </AppShell>
+</BaseLayout>

@@ -1,0 +1,11 @@
+---
+import BaseLayout from "@/layouts/base-layout.astro"
+import { AppShell } from "@/components/app-shell"
+import { StockReport } from "@/features/stocks/components/stock-report"
+---
+
+<BaseLayout title="Laporan Stok">
+  <AppShell user={Astro.locals.user} pathname={Astro.url.pathname} title="Laporan Stok">
+    <StockReport client:load />
+  </AppShell>
+</BaseLayout>

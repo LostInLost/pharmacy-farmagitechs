@@ -1,8 +1,11 @@
 ---
 import BaseLayout from "@/layouts/base-layout.astro"
-import { DashboardShell } from "@/features/dashboard/components/dashboard-shell"
+import { AppShell } from "@/components/app-shell"
+import { DashboardOverview } from "@/features/dashboard/components/dashboard-overview"
 ---
 
 <BaseLayout title="Dashboard">
-  <DashboardShell client:load />
+  <AppShell user={Astro.locals.user} pathname={Astro.url.pathname} title="Dashboard">
+    <DashboardOverview client:load />
+  </AppShell>
 </BaseLayout>

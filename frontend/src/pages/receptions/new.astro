@@ -1,0 +1,11 @@
+---
+import BaseLayout from "@/layouts/base-layout.astro"
+import { AppShell } from "@/components/app-shell"
+import { ReceptionForm } from "@/features/receptions/components/reception-form"
+---
+
+<BaseLayout title="Penerimaan Baru">
+  <AppShell user={Astro.locals.user} pathname={Astro.url.pathname} title="Penerimaan Baru">
+    <ReceptionForm client:load receptionId={null} />
+  </AppShell>
+</BaseLayout>
