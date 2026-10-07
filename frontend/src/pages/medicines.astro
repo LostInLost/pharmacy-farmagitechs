@@ -1,0 +1,16 @@
+---
+import BaseLayout from "@/layouts/base-layout.astro"
+import { AppShell } from "@/components/app-shell"
+import { MedicinesTable } from "@/features/medicines/components/medicines-table"
+---
+
+<BaseLayout title="Master Obat">
+  <AppShell
+    client:load
+    user={Astro.locals.user}
+    pathname={Astro.url.pathname}
+    title="Master Obat"
+  >
+    <MedicinesTable client:load />
+  </AppShell>
+</BaseLayout>

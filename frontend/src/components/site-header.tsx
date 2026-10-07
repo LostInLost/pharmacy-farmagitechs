@@ -18,6 +18,7 @@ const ROUTE_TITLES: Record<string, string> = {
   "/receptions": "Penerimaan",
   "/receptions/new": "Penerimaan Baru",
   "/stocks": "Laporan Stok",
+  "/medicines": "Master Obat",
 }
 
 function crumbsFor(pathname: string, title: string) {
