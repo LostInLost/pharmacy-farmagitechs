@@ -63,6 +63,16 @@
                          "key":  "csrf_token",
                          "value":  "",
                          "type":  "string"
+                     },
+                     {
+                         "key":  "supplier_id",
+                         "value":  "",
+                         "type":  "string"
+                     },
+                     {
+                         "key":  "supplier_name",
+                         "value":  "",
+                         "type":  "string"
                      }
                  ],
     "item":  [
@@ -414,7 +424,7 @@
                                                                        "type":  "text/javascript",
                                                                        "exec":  [
                                                                                     "pm.test(\u0027status 200\u0027, function () { pm.response.to.have.status(200); });",
-                                                                                    "pm.test(\u0027hanya pemasok aktif\u0027, function () { pm.expect(pm.response.json().data.length).to.eql(2); });",
+                                                                                    "pm.test(\u0027hanya pemasok aktif\u0027, function () { const rows = pm.response.json().data; pm.expect(rows.length).to.be.greaterThan(0); pm.expect(rows.every((s) => s.id !== 3)).to.eql(true); });",
                                                                                     "pm.test(\u0027field minimal id+name\u0027, function () { pm.expect(Object.keys(pm.response.json().data[0]).sort()).to.eql([\u0027id\u0027, \u0027name\u0027]); });"
                                                                                 ]
                                                                    }
@@ -1657,6 +1667,478 @@
                                   }
                               ],
                      "description":  "CRUD master obat (`/api/medicines`). Hak murni per peran (tanpa kepemilikan per baris):\n\n| Peran | medicine.view | medicine.write |\n|---|---|---|\n| `reception` (petugas) | ya | tidak |\n| `supervisor` | ya | ya |\n\nTidak ada hapus permanen: `medicines.id` dirujuk `reception_items`/`stock_movements` (FK RESTRICT). Obat dipensiunkan via `is_active = false` — hilang dari dropdown penerimaan, tetap tampil di master.\n\n## Aturan payload (POST \u0026 PUT)\n\n| Field | Aturan |\n|---|---|\n| `code` | wajib, maks 50 karakter, unik **case-insensitive** |\n| `name` | wajib, maks 200 karakter |\n| `unit` | wajib, maks 50 karakter |\n| `is_active` | opsional; `bool`. Jika tidak dikirim saat update, status tersimpan dipertahankan |\n\n## Status\n\n| Status | Kondisi |\n|---|---|\n| 200 / 201 | OK — `data` (GET/PUT) atau `message` + `data` (POST) |\n| 403 | role tanpa `medicine.write` (tulis) / `medicine.view` (baca) |\n| 404 | id tidak ada (GET/PUT) |\n| 422 | validasi payload (`errors[]`, `message` = `errors[0]`) |\n| 500 | kegagalan transaksi → rollback |\n\nHak baca (`medicine.view`) juga dimiliki petugas, jadi `GET /api/medicines` tetap 200 untuk keduanya. Riwayat aksi per obat ada di `GET /api/medicines/{id}` sebagai `data.logs`: baris `audit_logs` (`entity_type = \"medicine\"`) berisi kunci i18n aksi, aktor, dan snapshot before/after; daftar sengaja tetap tanpa log."
+                 },
+                 {
+                     "name":  "4b. Suppliers (master pemasok)",
+                     "item":  [
+                                  {
+                                      "name":  "4b.1 Daftar master pemasok sebagai petugas (200)",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027status 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "const body = pm.response.json();",
+                                                                                    "pm.test(\u0027petugas boleh membaca\u0027, function () { pm.expect(body.can_write).to.eql(false); });",
+                                                                                    "pm.test(\u0027master memuat pemasok nonaktif juga\u0027, function () {",
+                                                                                    "    pm.expect(body.data.map((s) => s.id)).to.include(3);",
+                                                                                    "});"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  {
+                                                                  "raw":  "{{base_url}}/api/suppliers",
+                                                                  "host":  [
+                                                                               "{{base_url}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "suppliers"
+                                                                           ]
+                                                              },
+                                                      "description":  "Berbeda dari dropdown referensi, master menampilkan seluruh katalog termasuk pemasok nonaktif."
+                                                  },
+                                      "description":  "`GET /api/suppliers` \u2014 petugas punya `supplier.view`, jadi 200.\n\n**200 OK**\n\n```json\n{\n  \"data\": [\n    {\"id\": 1, \"name\": \"Farma Nusantara\", \"is_active\": true},\n    {\"id\": 3, \"name\": \"Pemasok Arsip\", \"is_active\": false}\n  ],\n  \"can_write\": false\n}\n```\n\nQuery opsional: `?q=` (LIKE pada `name`, wildcard `%`/`_` pengguna di-escape jadi literal), `?status=all|active|inactive` (default `all`). Urutan: `name ASC`, `id ASC`. **422** bila `status` di luar nilai yang diizinkan."
+                                  },
+                                  {
+                                      "name":  "4b.2 Tambah pemasok sebagai petugas (403)",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027status 403\u0027, function () { pm.response.to.have.status(403); });",
+                                                                                    "pm.test(\u0027pesan hak akses\u0027, function () {",
+                                                                                    "    pm.expect(pm.response.json().message).to.eql(\u0027Anda tidak berhak mengubah master pemasok.\u0027);",
+                                                                                    "});"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"name\": \"Pemasok Ditolak\",\n  \"is_active\": true\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{base_url}}/api/suppliers",
+                                                                  "host":  [
+                                                                               "{{base_url}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "suppliers"
+                                                                           ]
+                                                              },
+                                                      "description":  "Petugas role `reception` tidak punya `supplier.write`."
+                                                  },
+                                      "description":  "`POST /api/suppliers` \u2014 petugas role `reception` tidak punya `supplier.write`.\n\n**403 Forbidden** (dicek **sebelum** validasi payload)\n\n```json\n{\n  \"message\": \"Anda tidak berhak mengubah master pemasok.\",\n  \"errors\": [\"Anda tidak berhak mengubah master pemasok.\"]\n}\n```"
+                                  },
+                                  {
+                                      "name":  "4b.3 Logout petugas (sebelum uji hak tulis)",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027status 200\u0027, function () { pm.response.to.have.status(200); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "url":  {
+                                                                  "raw":  "{{base_url}}/api/logout",
+                                                                  "host":  [
+                                                                               "{{base_url}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "logout"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "description":  "`POST /api/logout` \u2014 ganti akun wajib lewat logout dulu (filter `guest` menolak login saat sesi aktif).\n\n**200 OK** `{\"message\": \"Logout berhasil.\"}`"
+                                  },
+                                  {
+                                      "name":  "4b.4 Login supervisor (persiapan uji tulis)",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027status 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "pm.test(\u0027punya supplier.write\u0027, function () {",
+                                                                                    "    pm.expect(pm.response.json().user.permissions).to.include(\u0027supplier.write\u0027);",
+                                                                                    "});"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"username\": \"supervisor\",\n  \"password\": \"supervisor123\"\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{base_url}}/api/login",
+                                                                  "host":  [
+                                                                               "{{base_url}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "login"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "description":  "`POST /api/login` supervisor \u2014 `user.permissions` kini memuat `supplier.view` dan `supplier.write`.\n\n**200 OK**"
+                                  },
+                                  {
+                                      "name":  "4b.5 Tambah pemasok sebagai supervisor (201)",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "prerequest",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "// Nama unik per jalan supaya request aman diulang. Nilainya disimpan",
+                                                                                    "// sebagai variabel koleksi agar uji duplikat dan update memakai nama yang sama.",
+                                                                                    "pm.collectionVariables.set(\u0027supplier_name\u0027, \u0027Pemasok Uji \u0027 + Date.now());"
+                                                                                ]
+                                                                   }
+                                                    },
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027status 201\u0027, function () { pm.response.to.have.status(201); });",
+                                                                                    "const row = pm.response.json().data;",
+                                                                                    "pm.test(\u0027nama dan status tersimpan\u0027, function () {",
+                                                                                    "    pm.expect(row.name).to.eql(pm.collectionVariables.get(\u0027supplier_name\u0027));",
+                                                                                    "    pm.expect(row.is_active).to.eql(true);",
+                                                                                    "});",
+                                                                                    "pm.collectionVariables.set(\u0027supplier_id\u0027, row.id);"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"name\": \"{{supplier_name}}\",\n  \"is_active\": true\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{base_url}}/api/suppliers",
+                                                                  "host":  [
+                                                                               "{{base_url}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "suppliers"
+                                                                           ]
+                                                              },
+                                                      "description":  "Nama memakai timestamp agar aman dijalankan berulang. Nilainya disimpan ke variabel koleksi supplier_name."
+                                                  },
+                                      "description":  "`POST /api/suppliers` \u2014 supervisor membuat pemasok uji; `{{supplier_name}}` diisi otomatis oleh prerequest script (unik per run).\n\n**Body**\n\n```json\n{\"name\": \"{{supplier_name}}\", \"is_active\": true}\n```\n\n**201 Created**\n\n```json\n{\n  \"message\": \"Pemasok dibuat.\",\n  \"data\": {\"id\": 5, \"name\": \"Pemasok Uji 1234567890\", \"is_active\": true}\n}\n```\n\nPembuatan menulis log audit (`entity_type = \"supplier\"`) dalam transaksi. **422** bila nama sudah dipakai; **500** bila gagal simpan (rollback)."
+                                  },
+                                  {
+                                      "name":  "4b.6 Nonaktifkan pemasok (200)",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027status 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "pm.test(\u0027status nonaktif tersimpan\u0027, function () {",
+                                                                                    "    pm.expect(pm.response.json().data.is_active).to.eql(false);",
+                                                                                    "});"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "PUT",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"name\": \"{{supplier_name}}\",\n  \"is_active\": false\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{base_url}}/api/suppliers/{{supplier_id}}",
+                                                                  "host":  [
+                                                                               "{{base_url}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "suppliers",
+                                                                               "{{supplier_id}}"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "description":  "`PUT /api/suppliers/{{supplier_id}}` \u2014 menonaktifkan pemasok uji dari item 4b.5.\n\n**200 OK**\n\n```json\n{\n  \"message\": \"Pemasok diperbarui.\",\n  \"data\": {\"id\": 5, \"name\": \"Pemasok Uji 1234567890\", \"is_active\": false}\n}\n```\n\n`is_active` sengaja **wajib dikirim bernilai** di sini; kalau field-nya tidak dikirim sama sekali, status lama dipertahankan. Log audit `UPDATE` dengan `data_before`/`data_after`."
+                                  },
+                                  {
+                                      "name":  "4b.7 Pemasok nonaktif hilang dari dropdown penerimaan (200)",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027status 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "pm.test(\u0027pemasok nonaktif tidak ikut\u0027, function () {",
+                                                                                    "    const ids = pm.response.json().data.map((s) => s.id);",
+                                                                                    "    pm.expect(ids).to.not.include(Number(pm.collectionVariables.get(\u0027supplier_id\u0027)));",
+                                                                                    "});"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  {
+                                                                  "raw":  "{{base_url}}/api/references/suppliers",
+                                                                  "host":  [
+                                                                               "{{base_url}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "references",
+                                                                               "suppliers"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "description":  "`GET /api/references/suppliers` \u2014 dampak `is_active = false` terhadap form penerimaan.\n\n**200 OK** \u2014 bentuk sama seperti item dropdown di folder Stocks, tetapi pemasok yang baru dinonaktifkan **tidak ikut** \u2014 reference selalu memfilter `is_active = 1`."
+                                  },
+                                  {
+                                      "name":  "4b.8 Pemasok nonaktif tetap tampil di master (200)",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027status 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "pm.test(\u0027nonaktif \u2260 terhapus\u0027, function () {",
+                                                                                    "    const ids = pm.response.json().data.map((s) => s.id);",
+                                                                                    "    pm.expect(ids).to.include(Number(pm.collectionVariables.get(\u0027supplier_id\u0027)));",
+                                                                                    "});"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  {
+                                                                  "raw":  "{{base_url}}/api/suppliers?status=inactive",
+                                                                  "host":  [
+                                                                               "{{base_url}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "suppliers"
+                                                                           ],
+                                                                  "query":  [
+                                                                                {
+                                                                                    "key":  "status",
+                                                                                    "value":  "inactive"
+                                                                                }
+                                                                            ]
+                                                              }
+                                                  },
+                                      "description":  "`GET /api/suppliers?status=inactive`\n\n**200 OK** \u2014 bentuk sama dengan 4b.1; `data` hanya baris `is_active = false` (termasuk pemasok uji + contoh id 3). Membuktikan nonaktif \u2260 terhapus: riwayat penerimaannya tetap terbaca."
+                                  },
+                                  {
+                                      "name":  "4b.9 Nama pemasok duplikat ditolak (422)",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027status 422\u0027, function () { pm.response.to.have.status(422); });",
+                                                                                    "pm.test(\u0027pesan menyebut nama yang bentrok\u0027, function () {",
+                                                                                    "    const name = pm.collectionVariables.get(\u0027supplier_name\u0027);",
+                                                                                    "    pm.expect(pm.response.json().message).to.include(name);",
+                                                                                    "});"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"name\": \"{{supplier_name}}\",\n  \"is_active\": true\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{base_url}}/api/suppliers",
+                                                                  "host":  [
+                                                                               "{{base_url}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "suppliers"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "description":  "`POST /api/suppliers` dengan `name` yang sudah dipakai (`{{supplier_name}}` dari item 4b.5).\n\n**422 Unprocessable Entity**\n\n```json\n{\n  \"message\": \"name Pemasok Uji 1234567890 sudah dipakai pemasok lain.\",\n  \"errors\": [\"name Pemasok Uji 1234567890 sudah dipakai pemasok lain.\"]\n}\n```\n\nUniknya dicek **case-insensitive** (selaras dengan collation unique index MySQL) sehingga `farma nusantara` vs `Farma Nusantara` ditolak dengan 422, bukan 500.\n\nKatalog pesan 422 lain: `name wajib diisi.` / `name maksimal 150 karakter.` / `is_active harus bernilai true atau false.`"
+                                  },
+                                  {
+                                      "name":  "4b.10 Detail pemasok memuat log audit (200)",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027status 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "const body = pm.response.json();",
+                                                                                    "pm.test(\u0027riwayat memuat aksi create dan update\u0027, function () {",
+                                                                                    "    const actions = body.data.logs.map((log) => log.action);",
+                                                                                    "    pm.expect(actions).to.include(\u0027Audit.suppliers.action.create\u0027);",
+                                                                                    "    pm.expect(actions).to.include(\u0027Audit.suppliers.action.update\u0027);",
+                                                                                    "});",
+                                                                                    "pm.test(\u0027snapshot before/after dan aktor tercatat\u0027, function () {",
+                                                                                    "    const update = body.data.logs.find((log) => log.action === \u0027Audit.suppliers.action.update\u0027);",
+                                                                                    "    pm.expect(update.data_before.is_active).to.eql(true);",
+                                                                                    "    pm.expect(update.data_after.is_active).to.eql(false);",
+                                                                                    "    pm.expect(update.actor_name).to.be.a(\u0027string\u0027);",
+                                                                                    "});"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  {
+                                                                  "raw":  "{{base_url}}/api/suppliers/{{supplier_id}}",
+                                                                  "host":  [
+                                                                               "{{base_url}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "suppliers",
+                                                                               "{{supplier_id}}"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "description":  "`GET /api/suppliers/{{supplier_id}}` \u2014 riwayat aksi pemasok uji dari item 4b.5 yang dinonaktifkan item 4b.6.\n\n**200 OK**\n\n```json\n{\n  \"data\": {\n    \"id\": 5, \"name\": \"Pemasok Uji 1234567890\", \"is_active\": false,\n    \"logs\": [\n      {\"id\": 1, \"actor_id\": 1, \"actor_name\": \"Rina Supervisor\", \"action\": \"Audit.suppliers.action.create\", \"data_before\": null, \"data_after\": {\"is_active\": 1}, \"created_at\": \"2026-10-07 10:00:00\"},\n      {\"id\": 2, \"actor_id\": 1, \"actor_name\": \"Rina Supervisor\", \"action\": \"Audit.suppliers.action.update\", \"data_before\": {\"is_active\": true}, \"data_after\": {\"is_active\": false}, \"created_at\": \"2026-10-07 10:05:00\"}\n    ]\n  },\n  \"can_write\": true\n}\n```\n\n`data.logs` berisi baris `audit_logs` (`entity_type = \"supplier\"`) urut kronologis; `data_before` bernilai `null` untuk aksi create. Riwayat hanya disertakan di **detail** \u2014 daftar sengaja tetap ramping. **404** bila id tidak ada."
+                                  },
+                                  {
+                                      "name":  "4b.11 Logout supervisor (kembalikan sesi petugas)",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027status 200\u0027, function () { pm.response.to.have.status(200); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "url":  {
+                                                                  "raw":  "{{base_url}}/api/logout",
+                                                                  "host":  [
+                                                                               "{{base_url}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "logout"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "description":  "`POST /api/logout` \u2014 bersihkan sesi supervisor.\n\n**200 OK** `{\"message\": \"Logout berhasil.\"}`"
+                                  },
+                                  {
+                                      "name":  "4b.12 Login petugas kembali",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027status 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "pm.test(\u0027peran petugas\u0027, function () {",
+                                                                                    "    pm.expect(pm.response.json().user.role).to.eql(\u0027reception\u0027);",
+                                                                                    "});"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "POST",
+                                                      "header":  [
+                                                                     {
+                                                                         "key":  "Content-Type",
+                                                                         "value":  "application/json"
+                                                                     }
+                                                                 ],
+                                                      "body":  {
+                                                                   "mode":  "raw",
+                                                                   "raw":  "{\n  \"username\": \"petugas\",\n  \"password\": \"petugas123\"\n}"
+                                                               },
+                                                      "url":  {
+                                                                  "raw":  "{{base_url}}/api/login",
+                                                                  "host":  [
+                                                                               "{{base_url}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "login"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "description":  "`POST /api/login` petugas (`petugas`/`petugas123`) \u2014 mengembalikan sesi untuk folder 5.\n\n**200 OK** \u2014 bentuk sama dengan login petugas di folder Auth."
+                                  }
+                              ],
+                     "description":  "CRUD master pemasok (`/api/suppliers`). Hak murni per peran (tanpa kepemilikan per baris):\n\n| Peran | supplier.view | supplier.write |\n|---|---|---|\n| `reception` (petugas) | ya | tidak |\n| `supervisor` | ya | ya |\n\nTidak ada hapus permanen: `suppliers.id` dirujuk `receptions.supplier_id` (FK RESTRICT). Pemasok dipensiunkan via `is_active = false` \u2014 hilang dari dropdown penerimaan, tetap tampil di master.\n\n## Aturan payload (POST \u0026 PUT)\n\n| Field | Aturan |\n|---|---|\n| `name` | wajib, maks 150 karakter, unik **case-insensitive** |\n| `is_active` | opsional; `bool`. Jika tidak dikirim saat update, status tersimpan dipertahankan |\n\n## Status\n\n| Status | Kondisi |\n|---|---|\n| 200 / 201 | OK \u2014 `data` (GET/PUT) atau `message` + `data` (POST) |\n| 403 | role tanpa `supplier.write` (tulis) / `supplier.view` (baca) |\n| 404 | id tidak ada (GET/PUT) |\n| 422 | validasi payload (`errors[]`, `message` = `errors[0]`) |\n| 500 | kegagalan transaksi \u2192 rollback |\n\nRiwayat aksi per pemasok ada di `GET /api/suppliers/{id}` sebagai `data.logs`: baris `audit_logs` (`entity_type = \"supplier\"`) berisi kunci i18n aksi, aktor, dan snapshot before/after; daftar sengaja tetap tanpa log."
                  },
                  {
                      "name":  "5. Unauthenticated (jalankan paling akhir)",
