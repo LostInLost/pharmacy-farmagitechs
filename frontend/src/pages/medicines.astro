@@ -1,7 +1,35 @@
 ---
 import BaseLayout from "@/layouts/base-layout.astro"
 import { AppShell } from "@/components/app-shell"
-import { MedicinesTable } from "@/features/medicines/components/medicines-table"
+import {
+  MedicinesTable,
+  type MedicineSheetState,
+} from "@/features/medicines/components/medicines-table"
+
+// Sheet awal dari query string: `?new=1`, `?view=<id>`, atau `?edit=<id>`.
+// Prioritas edit → view → new, sehingga tautan lama `?edit=…` tetap menang.
+const params = Astro.url.searchParams
+
+function numericParam(name: string): number | null {
+  const raw = params.get(name)
+
+  return raw !== null && /^\d+$/.test(raw) ? Number(raw) : null
+}
+
+let initialSheet: MedicineSheetState | null = null
+
+const editId = numericParam("edit")
+const viewId = numericParam("view")
+
+if (editId !== null) {
+  initialSheet = { mode: "edit", id: editId }
+} else if (viewId !== null) {
+  initialSheet = { mode: "view", id: viewId }
+} else if (params.get("new") === "1") {
+  initialSheet = { mode: "create" }
+}
+
+const permissions = Astro.locals.user?.permissions ?? []
 ---
 
 <BaseLayout title="Master Obat">
@@ -11,6 +39,10 @@ import { MedicinesTable } from "@/features/medicines/components/medicines-table"
     pathname={Astro.url.pathname}
     title="Master Obat"
   >
-    <MedicinesTable client:load />
+    <MedicinesTable
+      client:load
+      initialSheet={initialSheet}
+      permissions={permissions}
+    />
   </AppShell>
 </BaseLayout>

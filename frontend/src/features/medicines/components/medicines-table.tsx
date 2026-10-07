@@ -31,12 +31,23 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { hasPermission, PERMISSIONS } from "@/features/auth"
 import { listMedicines, type MedicineList } from "@/features/medicines/api"
 import type {
   MedicineRow,
   MedicineStatus,
 } from "@/features/medicines/schemas"
-import { MedicineFormDialog } from "./medicine-form-dialog"
+import { MedicineFormSheet } from "./medicine-form-sheet"
+import { MedicineViewSheet } from "./medicine-view-sheet"
+
+/**
+ * Sheet yang sedang terbuka. Hanya satu sheet hidup pada satu waktu; berpindah
+ * mode cukup mengganti nilai ini (`view` → `edit` dari dalam sheet detail).
+ */
+export type MedicineSheetState =
+  | { mode: "create" }
+  | { mode: "view"; id: number }
+  | { mode: "edit"; id: number }
 
 type State =
   | { status: "loading" }
@@ -45,39 +56,52 @@ type State =
 
 const COLUMNS = ["Kode", "Nama Obat", "Satuan", "Status", "Aksi"]
 
-export function MedicinesTable() {
+/** Filter yang sudah "dipakai" — berbeda dari nilai input yang sedang diketik. */
+type Filter = { q: string; status: MedicineStatus }
+
+type Props = {
+  /** Sheet awal dari query string (`?new=1` / `?view=<id>` / `?edit=<id>`). */
+  initialSheet?: MedicineSheetState | null
+  /** Permission user dari `Astro.locals.user` (`GET /api/me`). */
+  permissions?: string[]
+}
+
+/**
+ * Halaman daftar master obat sekaligus orkestrator sheet tambah/detail/ubah.
+ *
+ * Polanya sama dengan penerimaan: membuka sheet menyinkronkan URL lewat
+ * `history.replaceState` (tanpa entri baru), sehingga tautan `?view=<id>`
+ * tetap bisa dibagikan dan dimuat langsung lewat SSR. Konsekuensi yang
+ * disadari: tombol Back browser keluar dari halaman, bukan menutup sheet.
+ *
+ * Penutupan sheet memakai dua state terpisah (`sheet` + `sheetOpen`) supaya
+ * Radix sempat memainkan animasi keluar: komponennya tetap ter-mount saat
+ * `open` menjadi `false`, dan Presence yang melepasnya setelah animasi usai.
+ * `sheetSeq` menggantikan peran `key` per-id agar pembukaan berikutnya tetap
+ * me-remount komponen — tanpa itu, komponen yang sempat tertahan akan
+ * mewariskan isian percobaan sebelumnya.
+ */
+export function MedicinesTable({ initialSheet = null, permissions = [] }: Props) {
   const [state, setState] = React.useState<State>({ status: "loading" })
   const [search, setSearch] = React.useState("")
   const [status, setStatus] = React.useState<MedicineStatus>("all")
-
-  // Dialog: `null` = tertutup, `{ medicine }` = terbuka (medicine null = tambah).
-  const [dialog, setDialog] = React.useState<
-    { medicine: MedicineRow | null } | null
-  >(null)
-
-  /**
-   * `q` dan `status` adalah keadaan filter yang sudah "dipakai", berbeda dari
-   * nilai input: form boleh diketik tanpa langsung memicu request.
-   */
-  const load = React.useCallback((q: string, nextStatus: MedicineStatus) => {
-    setState({ status: "loading" })
-
-    listMedicines(q, nextStatus).then((result) => {
-      setState(
-        result.ok
-          ? { status: "ready", data: result.data }
-          : { status: "error", message: result.message }
-      )
-    })
-  }, [])
+  const [filter, setFilter] = React.useState<Filter>({ q: "", status: "all" })
+  const [sheet, setSheet] = React.useState<MedicineSheetState | null>(
+    initialSheet
+  )
+  const [sheetOpen, setSheetOpen] = React.useState(initialSheet !== null)
+  const [sheetSeq, setSheetSeq] = React.useState(0)
+  const [notice, setNotice] = React.useState<string | null>(null)
+  const [reloadToken, setReloadToken] = React.useState(0)
 
   // Pemuatan awal mengikuti pola tabel penerimaan/laporan stok: status awal
   // sudah "loading", dan setState hanya terjadi di dalam callback request —
-  // bukan di badan efek, yang memicu cascading render.
+  // bukan di badan efek, yang memicu cascading render. Efek ikut berjalan
+  // ulang saat filter berubah atau daftar perlu disegarkan setelah simpan.
   React.useEffect(() => {
     let cancelled = false
 
-    listMedicines("", "all").then((result) => {
+    listMedicines(filter.q, filter.status).then((result) => {
       if (cancelled) return
 
       setState(
@@ -90,15 +114,68 @@ export function MedicinesTable() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [filter, reloadToken])
+
+  // Sinkronkan URL dengan sheet yang terbuka. `replaceState` dipilih agar
+  // membuka/menutup sheet tidak menumpuk riwayat. Kuncinya `sheetOpen`, bukan
+  // `sheet`: saat menutup, `sheet` sengaja masih terisi (lihat `closeSheet`)
+  // sehingga URL harus ikut bersih begitu animasi keluar dimulai.
+  React.useEffect(() => {
+    const url = new URL(window.location.href)
+
+    url.searchParams.delete("new")
+    url.searchParams.delete("view")
+    url.searchParams.delete("edit")
+
+    if (sheet !== null && sheetOpen) {
+      if (sheet.mode === "create") url.searchParams.set("new", "1")
+      if (sheet.mode === "view") url.searchParams.set("view", String(sheet.id))
+      if (sheet.mode === "edit") url.searchParams.set("edit", String(sheet.id))
+    }
+
+    window.history.replaceState(null, "", url)
+  }, [sheet, sheetOpen])
 
   function onFilterSubmit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
-    load(search, status)
+    setFilter({ q: search, status })
+  }
+
+  function closeSheet() {
+    // `sheet` sengaja tidak dikosongkan di sini: Radix `Presence` butuh
+    // komponennya tetap ter-mount untuk memainkan animasi keluar, lalu ia
+    // sendiri yang melepas isi portal setelah animasi usai.
+    setSheetOpen(false)
+  }
+
+  function reloadRows() {
+    setReloadToken((token) => token + 1)
+  }
+
+  /** Buka sheet: remount (`sheetSeq`) + tandai terbuka. */
+  function openSheet(next: MedicineSheetState) {
+    setNotice(null)
+    setSheet(next)
+    setSheetOpen(true)
+    setSheetSeq((seq) => seq + 1)
+  }
+
+  function openCreate() {
+    openSheet({ mode: "create" })
+  }
+
+  function openView(id: number) {
+    openSheet({ mode: "view", id })
+  }
+
+  function openEdit(id: number) {
+    openSheet({ mode: "edit", id })
   }
 
   const rows = state.status === "ready" ? state.data.rows : []
   const canWrite = state.status === "ready" && state.data.canWrite
+  const canCreate =
+    canWrite && hasPermission(permissions, PERMISSIONS.medicineWrite)
 
   return (
     <div className="flex flex-col gap-4 px-4 lg:px-6">
@@ -107,16 +184,19 @@ export function MedicinesTable() {
           <h2 className="font-heading text-lg font-medium">Master Obat</h2>
           <p className="text-sm text-muted-foreground">
             Katalog obat beserta satuannya. Obat nonaktif tetap terdaftar agar
-            riwayat stok dan penerimaannya utuh.
+            riwayat stok dan penerimaannya utuh. Klik kode untuk melihat
+            detailnya.
           </p>
         </div>
-        {canWrite && (
-          <Button onClick={() => setDialog({ medicine: null })}>
+        {canCreate && (
+          <Button type="button" onClick={openCreate}>
             <PlusIcon data-icon="inline-start" />
             Tambah Obat
           </Button>
         )}
       </div>
+
+      {notice !== null && <Feedback variant="success" messages={[notice]} />}
 
       <Card>
         <CardContent>
@@ -209,53 +289,123 @@ export function MedicinesTable() {
 
               {state.status === "ready" &&
                 rows.map((row) => (
-                  <TableRow key={row.id}>
-                    <TableCell className="font-medium">{row.code}</TableCell>
-                    <TableCell className="whitespace-normal">
-                      {row.name}
-                    </TableCell>
-                    <TableCell>{row.unit}</TableCell>
-                    <TableCell>
-                      <Badge variant={row.is_active ? "secondary" : "outline"}>
-                        {row.is_active ? "aktif" : "nonaktif"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {canWrite && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setDialog({ medicine: row })}
-                        >
-                          <PencilIcon data-icon="inline-start" />
-                          Ubah
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
+                  <MedicineTableRow
+                    key={row.id}
+                    row={row}
+                    canWrite={canWrite}
+                    onView={openView}
+                    onEdit={openEdit}
+                  />
                 ))}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
 
-      {dialog !== null && (
-        <MedicineFormDialog
-          // `key` membuat form ter-remount saat berpindah baris, jadi isian
-          // percobaan sebelumnya tidak terbawa tanpa reset lewat efek.
-          key={dialog.medicine?.id ?? "new"}
-          medicine={dialog.medicine}
-          open
+      {/*
+        Sheet sengaja dibiarkan ter-mount saat ditutup: `open` yang menjadi
+        `false` memicu animasi keluar Radix, dan `sheet` baru dikosongkan
+        lewat `key`/nilai baru saat sheet berikutnya dibuka.
+      */}
+      {sheet !== null && sheet.mode === "create" && (
+        <MedicineFormSheet
+          key={`create-${sheetSeq}`}
+          medicineId={null}
+          open={sheetOpen}
+          canWrite={canWrite}
           onOpenChange={(open) => {
-            if (!open) setDialog(null)
+            if (!open) closeSheet()
           }}
           onSaved={() => {
-            // Muat ulang memakai filter yang sedang aktif agar baris baru
-            // langsung tampak pada posisi yang benar.
-            load(search, status)
+            reloadRows()
+            setNotice("Obat dibuat.")
           }}
         />
       )}
+
+      {sheet !== null && sheet.mode === "edit" && (
+        <MedicineFormSheet
+          // `key` per pembukaan: form di-remount dengan state segar, jadi
+          // isian percobaan sebelumnya tidak terbawa.
+          key={`edit-${sheet.id}-${sheetSeq}`}
+          medicineId={sheet.id}
+          open={sheetOpen}
+          canWrite={canWrite}
+          onOpenChange={(open) => {
+            if (!open) closeSheet()
+          }}
+          onSaved={() => {
+            reloadRows()
+            setNotice("Obat diperbarui.")
+          }}
+        />
+      )}
+
+      {sheet !== null && sheet.mode === "view" && (
+        <MedicineViewSheet
+          key={`view-${sheet.id}-${sheetSeq}`}
+          medicineId={sheet.id}
+          open={sheetOpen}
+          canWrite={canWrite}
+          onOpenChange={(open) => {
+            if (!open) closeSheet()
+          }}
+          onEdit={openEdit}
+        />
+      )}
     </div>
+  )
+}
+
+function MedicineTableRow({
+  row,
+  canWrite,
+  onView,
+  onEdit,
+}: {
+  row: MedicineRow
+  canWrite: boolean
+  onView: (id: number) => void
+  onEdit: (id: number) => void
+}) {
+  return (
+    <TableRow>
+      <TableCell className="font-medium">
+        {/*
+          Anchor asli (bukan button) supaya bisa dibuka di tab baru dan tetap
+          bekerja tanpa JavaScript; klik biasa dicegat jadi sheet.
+        */}
+        <a
+          className="text-primary underline-offset-4 hover:underline"
+          href={`/medicines?view=${row.id}`}
+          onClick={(event) => {
+            event.preventDefault()
+            onView(row.id)
+          }}
+        >
+          {row.code}
+        </a>
+      </TableCell>
+      <TableCell className="whitespace-normal">{row.name}</TableCell>
+      <TableCell>{row.unit}</TableCell>
+      <TableCell>
+        <Badge variant={row.is_active ? "secondary" : "outline"}>
+          {row.is_active ? "aktif" : "nonaktif"}
+        </Badge>
+      </TableCell>
+      <TableCell className="text-right">
+        {canWrite && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => onEdit(row.id)}
+          >
+            <PencilIcon data-icon="inline-start" />
+            Ubah
+          </Button>
+        )}
+      </TableCell>
+    </TableRow>
   )
 }
