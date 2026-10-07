@@ -1,5 +1,9 @@
 import { z } from "zod"
 
+// `apiErrorSchema` kini tinggal di foundations karena dipakai lintas feature;
+// di-re-export agar impor lama dari features/auth tetap bekerja.
+export { apiErrorSchema, type ApiError } from "@/foundations/api/schemas"
+
 /** User yang dikembalikan backend (login & `GET /api/me`). */
 export const authUserSchema = z.object({
   id: z.number(),
@@ -26,14 +30,6 @@ export const loginFormSchema = z.object({
 })
 
 export type LoginInput = z.infer<typeof loginFormSchema>
-
-/** Body error API: toleran terhadap field ekstra dari backend. */
-export const apiErrorSchema = z.looseObject({
-  message: z.string().optional(),
-  error: z.string().optional(),
-})
-
-export type ApiError = z.infer<typeof apiErrorSchema>
 
 /** Body sukses `POST /api/login`. */
 export const loginSuccessSchema = z.object({ user: authUserSchema })

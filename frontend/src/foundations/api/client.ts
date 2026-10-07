@@ -29,7 +29,9 @@ export async function parseJsonSafe(response: Response): Promise<unknown> {
   }
 }
 
-export async function postJson(
+/** Kirim body JSON dengan metode apa pun; `csrf` opsional. */
+export async function sendJson(
+  method: "POST" | "PUT",
   path: string,
   body: unknown,
   csrf: string | null
@@ -39,8 +41,16 @@ export async function postJson(
   if (csrf) headers.set(CSRF_HEADER, csrf)
 
   return apiFetch(path, {
-    method: "POST",
+    method,
     headers,
     body: JSON.stringify(body),
   })
+}
+
+export async function postJson(
+  path: string,
+  body: unknown,
+  csrf: string | null
+): Promise<Response> {
+  return sendJson("POST", path, body, csrf)
 }
