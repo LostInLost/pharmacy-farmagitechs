@@ -26,5 +26,10 @@ Commit `e6fba21` (+689/−283, 5 berkas). Semua di `frontend/`; backend, API, Po
 - Kolom Kode jadi anchor `href="/medicines?view=<id>"` (bisa dibuka di tab baru, bekerja tanpa JS) yang kliknya dicegat jadi sheet; tombol Ubah tetap langsung ke mode edit.
 - Gating tombol header = `canWrite && hasPermission(permissions, PERMISSIONS.medicineWrite)` (fail-closed bila `permissions` kosong). Keduanya affordance; penegakan tetap di policy server.
 
+## Susulan: deep link `?edit=` vs hak tulis (commit `c600f25`)
+- `canWrite` di induk bernilai `false` selama daftar belum termuat, sehingga sheet ubah dari `?edit=<id>` sempat `forbidden` lalu berbalik jadi form begitu daftar siap (berkedip; di percobaan pertama `getMedicine` bahkan tidak pernah dipanggil).
+- Perbaikan: induk memisahkan `canWrite` (boolean, untuk tombol baris) dari `sheetCanWrite` (`boolean | undefined`, untuk sheet); form hanya menganggap penolakan bila `canWrite === false` — `undefined` berarti "belum diketahui", dan `can_write` dari detail tetap jadi penentu.
+- Prop `canWrite` di kedua sheet bergeser ke `boolean | undefined`. `exactOptionalPropertyTypes` **mati** di `frontend/tsconfig.json` (preset `astro/tsconfigs/strict`), jadi mengirim `boolean | undefined` ke prop opsional aman.
+
 ## Verifikasi
 Sesuai permintaan user: **tanpa test apa pun** — `composer run test`, Newman, `pnpm typecheck`/`lint`/`build` tidak dijalankan (disebut eksplisit di badan commit). Hanya pengecekan statis: tidak ada impor tersisa ke `medicine-form-dialog`. Verifikasi otomatis diserahkan ke user.
