@@ -16,4 +16,12 @@ return [
             'delete' => 'Deleted medicine data',
         ],
     ],
+
+    'suppliers' => [
+        'action' => [
+            'create' => 'Added supplier data',
+            'update' => 'Updated supplier data',
+            'delete' => 'Deleted supplier data',
+        ],
+    ],
 ];

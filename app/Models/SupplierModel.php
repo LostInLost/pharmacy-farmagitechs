@@ -9,6 +9,6 @@ class SupplierModel extends Model
     protected $table         = 'suppliers';
     protected $primaryKey    = 'id';
     protected $returnType    = 'array';
-    protected $allowedFields = [];
+    protected $allowedFields = ['name', 'is_active'];
     protected $useTimestamps = false;
 }

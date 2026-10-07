@@ -16,4 +16,12 @@ return [
             'delete' => 'Menghapus data obat',
         ],
     ],
+
+    'suppliers' => [
+        'action' => [
+            'create' => 'Menambahkan data pemasok',
+            'update' => 'Mengubah data pemasok',
+            'delete' => 'Menghapus data pemasok',
+        ],
+    ],
 ];

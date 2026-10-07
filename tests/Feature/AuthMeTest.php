@@ -59,6 +59,8 @@ final class AuthMeTest extends CIUnitTestCase
         $this->assertContains(Permissions::RECEIPT_UPDATE_OWN, $permissions);
         $this->assertNotContains(Permissions::RECEIPT_UPDATE_ANY, $permissions);
         $this->assertNotContains(Permissions::MEDICINE_WRITE, $permissions);
+        $this->assertContains(Permissions::SUPPLIER_VIEW, $permissions);
+        $this->assertNotContains(Permissions::SUPPLIER_WRITE, $permissions);
     }
 
     public function testSupervisorPermissionsIncludeUpdateAnyAndMedicineWrite(): void
@@ -71,6 +73,7 @@ final class AuthMeTest extends CIUnitTestCase
 
         $this->assertContains(Permissions::RECEIPT_UPDATE_ANY, $permissions);
         $this->assertContains(Permissions::MEDICINE_WRITE, $permissions);
+        $this->assertContains(Permissions::SUPPLIER_WRITE, $permissions);
     }
 
     public function testUnknownRoleGetsEmptyPermissions(): void

@@ -13,6 +13,7 @@ class AuditService
 {
     public const ENTITY_RECEPTION = 'reception';
     public const ENTITY_MEDICINE  = 'medicine';
+    public const ENTITY_SUPPLIER  = 'supplier';
 
     /**
      * entity_type => grup kunci i18n di berkas `Audit.php`. Entitas yang
@@ -24,6 +25,7 @@ class AuditService
     private const KEY_GROUPS = [
         self::ENTITY_RECEPTION => 'receptions',
         self::ENTITY_MEDICINE  => 'medicines',
+        self::ENTITY_SUPPLIER  => 'suppliers',
     ];
 
     public function __construct(

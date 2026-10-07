@@ -61,6 +61,20 @@ final class AuditActionLabelTest extends CIUnitTestCase
         $this->assertSame('Deleted medicine data', lang('Audit.medicines.action.delete', [], 'en'));
     }
 
+    public function testSupplierLabels(): void
+    {
+        $suppliers = lang('Audit.suppliers');
+
+        $this->assertIsArray($suppliers);
+        $this->assertSame('Menambahkan data pemasok', lang('Audit.suppliers.action.create', [], 'id'));
+        $this->assertSame('Mengubah data pemasok', lang('Audit.suppliers.action.update', [], 'id'));
+        $this->assertSame('Menghapus data pemasok', lang('Audit.suppliers.action.delete', [], 'id'));
+
+        $this->assertSame('Added supplier data', lang('Audit.suppliers.action.create', [], 'en'));
+        $this->assertSame('Updated supplier data', lang('Audit.suppliers.action.update', [], 'en'));
+        $this->assertSame('Deleted supplier data', lang('Audit.suppliers.action.delete', [], 'en'));
+    }
+
     public function testReceptionFileNoLongerCarriesActionLabels(): void
     {
         $log = lang('Reception.log');
