@@ -44,7 +44,6 @@
             loadFailed: <?= json_encode(lang('Reception.js.load_failed'), JSON_UNESCAPED_UNICODE) ?>,
             edit: <?= json_encode(lang('Reception.table.edit'), JSON_UNESCAPED_UNICODE) ?>,
             empty: <?= json_encode(lang('Reception.table.empty'), JSON_UNESCAPED_UNICODE) ?>,
-            notAllowed: <?= json_encode(lang('Reception.js.not_allowed'), JSON_UNESCAPED_UNICODE) ?>,
             neverUpdated: <?= json_encode(lang('Reception.js.never_updated'), JSON_UNESCAPED_UNICODE) ?>
         }
     };

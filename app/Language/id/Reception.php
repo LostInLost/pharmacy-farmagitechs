@@ -15,7 +15,6 @@ return [
         'updated_by'     => 'Pengubah terakhir',
         'actions'        => 'Aksi',
         'never_updated'  => 'belum pernah diubah',
-        'not_allowed'    => 'tidak berhak',
         'empty'          => 'Belum ada penerimaan.',
         'edit'           => 'Ubah',
         'add'            => 'Tambah Penerimaan',
@@ -95,6 +94,5 @@ return [
         'not_found'      => 'Penerimaan tidak ditemukan.',
         'forbidden'      => 'Anda tidak berhak mengubah penerimaan ini.',
         'never_updated'  => 'belum pernah diubah',
-        'not_allowed'    => 'tidak berhak',
     ],
 ];

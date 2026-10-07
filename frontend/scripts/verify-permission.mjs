@@ -1,7 +1,8 @@
 /**
  * Verifikasi tampilan izin di browser: baris yang `can_update = false` harus
- * menampilkan badge "tidak berhak", dan membuka form editnya harus diblokir
- * dengan pesan + tautan kembali (bukan form yang bisa disimpan).
+ * menyembunyikan aksi Ubah (sel aksi kosong, tanpa badge apa pun), dan
+ * membuka form editnya harus diblokir dengan pesan + tautan kembali (bukan
+ * form yang bisa disimpan).
  *
  * Pemakaian:
  *   node scripts/verify-permission.mjs <chromePath> <sessionCookie> <ownId> <otherId>
@@ -117,19 +118,29 @@ try {
     return result.value
   }
 
-  // Daftar: baris milik orang lain harus menampilkan badge, bukan tombol Ubah.
+  // Daftar: baris milik orang lain harus tanpa tombol Ubah dan tanpa badge.
   await client.send("Page.navigate", { url: `${APP}/receptions` })
   await sleep(5500)
 
   report.list = JSON.parse(
     await evaluate(`
-      JSON.stringify({
-        ubahButtons: [...document.querySelectorAll('a')]
-          .filter((anchor) => anchor.textContent.trim() === 'Ubah')
-          .map((anchor) => anchor.getAttribute('href')),
-        notAllowedBadges: [...document.querySelectorAll('span')]
-          .filter((node) => node.textContent.trim() === 'tidak berhak').length,
-      })
+      (() => {
+        const actionCellText = (id) => {
+          const link = [...document.querySelectorAll('a')]
+            .find((anchor) => anchor.getAttribute('href') === '/receptions/' + id + '/edit');
+          const row = link && link.closest('tr');
+          return row ? row.lastElementChild.textContent.trim() : null;
+        };
+
+        return JSON.stringify({
+          ubahButtons: [...document.querySelectorAll('a')]
+            .filter((anchor) => anchor.textContent.trim() === 'Ubah')
+            .map((anchor) => anchor.getAttribute('href')),
+          ownActionCell: actionCellText(${ownId}),
+          otherActionCell: actionCellText(${otherId}),
+          notAllowedText: document.body.innerText.includes('tidak berhak'),
+        });
+      })()
     `)
   )
 
@@ -169,12 +180,14 @@ try {
 }
 
 // Petugas hanya berhak atas penerimaan buatannya sendiri: tidak boleh ada
-// tombol "Ubah" yang menunjuk ke dokumen milik orang lain, dan dokumen itu
-// harus tampil sebagai badge "tidak berhak".
+// tombol "Ubah" yang menunjuk ke dokumen milik orang lain, dan baris itu
+// tampil tanpa aksi apa pun (tanpa badge "tidak berhak").
 report.pass =
   report.list.ubahButtons.includes(`/receptions/${ownId}/edit`) &&
   !report.list.ubahButtons.includes(`/receptions/${otherId}/edit`) &&
-  report.list.notAllowedBadges >= 1 &&
+  report.list.ownActionCell === 'Ubah' &&
+  report.list.otherActionCell === '' &&
+  !report.list.notAllowedText &&
   report.otherForm.blockedMessage &&
   !report.otherForm.hasSubmit &&
   report.ownForm.hasSubmit &&

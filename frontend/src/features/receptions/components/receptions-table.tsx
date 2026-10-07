@@ -11,7 +11,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
 import {
   Empty,
   EmptyDescription,
@@ -151,14 +150,10 @@ function ReceptionTableRow({ row }: { row: ReceptionRow }) {
         )}
       </TableCell>
       <TableCell className="text-right">
-        {row.can_update ? (
+        {row.can_update && (
           <Button asChild variant="outline" size="sm">
             <a href={`/receptions/${row.id}/edit`}>Ubah</a>
           </Button>
-        ) : (
-          <Badge variant="secondary" className="text-muted-foreground">
-            tidak berhak
-          </Badge>
         )}
       </TableCell>
     </TableRow>

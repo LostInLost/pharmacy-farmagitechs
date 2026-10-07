@@ -23,12 +23,12 @@
         function actionCell(row, i18n) {
             var editUrl = Farmasi.boot.endpoints.editBase + row.id;
 
-            if (row.can_update) {
-                return '<a class="btn btn-sm btn-outline-primary" href="' + esc(editUrl) + '">' +
-                    esc(i18n.edit) + '</a>';
+            if (!row.can_update) {
+                return '';
             }
 
-            return '<span class="badge text-bg-secondary">' + esc(i18n.notAllowed) + '</span>';
+            return '<a class="btn btn-sm btn-outline-primary" href="' + esc(editUrl) + '">' +
+                esc(i18n.edit) + '</a>';
         }
 
         function render(rows, i18n) {
@@ -65,7 +65,6 @@
                 render(result.body.data || [], {
                     edit: Farmasi.text('edit', ''),
                     empty: Farmasi.text('empty', ''),
-                    notAllowed: Farmasi.text('notAllowed', ''),
                     neverUpdated: Farmasi.text('neverUpdated', '')
                 });
             },

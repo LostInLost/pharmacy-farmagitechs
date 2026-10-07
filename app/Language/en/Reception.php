@@ -15,7 +15,6 @@ return [
         'updated_by'     => 'Last updated by',
         'actions'        => 'Actions',
         'never_updated'  => 'never updated',
-        'not_allowed'    => 'not allowed',
         'empty'          => 'No receptions yet.',
         'edit'           => 'Edit',
         'add'            => 'Add Reception',
@@ -95,6 +94,5 @@ return [
         'not_found'      => 'Reception not found.',
         'forbidden'      => 'You are not allowed to update this reception.',
         'never_updated'  => 'never updated',
-        'not_allowed'    => 'not allowed',
     ],
 ];
