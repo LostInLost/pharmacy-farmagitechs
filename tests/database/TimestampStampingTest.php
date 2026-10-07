@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\ReceptionLogModel;
+use App\Models\AuditLogModel;
 use App\Models\ReceptionModel;
 use CodeIgniter\I18n\Time;
 use CodeIgniter\Test\CIUnitTestCase;
@@ -133,7 +133,7 @@ final class TimestampStampingTest extends CIUnitTestCase
         $this->assertSame('2020-01-01 00:00:00', $row['created_at']);
     }
 
-    public function testReceptionLogStampsCreatedAt(): void
+    public function testAuditLogStampsCreatedAt(): void
     {
         ['user' => $userId, 'supplier' => $supplierId] = $this->seedDependencies();
 
@@ -145,11 +145,12 @@ final class TimestampStampingTest extends CIUnitTestCase
             'created_by'   => $userId,
         ]);
 
-        $logs = new ReceptionLogModel();
+        $logs = new AuditLogModel();
         $logId = $logs->insert([
-            'reception_id' => $receptionId,
-            'actor_id'     => $userId,
-            'action'       => 'CREATE',
+            'entity_type' => 'reception',
+            'entity_id'   => $receptionId,
+            'actor_id'    => $userId,
+            'action'      => 'CREATE',
         ]);
 
         $row = $logs->find($logId);

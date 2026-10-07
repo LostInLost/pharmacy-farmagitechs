@@ -1,12 +1,13 @@
 <?php
 
+use App\Repositories\AuditLogRepository;
 use App\Services\ReceptionService;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use Tests\Support\Fixtures\StockFixture;
 
 /**
- * Audit trail: snapshot sebelum/sesudah pada reception_logs.
+ * Audit trail: snapshot sebelum/sesudah pada audit_logs (entitas reception).
  *
  * @internal
  */
@@ -144,7 +145,7 @@ final class ReceptionAuditTest extends CIUnitTestCase
             ['medicine_id' => 101, 'batch_no' => 'PCT-2601', 'expires_on' => '2027-12-31', 'quantity' => 10],
         ]), $this->petugasId);
 
-        $logsBefore = $this->db->table('reception_logs')->countAllResults();
+        $logsBefore = $this->db->table('audit_logs')->countAllResults();
 
         $actor  = ['id' => $this->petugasId, 'role' => 'reception'];
         $result = $this->receptions->update($created['id'], $this->payload([
@@ -153,7 +154,7 @@ final class ReceptionAuditTest extends CIUnitTestCase
 
         $this->assertFalse($result['ok']);
         $this->assertSame(422, $result['status']);
-        $this->assertSame($logsBefore, $this->db->table('reception_logs')->countAllResults());
+        $this->assertSame($logsBefore, $this->db->table('audit_logs')->countAllResults());
     }
 
     public function testAuditRowsSurviveDeletingReception(): void
@@ -163,17 +164,28 @@ final class ReceptionAuditTest extends CIUnitTestCase
         ]), $this->petugasId);
 
         $this->db->table('reception_items')->where('reception_id', $created['id'])->delete();
-
-        $this->expectException(CodeIgniter\Database\Exceptions\DatabaseException::class);
-
         $this->db->table('receptions')->where('id', $created['id'])->delete();
+
+        $this->assertSame(1, $this->db->table('audit_logs')->countAllResults());
+    }
+
+    public function testAuditLogSupportsOtherEntityTypes(): void
+    {
+        (new AuditLogRepository())->record('medicine', 101, $this->petugasId, 'UPDATE', ['quantity' => 5], ['quantity' => 7]);
+
+        $rows = $this->db->table('audit_logs')->where('entity_type', 'medicine')->get()->getResultArray();
+
+        $this->assertCount(1, $rows);
+        $this->assertSame(101, (int) $rows[0]['entity_id']);
+        $this->assertSame('UPDATE', $rows[0]['action']);
     }
 
     public function testAuditColumnsAreNullableJson(): void
     {
-        $fields = array_column($this->db->getFieldData('reception_logs'), 'type', 'name');
+        $fields = array_column($this->db->getFieldData('audit_logs'), 'type', 'name');
 
         $this->assertSame('json', strtolower((string) $fields['data_before']));
         $this->assertSame('json', strtolower((string) $fields['data_after']));
+        $this->assertSame('varchar', strtolower((string) $fields['entity_type']));
     }
 }

@@ -5,12 +5,12 @@ namespace App\Models;
 use CodeIgniter\I18n\Time;
 use CodeIgniter\Model;
 
-class ReceptionLogModel extends Model
+class AuditLogModel extends Model
 {
-    protected $table         = 'reception_logs';
+    protected $table         = 'audit_logs';
     protected $primaryKey    = 'id';
     protected $returnType    = 'array';
-    protected $allowedFields = ['reception_id', 'actor_id', 'action', 'data_before', 'data_after', 'created_at'];
+    protected $allowedFields = ['entity_type', 'entity_id', 'actor_id', 'action', 'data_before', 'data_after', 'created_at'];
     protected $useTimestamps = false;
 
     protected array $casts = [

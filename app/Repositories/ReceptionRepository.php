@@ -3,7 +3,6 @@
 namespace App\Repositories;
 
 use App\Models\ReceptionItemModel;
-use App\Models\ReceptionLogModel;
 use App\Models\ReceptionModel;
 
 class ReceptionRepository
@@ -11,7 +10,7 @@ class ReceptionRepository
     public function __construct(
         private readonly ReceptionModel $receptions = new ReceptionModel(),
         private readonly ReceptionItemModel $items = new ReceptionItemModel(),
-        private readonly ReceptionLogModel $logs = new ReceptionLogModel(),
+        private readonly AuditLogRepository $audit = new AuditLogRepository(),
     ) {
     }
 
@@ -64,23 +63,7 @@ class ReceptionRepository
 
     public function logsOf(int $receptionId): array
     {
-        $rows = $this->logs
-            ->select('reception_logs.*, users.name AS actor_name')
-            ->join('users', 'users.id = reception_logs.actor_id', 'left')
-            ->where('reception_logs.reception_id', $receptionId)
-            ->orderBy('reception_logs.created_at', 'ASC')
-            ->orderBy('reception_logs.id', 'ASC')
-            ->findAll();
-
-        return array_map(static fn (array $row): array => [
-            'id'          => (int) $row['id'],
-            'actor_id'    => (int) $row['actor_id'],
-            'actor_name'  => $row['actor_name'],
-            'action'      => $row['action'],
-            'data_before' => $row['data_before'],
-            'data_after'  => $row['data_after'],
-            'created_at'  => $row['created_at'],
-        ], $rows);
+        return $this->audit->forEntity(AuditLogRepository::ENTITY_RECEPTION, $receptionId);
     }
 
     public function insertReception(array $data): int
@@ -108,13 +91,7 @@ class ReceptionRepository
 
     public function log(int $receptionId, int $actorId, string $action, ?array $before, ?array $after): void
     {
-        $this->logs->insert([
-            'reception_id' => $receptionId,
-            'actor_id'     => $actorId,
-            'action'       => $action,
-            'data_before'  => $before,
-            'data_after'   => $after,
-        ]);
+        $this->audit->record(AuditLogRepository::ENTITY_RECEPTION, $receptionId, $actorId, $action, $before, $after);
     }
 
     private function normalizeReception(array $row): array

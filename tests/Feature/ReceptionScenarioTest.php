@@ -170,7 +170,7 @@ final class ReceptionScenarioTest extends CIUnitTestCase
         ]), $this->supervisorId);
 
         $itemsBefore = $this->db->table('reception_items')->countAllResults();
-        $logsBefore  = $this->db->table('reception_logs')->countAllResults();
+        $logsBefore  = $this->db->table('audit_logs')->countAllResults();
         $stockBefore = $this->availableQuantity(101);
 
         $petugas = ['id' => $this->petugasId, 'role' => 'reception'];
@@ -182,7 +182,7 @@ final class ReceptionScenarioTest extends CIUnitTestCase
         $this->assertSame(403, $result['status']);
 
         $this->assertSame($itemsBefore, $this->db->table('reception_items')->countAllResults());
-        $this->assertSame($logsBefore, $this->db->table('reception_logs')->countAllResults());
+        $this->assertSame($logsBefore, $this->db->table('audit_logs')->countAllResults());
         $this->assertSame($stockBefore, $this->availableQuantity(101));
 
         $detail = $this->receptions->detail($created['id']);
@@ -193,7 +193,7 @@ final class ReceptionScenarioTest extends CIUnitTestCase
     {
         $receptionsBefore = $this->db->table('receptions')->countAllResults();
         $itemsBefore      = $this->db->table('reception_items')->countAllResults();
-        $logsBefore       = $this->db->table('reception_logs')->countAllResults();
+        $logsBefore       = $this->db->table('audit_logs')->countAllResults();
 
         $result = $this->receptions->create($this->payload([
             ['medicine_id' => 101, 'batch_no' => 'PCT-2601', 'expires_on' => '2027-12-31', 'quantity' => 10],
@@ -205,7 +205,7 @@ final class ReceptionScenarioTest extends CIUnitTestCase
 
         $this->assertSame($receptionsBefore, $this->db->table('receptions')->countAllResults());
         $this->assertSame($itemsBefore, $this->db->table('reception_items')->countAllResults());
-        $this->assertSame($logsBefore, $this->db->table('reception_logs')->countAllResults());
+        $this->assertSame($logsBefore, $this->db->table('audit_logs')->countAllResults());
     }
 
     public function testBatchSharedAcrossReceptionsAccumulates(): void

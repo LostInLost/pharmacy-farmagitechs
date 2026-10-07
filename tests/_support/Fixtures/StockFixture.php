@@ -63,7 +63,7 @@ class StockFixture
 
     public function clear(): void
     {
-        foreach (['reception_logs', 'reception_items', 'receptions', 'stock_usage', 'seed_batch_stock', 'medicines', 'suppliers', 'users'] as $table) {
+        foreach (['audit_logs', 'reception_items', 'receptions', 'stock_usage', 'seed_batch_stock', 'medicines', 'suppliers', 'users'] as $table) {
             $this->db->table($table)->emptyTable();
         }
     }

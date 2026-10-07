@@ -81,9 +81,9 @@ Validasi penerimaan yang berlaku: `reference_no` wajib dan unik; pemasok dan oba
 
 CSRF aktif untuk **semua** POST/PUT, termasuk `/api/*`. Token dikirim lewat header `X-CSRF-TOKEN`; nilainya sama dengan cookie `csrf_cookie_name` yang diterbitkan saat halaman login dimuat (`GET /login`). Karena itu klien API harus memulai dari `GET /login` untuk mendapatkan cookie tersebut. Token **berotasi** setiap mutasi berhasil, dan nilai terbaru selalu dikembalikan pada header `X-CSRF-TOKEN` di setiap response API — klien wajib memakai nilai terakhir itu untuk request berikutnya. Kegagalan token dijawab `403` JSON berisi `"error": "csrf"` (disertai token segar) untuk `/api/*`, dan redirect kembali ke halaman asal untuk form web. Detail alasan desain ada di [`docs/security.md`](docs/security.md).
 
-Audit trail: setiap aksi buat/ubah menulis satu baris `reception_logs` berisi `reception_id`, `actor_id`, `action`, dan waktu, ditambah kolom `data_before`/`data_after` (JSON) berisi snapshot penerimaan sebelum dan sesudah perubahan. Kolom snapshot adalah tambahan di atas syarat minimal soal (soal menyebut isi sebelum/sesudah "tidak diwajibkan") dan dipakai agar perubahan yang menggeser stok tetap dapat ditelusuri; tanpa itu, item yang dihapus saat `PUT` hilang tanpa jejak karena `reception_items` selalu diganti penuh. `data_before` bernilai `null` pada `CREATE`, dan `PUT` identik tetap tercatat dengan `data_before == data_after`. Log tidak ikut terhapus saat penerimaan dihapus (FK `ON DELETE RESTRICT`), berbeda dari `reception_items` yang memakai `CASCADE`. Detail kontrak snapshot ada di [`docs/database.md`](docs/database.md).
+Audit trail: setiap aksi buat/ubah menulis satu baris `audit_logs` berisi `entity_type`, `entity_id`, `actor_id`, `action`, dan waktu, ditambah kolom `data_before`/`data_after` (JSON) berisi snapshot penerimaan sebelum dan sesudah perubahan. Kolom snapshot adalah tambahan di atas syarat minimal soal (soal menyebut isi sebelum/sesudah "tidak diwajibkan") dan dipakai agar perubahan yang menggeser stok tetap dapat ditelusuri; tanpa itu, item yang dihapus saat `PUT` hilang tanpa jejak karena `reception_items` selalu diganti penuh. `data_before` bernilai `null` pada `CREATE`, dan `PUT` identik tetap tercatat dengan `data_before == data_after`. Baris audit bertahan saat entitasnya dihapus (`entity_id` polimorfik tanpa FK), berbeda dari `reception_items` yang memakai `CASCADE`. Detail kontrak snapshot ada di [`docs/database.md`](docs/database.md).
 
-Log tetap **reception-scoped**, bukan tabel audit generik: `receptions` adalah satu-satunya entitas yang dapat ditulis aplikasi (POST/PUT), sedangkan `medicines`, `suppliers`, `seed_batch_stock`, dan `stock_usage` hanya dibaca dari lampiran dan pengelolaan master data tidak diminta soal. Tabel generik `(entity_type, entity_id)` akan menghilangkan foreign key ke entitas yang diaudit — padahal penjelasan FK justru diminta soal. Jalur generalisasi bila nanti ada domain tulis kedua didokumentasikan di `docs/database.md`.
+Tabel log sengaja **generik** lewat pasangan `entity_type`/`entity_id`, bukan reception-scoped: kolom inti audit (`actor_id`, `action`, waktu, snapshot) sama untuk entitas apa pun, sehingga domain tulis lain (mis. master obat) cukup memakai tabel yang sama tanpa skema baru. `entity_type` berisi `reception` untuk baris penerimaan. Trade-off-nya `entity_id` tidak dapat di-FK karena menunjuk ke banyak tabel — diterima karena jejak audit justru harus hidup ketika datanya dihapus; `actor_id` tetap ber-FK ke `users`.
 
 Contoh request membuat penerimaan (setelah login, kirim cookie session):
 
@@ -110,7 +110,7 @@ GET /api/stocks?on_date=2026-10-03
 
 ## 6. Pengujian dan Verifikasi
 
-Pengujian otomatis (69 test, 171 assertion):
+Pengujian otomatis (102 test, 296 assertion):
 
 ```
 composer run test

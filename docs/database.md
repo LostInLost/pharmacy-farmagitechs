@@ -6,13 +6,13 @@
 erDiagram
     users ||--o{ receptions : "creates"
     users ||--o{ receptions : "updates"
-    users ||--o{ reception_logs : "acts"
+    users ||--o{ audit_logs : "acts"
     suppliers ||--o{ receptions : "supplies"
     medicines ||--o{ seed_batch_stock : "has_initial"
     medicines ||--o{ stock_usage : "consumed"
     medicines ||--o{ reception_items : "received"
     receptions ||--o{ reception_items : "contains"
-    receptions ||--o{ reception_logs : "audited"
+    receptions ||--o{ audit_logs : "audited (entity_type='reception')"
 
     users {
         int id PK
@@ -68,9 +68,10 @@ erDiagram
         date expires_on
         int quantity
     }
-    reception_logs {
+    audit_logs {
         int id PK
-        int reception_id FK
+        varchar entity_type "reception = entitas yang diaudit"
+        int entity_id "id entitas, polimorfik tanpa FK"
         int actor_id FK
         enum action "CREATE|UPDATE|DELETE"
         json data_before "NULL saat CREATE"
@@ -90,16 +91,16 @@ erDiagram
 | `stock_usage` | Pemakaian final oleh unit pelayanan yang mengurangi stok, beserta waktu pakai dan unit pelayanannya. |
 | `receptions` | Header satu transaksi kedatangan dari satu pemasok. |
 | `reception_items` | Rincian obat, batch, kedaluwarsa, dan jumlah per penerimaan. |
-| `reception_logs` | Riwayat aksi buat/ubah per penerimaan beserta snapshot sebelum/sesudah. |
+| `audit_logs` | Jejak aksi tulis semua entitas (kini `reception`) beserta snapshot sebelum/sesudah; polimorfik lewat pasangan `entity_type`/`entity_id`. |
 
 `suppliers`, `medicines`, `seed_batch_stock`, dan `stock_usage` berasal dari lampiran `app/Database/seed_farmasi.sql`. Isinya dipindahkan apa adanya ke `StockSeeder` (3 pemasok, 25 obat, 10 batch awal, 3 baris pemakaian) supaya angka laporan stok sama dengan contoh soal tanpa impor SQL manual. Seeder mencocokkan baris per `id`: `suppliers` dan `medicines` diperbarui di tempat karena dirujuk foreign key, sedangkan `seed_batch_stock` dan `stock_usage` dimuat ulang seluruhnya agar stok penerimaan lama tidak menumpuk. Kolom `used_at` dan `unit_name` hanya dibaca lampiran; perhitungan stok tetap memakai `quantity`.
 
 ## Kunci dan Indeks
 
-- Primary key: `id` surrogate auto-increment untuk `users`, `receptions`, `reception_items`, `reception_logs`, dan tabel seed yang membutuhkannya. Surrogate dipilih agar join stabil dan tidak bergantung pada data bisnis yang bisa berubah.
-- Foreign key: `receptions.supplier_id` ke `suppliers.id`, `receptions.created_by`/`updated_by` ke `users.id`, `reception_items.reception_id` ke `receptions.id` dengan `ON DELETE CASCADE` supaya menghapus penerimaan tidak meninggalkan item yatim, `reception_logs.actor_id` ke `users.id`, dan `reception_logs.reception_id` ke `receptions.id` dengan `ON DELETE RESTRICT`. Log sengaja **tidak** memakai `CASCADE`: `reception_items` adalah keadaan sekarang (ikut terhapus wajar), sedangkan `reception_logs` adalah jejak audit yang justru paling dibutuhkan ketika ada penerimaan bermasalah. Menghapus penerimaan lewat SQL manual akan ditolak selama lognya masih ada; endpoint `DELETE` sendiri tidak disediakan aplikasi.
+- Primary key: `id` surrogate auto-increment untuk `users`, `receptions`, `reception_items`, `audit_logs`, dan tabel seed yang membutuhkannya. Surrogate dipilih agar join stabil dan tidak bergantung pada data bisnis yang bisa berubah.
+- Foreign key: `receptions.supplier_id` ke `suppliers.id`, `receptions.created_by`/`updated_by` ke `users.id`, `reception_items.reception_id` ke `receptions.id` dengan `ON DELETE CASCADE` supaya menghapus penerimaan tidak meninggalkan item yatim, dan `audit_logs.actor_id` ke `users.id` dengan `ON DELETE RESTRICT`. Satu-satunya kolom FK yang sengaja kosong adalah `audit_logs.entity_id`: nilainya polimorfik (menunjuk ke tabel sesuai `entity_type`), dan kolom FK memang tidak dapat menunjuk ke banyak tabel sekaligus. Konsekuensinya menghapus entitas yang diaudit tidak lagi ditolak oleh log — justru diinginkan, karena jejak audit harus tetap hidup ketika datanya sudah hilang.
 - Unique: `users.username`, `users.email`, `medicines.code`, `receptions.reference_no`, `seed_batch_stock(medicine_id, batch_no)` mencegah stok awal batch ganda, dan `reception_items(reception_id, medicine_id, batch_no)` mencegah kombinasi obat-batch muncul dua kali dalam satu penerimaan.
-- Indeks: `reception_items(medicine_id, batch_no)` untuk agregasi stok per batch, `receptions(supplier_id, received_at)` untuk daftar dan filter penerimaan, `reception_logs(reception_id, created_at)` untuk riwayat aksi.
+- Indeks: `reception_items(medicine_id, batch_no)` untuk agregasi stok per batch, `receptions(supplier_id, received_at)` untuk daftar dan filter penerimaan, `audit_logs(entity_type, entity_id, created_at)` untuk riwayat aksi per entitas (menggantikan `(reception_id, created_at)`).
 
 ## Model Stok
 
@@ -127,15 +128,16 @@ Karena stok adalah hasil agregasi atas data tersimpan, rollback otomatis mengemb
 
 ## Audit Trail
 
-`reception_logs` menyimpan satu baris per aksi tulis pada penerimaan: `CREATE` atau `UPDATE` (enum juga menyediakan `DELETE`, tetapi endpoint hapus tidak ada di lingkup tes).
+`audit_logs` menyimpan satu baris per aksi tulis: `CREATE` atau `UPDATE` (enum juga menyediakan `DELETE`, tetapi endpoint hapus tidak ada di lingkup tes). Tabelnya generik — satu tabel melayani semua entitas — dengan pasangan `entity_type`/`entity_id` sebagai penunjuk entitas; baris milik penerimaan memakai `entity_type = 'reception'` dan `entity_id` berisi `receptions.id`.
 
 | Kolom | Isi |
 | --- | --- |
-| `reception_id` | Penerimaan yang diaudit. |
+| `entity_type` | Jenis entitas yang diaudit; saat ini hanya `reception`. |
+| `entity_id` | ID entitas yang diaudit (untuk reception: `receptions.id`). |
 | `actor_id` | Petugas pelaku, diambil server dari sesi. |
 | `action` | `CREATE` atau `UPDATE`. |
-| `data_before` | Snapshot keadaan penerimaan **sebelum** perubahan. `NULL` untuk `CREATE`. |
-| `data_after` | Snapshot keadaan penerimaan **sesudah** perubahan. |
+| `data_before` | Snapshot keadaan entitas **sebelum** perubahan. `NULL` untuk `CREATE`. |
+| `data_after` | Snapshot keadaan entitas **sesudah** perubahan. |
 | `created_at` | Waktu aksi. |
 
 Kontrak snapshot (dibentuk `ReceptionService::snapshot()`):
@@ -156,7 +158,7 @@ Kontrak snapshot (dibentuk `ReceptionService::snapshot()`):
 - Request yang ditolak (403/422) tidak menulis baris log sama sekali.
 - `PUT` identik tetap tercatat sebagai aksi baru dengan `data_before == data_after`, sehingga beda antara "ada aksi" dan "ada perubahan" tetap terlihat.
 
-Alasan kolom before/after ada di sini, bukan di tabel terpisah: soal hanya mewajibkan `reception_id`, `actor_id`, `action`, dan waktu (isi sebelum/sesudah bersifat opsional). Kolom JSON `NULL`-able adalah tambahan termurah yang memenuhi kebutuhan audit tanpa mengubah bentuk tabel, dan `receptions` tetap satu-satunya entitas yang bisa ditulis aplikasi. `medicines`, `suppliers`, `seed_batch_stock`, dan `stock_usage` hanya dibaca dari lampiran, jadi tidak ada aksi tulis lain yang perlu diaudit. Bila nanti muncul domain tulis kedua, jalur generalisasinya adalah tabel `audit_logs(entity_type, entity_id, actor_id, action, data_before, data_after)` dengan backfill dari `reception_logs`; itu belum diambil sekarang karena `entity_id` generik tidak dapat di-FK dan justru melemahkan penjelasan foreign key yang diminta soal.
+Alasan tabel generik: `reception_logs` dahulu reception-scoped karena hanya penerimaan yang dapat ditulis aplikasi. Begitu log dimaksudkan dapat dipakai domain lain, bentuk generik `audit_logs` lebih tepat daripada menambah tabel log per entitas — kolom inti (`actor_id`, `action`, waktu, snapshot) identik untuk entitas apa pun, sehingga satu model dan satu repository cukup. Trade-off-nya: `entity_id` tidak dapat diberi foreign key karena satu kolom menunjuk ke banyak tabel. Itu diterima karena jejak audit justru harus tetap hidup ketika entitasnya dihapus; `actor_id` tetap ber-FK ke `users` agar pelaku selalu valid. Domain baru cukup mengisi `entity_type` sendiri (mis. `medicine`, `supplier`) tanpa perubahan skema.
 
 ## Konvensi
 
@@ -165,7 +167,7 @@ Alasan kolom before/after ada di sini, bukan di tabel terpisah: soal hanya mewaj
 - `receptions.updated_at` simetris dengan `updated_by`: keduanya `NULL` selama belum pernah diubah, sehingga pasangan `(updated_by, updated_at)` selalu null-null atau terisi bersama. Waktu diisi otomatis oleh model event (`beforeInsert`, `beforeInsertBatch`, `beforeUpdate`) memakai `Time::now()` yang mengikuti `appTimezone` Asia/Jakarta; identitas petugas tetap di-set service dari sesi.
 - Database tidak memakai `DEFAULT CURRENT_TIMESTAMP` maupun trigger MySQL. `CURRENT_TIMESTAMP` mengikuti zona waktu server database, bukan Asia/Jakarta yang diwajibkan soal, dan default kolom tidak dapat menjaga `updated_at` tetap `NULL` sampai edit pertama. Sebagai jaring pengaman, insert tanpa `created_at` ditolak database (`ERROR 1364`).
 - Model CI4 memakai `useTimestamps = false`. Bila diaktifkan, CI4 mengisi `updated_at` pada saat insert juga (`BaseModel::insert()`), sehingga merusak konvensi null di atas.
-- `reception_items` tidak punya timestamp: item selalu diganti penuh saat pembaruan sehingga waktu per baris menyesatkan. Waktu perubahan tercatat di `receptions.updated_at` dan `reception_logs.created_at`.
-- Setiap aksi buat/ubah menambah satu baris `reception_logs` berisi `reception_id`, `actor_id`, `action`, snapshot `data_before`/`data_after`, dan `created_at`.
+- `reception_items` tidak punya timestamp: item selalu diganti penuh saat pembaruan sehingga waktu per baris menyesatkan. Waktu perubahan tercatat di `receptions.updated_at` dan `audit_logs.created_at`.
+- Setiap aksi buat/ubah menambah satu baris `audit_logs` berisi `entity_type`, `entity_id`, `actor_id`, `action`, snapshot `data_before`/`data_after`, dan `created_at`.
 - Satuan mengikuti `medicines.unit` tanpa konversi.
 - `users.name` dipakai untuk menampilkan nama pembuat/pengubah pada detail penerimaan. `users.email` wajib dan unik, disiapkan untuk alur pemulihan kata sandi berbasis email (alurnya sendiri di luar cakupan tes).
