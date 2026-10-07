@@ -3,14 +3,17 @@
 namespace App\Controllers\Api;
 
 use App\Services\AuthService;
+use Config\Permissions;
 
 class AuthController extends BaseApiController
 {
     private readonly AuthService $auth;
+    private readonly Permissions $permissions;
 
     public function __construct()
     {
-        $this->auth = new AuthService();
+        $this->auth        = new AuthService();
+        $this->permissions = new Permissions();
     }
 
     public function login()
@@ -34,7 +37,7 @@ class AuthController extends BaseApiController
 
         return $this->withFreshCsrf($this->response->setStatusCode(200)->setJSON([
             'message' => lang('Auth.api.success'),
-            'user'    => $user,
+            'user'    => $this->withPermissions($user),
         ]));
     }
 
@@ -62,11 +65,28 @@ class AuthController extends BaseApiController
 
         return $this->withFreshCsrf($this->response->setStatusCode(200)->setJSON([
             'user' => [
-                'id'       => (int) $userId,
-                'name'     => (string) session()->get('user_name'),
-                'username' => (string) (session()->get('username') ?? ''),
-                'role'     => (string) session()->get('role'),
+                'id'          => (int) $userId,
+                'name'        => (string) session()->get('user_name'),
+                'username'    => (string) (session()->get('username') ?? ''),
+                'role'        => (string) session()->get('role'),
+                'permissions' => $this->permissions->forRole((string) session()->get('role')),
             ],
         ]));
+    }
+
+    /**
+     * Sertakan permission role pada payload user agar UI bisa menyembunyikan
+     * aksi yang tak mungkin diizinkan (mis. tombol tambah bagi role tanpa
+     * `receipt.create`) tanpa perlu memanggil endpoint terpisah.
+     *
+     * Ini murni affordance: penegakan tetap di policy server per request.
+     * Permission tidak disimpan di session supaya perubahan `Config\Permissions`
+     * langsung berlaku pada request berikutnya, bukan setelah login ulang.
+     */
+    private function withPermissions(array $user): array
+    {
+        $user['permissions'] = $this->permissions->forRole((string) ($user['role'] ?? ''));
+
+        return $user;
     }
 }

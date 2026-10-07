@@ -154,7 +154,8 @@
                                                                        "exec":  [
                                                                                     "pm.test(\u0027status 200\u0027, function () { pm.response.to.have.status(200); });",
                                                                                     "pm.test(\u0027role supervisor\u0027, function () { pm.expect(pm.response.json().user.role).to.eql(\u0027supervisor\u0027); });",
-                                                                                    "pm.test(\u0027password_hash tidak dikirim\u0027, function () { pm.expect(pm.response.json().user).to.not.have.property(\u0027password_hash\u0027); });"
+                                                                                    "pm.test(\u0027password_hash tidak dikirim\u0027, function () { pm.expect(pm.response.json().user).to.not.have.property(\u0027password_hash\u0027); });",
+                                                                                    "pm.test(\u0027permissions supervisor\u0027, function () { const p = pm.response.json().user.permissions; pm.expect(p).to.include(\u0027receipt.update-any\u0027); pm.expect(p).to.include(\u0027medicine.write\u0027); pm.expect(p).to.include(\u0027receipt.create\u0027); });"
                                                                                 ]
                                                                    }
                                                     }
@@ -221,7 +222,8 @@
                                                                        "type":  "text/javascript",
                                                                        "exec":  [
                                                                                     "pm.test(\u0027status 200\u0027, function () { pm.response.to.have.status(200); });",
-                                                                                    "pm.test(\u0027role reception\u0027, function () { pm.expect(pm.response.json().user.role).to.eql(\u0027reception\u0027); });"
+                                                                                    "pm.test(\u0027role reception\u0027, function () { pm.expect(pm.response.json().user.role).to.eql(\u0027reception\u0027); });",
+                                                                                    "pm.test(\u0027permissions petugas\u0027, function () { const p = pm.response.json().user.permissions; pm.expect(p).to.include(\u0027receipt.create\u0027); pm.expect(p).to.include(\u0027receipt.update-own\u0027); pm.expect(p).to.not.include(\u0027receipt.update-any\u0027); pm.expect(p).to.not.include(\u0027medicine.write\u0027); });"
                                                                                 ]
                                                                    }
                                                     }
@@ -251,6 +253,36 @@
                                                       "description":  "Wajib dijalankan sebelum folder Stocks dan Receipts."
                                                   },
                                       "description":  "`POST /api/login` â€” akun petugas (role `reception`: buat penerimaan sendiri, ubah hanya milik sendiri; `can_update` untuk reception lain = `false`).\n\n**Body**\n\n```json\n{\"username\": \"petugas\", \"password\": \"petugas123\"}\n```\n\n**200 OK** â€” bentuk sama dengan login supervisor, `role` = `\"reception\"`. Sesi ini dipakai seluruh folder `3. Receipts`."
+                                  },
+                                  {
+                                      "name":  "1.5 Cek sesi sendiri (GET /api/me)",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test(\u0027status 200\u0027, function () { pm.response.to.have.status(200); });",
+                                                                                    "pm.test(\u0027user petugas dengan permissions\u0027, function () { const u = pm.response.json().user; pm.expect(u.username).to.eql(\u0027petugas\u0027); pm.expect(u.permissions).to.include(\u0027receipt.create\u0027); pm.expect(u.permissions).to.not.include(\u0027receipt.update-any\u0027); });",
+                                                                                    "pm.test(\u0027token CSRF terbaru di header\u0027, function () { pm.expect(pm.response.headers.get(\u0027X-CSRF-TOKEN\u0027)).to.be.a(\u0027string\u0027); });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  {
+                                                                  "raw":  "{{base_url}}/api/me",
+                                                                  "host":  [
+                                                                               "{{base_url}}"
+                                                                                ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "me"
+                                                                                ]
+                                                              }
+                                                  },
+                                      "description":  "`GET /api/me` - sesi yang sama dengan 1.4, endpoint yang dipakai middleware SSR frontend Astro.\n\n**200 OK**\n\n```json\n{\"user\": {\"id\": 2, \"name\": \"Dewi Petugas\", \"username\": \"petugas\", \"role\": \"reception\", \"permissions\": [\"receipt.create\", \"receipt.view\", \"receipt.update-own\", \"medicine.view\"]}}\n```\n\n**401 Unauthorized** (tanpa sesi)\n\n```json\n{\"message\": \"Belum masuk.\"}\n```\n\n`permissions` dihitung dari `Config\\Permissions` pada setiap request (tidak disimpan di session), jadi perubahan konfigurasi langsung berlaku tanpa login ulang. Nilainya hanya affordance UI; penegakan tetap di policy server."
                                   }
                               ],
                      "description":  "Autentikasi berbasis sesi cookie `ci_session` + CSRF header `X-CSRF-TOKEN`.\n\nEndpoint: `POST /api/login` (filter `guest`), `POST /api/logout`, `GET /api/me` (filter `auth`).\n\nKondisi login:\n\n| Status | Kapan |\n|---|---|\n| 200 | Kredensial benar â†’ sesi dibuat |\n| 422 | `username`/`password` kosong |\n| 401 | Kredensial salah atau user nonaktif |\n| 403 | Sudah sesi aktif (GuestFilter) / CSRF gagal |"
@@ -1079,12 +1111,12 @@
                                                                        "type":  "text/javascript",
                                                                        "exec":  [
                                                                                     "pm.test(\u0027status 200\u0027, function () { pm.response.to.have.status(200); });",
-                                                                                    "const data = pm.response.json().data;",
+                                                                                    "const rows = pm.response.json().data;",
                                                                                     "pm.test(\u0027memuat field master lengkap\u0027, function () {",
-                                                                                    "    pm.expect(Object.keys(data[0]).sort()).to.eql([\u0027code\u0027, \u0027id\u0027, \u0027is_active\u0027, \u0027name\u0027, \u0027unit\u0027]);",
+                                                                                    "    pm.expect(Object.keys(rows[0]).sort()).to.eql([\u0027code\u0027, \u0027id\u0027, \u0027is_active\u0027, \u0027name\u0027, \u0027unit\u0027]);",
                                                                                     "});",
                                                                                     "pm.test(\u0027obat nonaktif 105 tetap tampil di master\u0027, function () {",
-                                                                                    "    const row = data.find((m) =\u003e m.id === 105);",
+                                                                                    "    const row = rows.find((m) =\u003e m.id === 105);",
                                                                                     "    pm.expect(row, \u0027obat 105 ada di master\u0027).to.not.be.undefined;",
                                                                                     "    pm.expect(row.is_active).to.eql(false);",
                                                                                     "});"
@@ -1283,12 +1315,12 @@
                                                                        "type":  "text/javascript",
                                                                        "exec":  [
                                                                                     "pm.test(\u0027status 201\u0027, function () { pm.response.to.have.status(201); });",
-                                                                                    "const data = pm.response.json().data;",
+                                                                                    "const rows = pm.response.json().data;",
                                                                                     "pm.test(\u0027kode dan status tersimpan\u0027, function () {",
-                                                                                    "    pm.expect(data.code).to.eql(pm.collectionVariables.get(\u0027medicine_code\u0027));",
-                                                                                    "    pm.expect(data.is_active).to.eql(true);",
+                                                                                    "    pm.expect(rows.code).to.eql(pm.collectionVariables.get(\u0027medicine_code\u0027));",
+                                                                                    "    pm.expect(rows.is_active).to.eql(true);",
                                                                                     "});",
-                                                                                    "pm.collectionVariables.set(\u0027medicine_id\u0027, data.id);"
+                                                                                    "pm.collectionVariables.set(\u0027medicine_id\u0027, rows.id);"
                                                                                 ]
                                                                    }
                                                     }

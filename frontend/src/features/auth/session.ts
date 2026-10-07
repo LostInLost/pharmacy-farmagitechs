@@ -1,11 +1,11 @@
-import { apiFetch } from "@/foundations/api/client"
+import { apiFetch, parseJsonSafe } from "@/foundations/api/client"
 import {
   readStorageRaw,
   removeStorageKey,
   writeStorageRaw,
 } from "@/foundations/storage"
 
-import { authUserSchema, type AuthUser } from "./schemas"
+import { authUserSchema, meResponseSchema, type AuthUser } from "./schemas"
 
 /**
  * Info user untuk UI (nama/role). Bukan data otorisasi: otorisasi tetap
@@ -53,36 +53,32 @@ export function clearUserSession(): void {
 }
 
 /**
- * Pastikan sesi backend masih valid. Dipakai halaman dashboard:
- * - Ada info user lokal → pakai itu.
- * - Belum ada → cek endpoint ber-auth; 200 = sesi valid (user anonim UI),
- *   401 = belum login.
+ * Pastikan sesi backend masih valid. Dipakai `AppShell` sebagai jaring
+ * pengaman klien ketika SSR tidak mendapat user (mis. backend sempat mati).
  *
- * TODO(/api/me): backend sudah menyediakan `GET /api/me` — migrasikan probe
- * ini + fallback sintetis `id: 0` ke sana agar nama asli tampil dan sesi
- * palsu tidak lagi dipersist ke sessionStorage.
+ * - Ada info user lokal → pakai itu.
+ * - Belum ada → tanya `GET /api/me`: 200 = sesi valid (nama + role +
+ *   permissions asli), 401 = belum login, lainnya = menyerah (fail-closed).
+ *
+ * Sebelumnya probe memakai `GET /api/receipts` dan menulis user sintetis
+ * `id: 0`; `/api/me` menghapus kebutuhan itu sekaligus membawa permissions
+ * sehingga gating tombol tetap benar setelah muat ulang.
  */
 export async function ensureSession(): Promise<SessionUser | null> {
   const local = getUserSession()
   if (local) return local
 
   try {
-    const response = await apiFetch("/api/receipts")
+    const response = await apiFetch("/api/me")
 
-    if (response.status === 401) return null
+    if (!response.ok) return null
 
-    if (response.ok) {
-      const fallback: SessionUser = {
-        id: 0,
-        name: "Pengguna",
-        username: "",
-        role: "",
-      }
-      setUserSession(fallback)
-      return fallback
-    }
+    const parsed = meResponseSchema.safeParse(await parseJsonSafe(response))
 
-    return null
+    if (!parsed.success) return null
+
+    setUserSession(parsed.data.user)
+    return parsed.data.user
   } catch {
     return null
   }

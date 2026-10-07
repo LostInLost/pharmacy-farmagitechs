@@ -63,6 +63,7 @@ Kata sandi disimpan sebagai hash Argon2id (`Config\Hash`, dapat diubah lewat `ha
 | --- | --- | --- | --- |
 | POST | `/api/login` | Login, mengembalikan JSON | Tidak perlu (ditolak `403` bila sudah login) |
 | POST | `/api/logout` | Logout | Session |
+| GET | `/api/me` | Identitas sesi + `permissions` role (dipakai middleware SSR Astro) | Session |
 | GET | `/api/receipts` | Daftar seluruh penerimaan | Session |
 | POST | `/api/receipts` | Membuat penerimaan beserta seluruh item | Session |
 | GET | `/api/receipts/{id}` | Detail satu penerimaan | Session |
@@ -77,11 +78,13 @@ Kata sandi disimpan sebagai hash Argon2id (`Config\Hash`, dapat diubah lewat `ha
 
 Halaman web (`/login`, `/receptions`, `/receptions/new`, `/receptions/{id}/edit`, `/stocks`) tidak mengambil data sendiri: controller Web hanya merender cangkang + objek `window.FARMASI_BOOT` (endpoint, string bahasa), dan jQuery di `public/assets/js/` (bootstrap `app.js`, pustaka bersama `lib/`, satu file per halaman di `pages/`) memanggil endpoint di atas. `GET /api/receipts` menyertakan `can_update` per baris agar UI tahu kapan menampilkan tombol Ubah; penegakan hak tetap di server (`ReceptionPolicy` via service).
 
-Selain itu ada frontend terpisah berbasis Astro di `frontend/` (cara menjalankannya ada di [`frontend/README.md`](frontend/README.md)) yang memakai API yang sama, termasuk halaman **Master Obat** (`/medicines`). Endpoint baca master menyertakan `can_write` — padanan `can_update` — sehingga tombol tambah/ubah hanya muncul bagi supervisor, sementara penegakan tetap di server (`MedicinePolicy` via service).
+Selain itu ada frontend terpisah berbasis Astro di `frontend/` (cara menjalankannya ada di [`frontend/README.md`](frontend/README.md)) yang memakai API yang sama, termasuk halaman **Master Obat** (`/medicines`). Endpoint baca master menyertakan `can_write` — padanan `can_update` — sehingga tombol tambah/ubah hanya muncul bagi supervisor, sementara penegakan tetap di server (`MedicinePolicy` via service). Di sisi Astro, tambah/detail/ubah penerimaan terjadi dalam sheet di atas daftar `/receptions` (`?new=1`, `?view=<id>`, `?edit=<id>`); riwayat aksi tidak dirender di sana karena disiapkan menjadi menu Audit tersendiri.
 
 Status implementasi: seluruh endpoint sudah berfungsi penuh. Autentikasi memakai session cookie (`ci_session`), sehingga request berikutnya setelah login cukup mengirim cookie tersebut. Request tanpa login ditolak: `401` JSON untuk path `/api/*` dan redirect ke `/login` untuk halaman web. Sebaliknya, rute tamu (`GET /login` dan `POST /api/login`) dilindungi filter `guest`: pengguna yang sudah login menerima `403` — halaman error "Sudah Masuk" berisi tautan ke `/receptions` untuk web, JSON `{"message": "..."}` (beserta header `X-CSRF-TOKEN` terbaru) untuk `/api/*`.
 
 Aturan hak ubah: petugas penerimaan hanya dapat mengubah penerimaan yang ia buat; supervisor dapat mengubah semua. Pelanggaran mengembalikan `403` tanpa mengubah penerimaan, stok, maupun log aksi. Identitas pembuat/pengubah diambil server dari sesi, bukan dari body request.
+
+`POST /api/login` dan `GET /api/me` sama-sama mengembalikan `user.permissions`: array datar permission milik role (mis. `["receipt.create", "receipt.view", "receipt.update-own", "medicine.view"]`) yang dihitung `Config\Permissions::forRole()` pada setiap request — tidak disimpan di session, jadi mengubah konfigurasi langsung berlaku tanpa login ulang. Frontend memakainya hanya untuk menggating tampilan (mis. tombol "Tambah Penerimaan" butuh `receipt.create`), sedangkan keputusan per baris tetap memakai `can_update`/`can_write` dari respons server karena butuh data pemilik baris. Penegakan sesungguhnya tetap di policy server; bentuk array datar sengaja dipilih agar mudah dipindah ke klaim cookie JWT nanti.
 
 Validasi penerimaan yang berlaku: `reference_no` wajib dan unik; pemasok dan obat harus ada serta aktif; `items` minimal satu baris; `quantity` bilangan bulat positif; kombinasi `(medicine_id, batch_no)` hanya sekali per penerimaan; `expires_on` konsisten untuk batch yang sama; dan `expires_on` harus lebih akhir daripada tanggal penerimaan (zona Asia/Jakarta). Kegagalan mengembalikan `422` dengan daftar pesan, dan seluruh perubahan dibatalkan.
 

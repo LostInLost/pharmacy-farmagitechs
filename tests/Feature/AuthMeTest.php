@@ -2,10 +2,11 @@
 
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\FeatureTestTrait;
+use Config\Permissions;
 
 /**
  * Endpoint cek sesi untuk middleware SSR frontend Astro (GET /api/me):
- * 401 bila anonim, 200 + data user bila sudah login.
+ * 401 bila anonim, 200 + data user + permission role bila sudah login.
  *
  * @internal
  */
@@ -44,6 +45,43 @@ final class AuthMeTest extends CIUnitTestCase
 
         // Kontrak proyek: setiap response API membawa token CSRF terbaru.
         $this->assertNotSame('', $result->response()->getHeaderLine('X-CSRF-TOKEN'));
+    }
+
+    public function testUserCarriesRolePermissions(): void
+    {
+        $result = $this->withSession($this->actor())->get('/api/me');
+
+        $body = json_decode((string) $result->getJSON(), true);
+        $permissions = $body['user']['permissions'];
+
+        $this->assertSame((new Permissions())->forRole('reception'), $permissions);
+        $this->assertContains(Permissions::RECEIPT_CREATE, $permissions);
+        $this->assertContains(Permissions::RECEIPT_UPDATE_OWN, $permissions);
+        $this->assertNotContains(Permissions::RECEIPT_UPDATE_ANY, $permissions);
+        $this->assertNotContains(Permissions::MEDICINE_WRITE, $permissions);
+    }
+
+    public function testSupervisorPermissionsIncludeUpdateAnyAndMedicineWrite(): void
+    {
+        $result = $this->withSession([
+            'user_id' => 2, 'user_name' => 'Rina Supervisor', 'username' => 'supervisor', 'role' => 'supervisor',
+        ])->get('/api/me');
+
+        $permissions = json_decode((string) $result->getJSON(), true)['user']['permissions'];
+
+        $this->assertContains(Permissions::RECEIPT_UPDATE_ANY, $permissions);
+        $this->assertContains(Permissions::MEDICINE_WRITE, $permissions);
+    }
+
+    public function testUnknownRoleGetsEmptyPermissions(): void
+    {
+        // Fail-closed: role tak dikenal tidak mendapat aksi apa pun di UI.
+        $result = $this->withSession(['user_id' => 3, 'user_name' => 'Entah', 'role' => 'auditor'])->get('/api/me');
+
+        $result->assertStatus(200);
+
+        $body = json_decode((string) $result->getJSON(), true);
+        $this->assertSame([], $body['user']['permissions']);
     }
 
     public function testSessionWithoutUsernameFallsBackToEmptyString(): void

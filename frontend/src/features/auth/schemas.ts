@@ -4,12 +4,21 @@ import { z } from "zod"
 // di-re-export agar impor lama dari features/auth tetap bekerja.
 export { apiErrorSchema, type ApiError } from "@/foundations/api/schemas"
 
-/** User yang dikembalikan backend (login & `GET /api/me`). */
+/**
+ * User yang dikembalikan backend (login & `GET /api/me`).
+ *
+ * `permissions` adalah array datar permission milik role (mis.
+ * `receipt.create`) yang dihitung `Config\Permissions` di backend. Nilainya
+ * hanya untuk menggating tampilan — penegakan tetap di server per request.
+ * `default([])` membuat entri sesi lama (sebelum field ini ada) tetap valid
+ * sekaligus fail-closed: tanpa daftar permission, aksi tidak ditampilkan.
+ */
 export const authUserSchema = z.object({
   id: z.number(),
   name: z.string().min(1),
   username: z.string(),
   role: z.string(),
+  permissions: z.array(z.string()).default([]),
 })
 
 export type AuthUser = z.infer<typeof authUserSchema>

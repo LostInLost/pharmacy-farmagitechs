@@ -39,6 +39,21 @@ class Permissions extends BaseConfig
 
     public function roleHas(string $role, string $permission): bool
     {
-        return in_array($permission, $this->roles[$role] ?? [], true);
+        return in_array($permission, $this->forRole($role), true);
+    }
+
+    /**
+     * Daftar permission sebuah role, siap dikirim ke klien (`GET /api/me`,
+     * `POST /api/login`) sebagai array datar string.
+     *
+     * Bentuk datar dipilih agar kelak bisa dipindah apa adanya ke klaim JWT
+     * cookie tanpa mengubah kontrak frontend. Role tak dikenal → `[]`
+     * (fail-closed: UI hanya menyembunyikan aksi, penegakan tetap di server).
+     *
+     * @return list<string>
+     */
+    public function forRole(string $role): array
+    {
+        return $this->roles[$role] ?? [];
     }
 }
