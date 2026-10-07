@@ -177,6 +177,12 @@ export function MedicinesTable({ initialSheet = null, permissions = [] }: Props)
   const canCreate =
     canWrite && hasPermission(permissions, PERMISSIONS.medicineWrite)
 
+  // Sheet menerima hak tulis yang *sudah diketahui* saja. Saat daftar masih
+  // dimuat, `undefined` mencegah deep link `?edit=` ditolak sebelum sempat
+  // diperiksa; begitu daftar siap, nilainya boolean dan penolakan berlaku.
+  const sheetCanWrite =
+    state.status === "ready" ? state.data.canWrite : undefined
+
   return (
     <div className="flex flex-col gap-4 px-4 lg:px-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -312,7 +318,7 @@ export function MedicinesTable({ initialSheet = null, permissions = [] }: Props)
           key={`create-${sheetSeq}`}
           medicineId={null}
           open={sheetOpen}
-          canWrite={canWrite}
+          canWrite={sheetCanWrite}
           onOpenChange={(open) => {
             if (!open) closeSheet()
           }}
@@ -330,7 +336,7 @@ export function MedicinesTable({ initialSheet = null, permissions = [] }: Props)
           key={`edit-${sheet.id}-${sheetSeq}`}
           medicineId={sheet.id}
           open={sheetOpen}
-          canWrite={canWrite}
+          canWrite={sheetCanWrite}
           onOpenChange={(open) => {
             if (!open) closeSheet()
           }}
@@ -346,7 +352,7 @@ export function MedicinesTable({ initialSheet = null, permissions = [] }: Props)
           key={`view-${sheet.id}-${sheetSeq}`}
           medicineId={sheet.id}
           open={sheetOpen}
-          canWrite={canWrite}
+          canWrite={sheetCanWrite}
           onOpenChange={(open) => {
             if (!open) closeSheet()
           }}

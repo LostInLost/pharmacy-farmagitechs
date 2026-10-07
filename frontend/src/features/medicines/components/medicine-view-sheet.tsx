@@ -20,8 +20,11 @@ type Props = {
   medicineId: number
   open: boolean
   onOpenChange: (open: boolean) => void
-  /** Tombol Ubah hanya dirender bila induk memutuskan pengguna berhak. */
-  canWrite: boolean
+  /**
+   * Tombol Ubah hanya dirender bila induk memutuskan pengguna berhak.
+   * `undefined` = daftar masih dimuat; tombol disembunyikan sampai pasti.
+   */
+  canWrite: boolean | undefined
   onEdit: (id: number) => void
 }
 

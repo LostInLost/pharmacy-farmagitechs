@@ -36,8 +36,12 @@ type Props = {
   onOpenChange: (open: boolean) => void
   /** Dipanggil setelah server menyimpan; induk memuat ulang daftarnya. */
   onSaved: (medicine: MedicineRow) => void
-  /** Bila induk sudah tahu pengguna tak berhak, form tidak dibuka. */
-  canWrite?: boolean
+  /**
+   * Hak tulis menurut induk. `undefined` = induk belum tahu (daftar masih
+   * dimuat saat deep link `?edit=`): jangan anggap sebagai penolakan, biarkan
+   * cek `can_write` dari detail yang menentukan.
+   */
+  canWrite: boolean | undefined
 }
 
 type LoadState =
@@ -74,7 +78,7 @@ export function MedicineFormSheet({
   open,
   onOpenChange,
   onSaved,
-  canWrite = true,
+  canWrite,
 }: Props) {
   const [load, setLoad] = React.useState<LoadState>({
     status: medicineId === null ? "ready" : "loading",
@@ -87,14 +91,15 @@ export function MedicineFormSheet({
   const [saving, setSaving] = React.useState(false)
 
   React.useEffect(() => {
+    // Mode tambah tidak memanggil server: status awal sudah "ready", jadi
+    // tidak ada setState di badan efek (pola yang sama dengan view sheet).
+    if (medicineId === null) return
+
     let cancelled = false
 
-    if (medicineId === null) {
-      setLoad({ status: "ready" })
-      return
-    }
-
-    if (!canWrite) {
+    // Hanya penolakan yang sudah pasti (induk sudah selesai memuat daftar)
+    // yang menghentikan pemuatan; detail sendiri juga memeriksa `can_write`.
+    if (canWrite === false) {
       setLoad({
         status: "forbidden",
         message: "Anda tidak berhak mengubah obat ini.",
