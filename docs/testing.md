@@ -1,6 +1,6 @@
 # Pengujian dan Verifikasi
 
-> Bagian dari [README](../README.md). Lihat juga [Konvensi Kode](conventions.md#lapisan), [Desain Database](database.md#konsistensi-transaksi), dan [Postman Collection](postman.md) untuk uji API.
+> Bagian dari [README](../README.md). Lihat juga [Konvensi Kode](conventions.md#lapisan), [Desain Database](database.md#konsistensi-transaksi), [Postman Collection](postman.md) untuk uji API, dan [Memori AI](ai-memory.md) untuk riwayat proses.
 
 ## Menjalankan test otomatis
 

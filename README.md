@@ -10,6 +10,7 @@ Aplikasi pencatatan penerimaan obat dan laporan stok untuk fasilitas kesehatan: 
 - [**docs/security.md**](docs/security.md) — [proteksi CSRF](docs/security.md#proteksi-csrf), urutan filter, rute tamu, batas keamanan.
 - [**docs/conventions.md**](docs/conventions.md) — [aturan lapisan](docs/conventions.md#lapisan), [struktur proyek](docs/conventions.md#struktur-proyek), gaya kode.
 - [**docs/testing.md**](docs/testing.md) — menjalankan test, cakupan, database test, verifikasi manual, asumsi & batasan.
+- [**docs/ai-memory.md**](docs/ai-memory.md) — [memori AI](.harness/memory) dan [ringkasan proses pengerjaan](docs/ai-memory.md#ringkasan-proses-pengerjaan).
 - [**docs/postman.md**](docs/postman.md) — menjalankan collection, [autentikasi & CSRF](docs/postman.md#4-autentikasi-dan-csrf), bentuk respons, aturan validasi payload.
 - [**docs/backend-cors.md**](docs/backend-cors.md) — konfigurasi CORS dan endpoint [/api/csrf](docs/backend-cors.md#kenapa-perlu-endpoint-apicsrf).
 - [**docs/frontend-theme.md**](docs/frontend-theme.md) — [token tema](docs/frontend-theme.md#token-utama-light) shadcn (warna, tipografi).
@@ -122,6 +123,7 @@ GET /api/stocks?on_date=2026-10-03
 ## Catatan Alat AI dan Referensi
 
 - **Tools**: Deepseek Harness dengan beberapa plugin (persistent memory, MCP) untuk membantu AI mengenal konteks proyek.
+- **Riwayat memori**: 45 catatan keputusan, pelajaran, dan progres tersimpan di [`.harness/memory/`](.harness/memory) — diringkas di [`docs/ai-memory.md`](docs/ai-memory.md).
 - **Model planning**: Muse 1.3 Spark, Mimo V2.6 Pro, Kimi K3.
 - **Model eksekutor**: Deepseek V4.1 Flash, GLM 5.3 Flash, Mimo V2.6 Flash, Kimi 2.7 Code.
 - **Referensi**: dokumentasi resmi CodeIgniter 4 (backend) dan Astro (frontend, lihat [`frontend/README.md`](frontend/README.md)). Keputusan desain diverifikasi manual; detail tercatat di riwayat commit dan berkas pada `docs/`.

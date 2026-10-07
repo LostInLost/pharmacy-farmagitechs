@@ -1,6 +1,6 @@
 # Konvensi Kode
 
-> Bagian dari [README](../README.md). Lihat juga [Desain Database](database.md), [Keamanan](security.md#proteksi-csrf), [Pengujian](testing.md), dan [Postman Collection](postman.md).
+> Bagian dari [README](../README.md). Lihat juga [Desain Database](database.md), [Keamanan](security.md#proteksi-csrf), [Pengujian](testing.md), [Postman Collection](postman.md), dan [Memori AI](ai-memory.md).
 
 ## Lapisan
 
