@@ -8,12 +8,12 @@ Proyek ini dikembangkan bersama asisten AI yang menyimpan memorinya di dalam rep
 
 | Path | Isi | Status git |
 | --- | --- | --- |
-| [`.harness/memory/decisions/`](../.harness/memory/decisions) | Keputusan desain beserta alasannya | Dilacak (26 berkas) |
-| [`.harness/memory/learnings/`](../.harness/memory/learnings) | Pelajaran teknis, jebakan, dan cara mengatasinya | Dilacak (12 berkas) |
-| [`.harness/memory/tasks/`](../.harness/memory/tasks) | Progres dan rencana per sesi kerja | Dilacak (7 berkas) |
+| [`.harness/memory/decisions/`](../.harness/memory/decisions) | Keputusan desain beserta alasannya | Dilacak |
+| [`.harness/memory/learnings/`](../.harness/memory/learnings) | Pelajaran teknis, jebakan, dan cara mengatasinya | Dilacak |
+| [`.harness/memory/tasks/`](../.harness/memory/tasks) | Progres dan rencana per sesi kerja | Dilacak |
 | `.harness/tmp/` | Arsip sementara (mis. salinan README sebelum dipangkas) | Diabaikan `.gitignore` |
 
-Total **45 entri memori** yang ikut ter-commit, sehingga riwayatnya terlihat langsung di GitHub tanpa perlu alat khusus.
+Per 7 Oktober 2026 ada **46 entri** yang ikut ter-commit, sehingga riwayatnya terlihat langsung di GitHub tanpa perlu alat khusus. Katalog di bawah ikut bertambah setiap kali sesi AI mencatat temuan baru.
 
 ## Format satu entri
 
@@ -82,7 +82,7 @@ Angka-angka ini dikutip dari catatan memori pada tiap titik, jadi terlihat bagai
 
 ## Katalog memori
 
-### Keputusan desain (26 entri)
+### Keputusan desain
 
 **2026-10-05**
 
@@ -118,8 +118,9 @@ Angka-angka ini dikutip dari catatan memori pada tiap titik, jadi terlihat bagai
 - [Catatan Alat AI README: Deepseek Harness + plugin (memory/MCP); planning Muse/Mimo/Kimi, eksekutor Deepseek/GLM/Mimo/Kimi](../.harness/memory/decisions/2026-10-07T09-10-30-catatan-alat-ai-readme-deepseek-harness-plugin-mem.md) — Bagian \"Catatan Alat AI dan Referensi\" di README diperbarui sesuai info user 2026-10-07: tools = Deepseek Harness dengan plugin…
 - [Referensi README + Astro (frontend stack: Astro 7.3.5 SSR, React 19, Tailwind 4, shadcn)](../.harness/memory/decisions/2026-10-07T09-12-09-referensi-readme-astro-frontend-stack-astro-7-3-5-.md) — Bullet \"Referensi\" di README ditambah Astro sesuai permintaan user 2026-10-07: \"dokumentasi resmi CodeIgniter 4 (backend) dan Astro…
 - [Konvensi Peta Dokumentasi README: nama berkas jadi link tebal, bukan code span (biar jelas bisa diklik)](../.harness/memory/decisions/2026-10-07T09-21-22-konvensi-peta-dokumentasi-readme-nama-berkas-jadi-.md) — User 2026-10-07 bertanya apakah Peta Dokumentasi bisa diklik. Ternyata sudah link sejak awal, tapi nama berkas dibungkus backtick…
+- [Dokumentasi riwayat memori AI + ringkasan proses + katalog entri](../.harness/memory/decisions/2026-10-07T09-50-51-docs-ai-memory-md-dokumentasi-riwayat-memori-ai-ha.md) — Berkas yang sedang Anda baca ini: isi `.harness/`, format entri, ringkasan 4 fase, dan katalog lengkap memori.
 
-### Pelajaran teknis (12 entri)
+### Pelajaran teknis
 
 **2026-10-05**
 
@@ -142,7 +143,7 @@ Angka-angka ini dikutip dari catatan memori pada tiap titik, jadi terlihat bagai
 - [Cara menjalankan jalur test SQLite3 saat ekstensi sqlite3 mati (php -d extension=sqlite3 + config sementara ber-<env>), lang() hanya memuat berkas bila diminta per grup, API test dari PowerShell pakai file payload + cookie jar, dan Chrome headless harus diserahkan ke user](../.harness/memory/learnings/2026-10-07T06-55-56-cara-menjalankan-jalur-test-sqlite3-saat-ekstensi-.md) — Cara menjalankan jalur test SQLite3 saat ekstensi sqlite3 mati (php -d extension=sqlite3 + config sementara ber-<env>), lang() hanya…
 - [Cara push dari sandbox: GIT_ASKPASS berisi token dari git-credential-manager, karena sh.exe diblokir](../.harness/memory/learnings/2026-10-07T09-36-26-cara-push-dari-sandbox-git-askpass-berisi-token-da.md) — 2026-10-07 push berhasil. Kendala: git spawn sh.exe (bootstrap credential helper) diblokir sandbox (Win32 error 5) -> \"could not read…
 
-### Progres dan rencana (7 entri)
+### Progres dan rencana
 
 **2026-10-05**
 
@@ -166,3 +167,4 @@ Angka-angka ini dikutip dari catatan memori pada tiap titik, jadi terlihat bagai
 - **Membaca satu keputusan**: setiap entri memuat alasan, alternatif yang ditolak, dan commit terkait sehingga bisa ditelusuri ke kode.
 - **Menambah catatan**: sesi AI menulis entri baru lewat tool memori harness, lalu meng-commit-nya dengan pesan `chore(memory): ...` — konvensi yang sudah dipakai sejak commit pertama memori.
 - **Yang tidak ikut ter-commit**: isi `.harness/tmp/` bersifat sementara; berkas di sana boleh hilang kapan saja.
+- **Memperbarui katalog**: katalog di atas adalah cuplikan per 7 Oktober 2026. Setiap kali ada entri memori baru, tambahkan barisnya di bagian yang sesuai — cukup satu baris berisi judul, tautan relatif ke berkas, dan ringkasannya.
