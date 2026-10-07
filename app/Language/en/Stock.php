@@ -5,6 +5,10 @@ return [
 
     'filter' => [
         'on_date'  => 'Expiry check date',
+        'status'   => 'Batch status',
+        'status_all'       => 'All statuses',
+        'status_available' => 'Available only',
+        'status_expired'   => 'Expired only',
         'show'     => 'Show',
         'hint'     => 'Quantities are always calculated from all stored transactions; the date only determines expiry status.',
     ],
@@ -38,5 +42,8 @@ return [
         'batch_count'      => '{0} batches',
         'status_available' => 'available',
         'status_expired'   => 'expired',
+        'filter_available' => 'No available batches on this date.',
+        'filter_expired'   => 'No expired batches on this date.',
+        'filter_empty'     => 'No medicines match this status.',
     ],
 ];

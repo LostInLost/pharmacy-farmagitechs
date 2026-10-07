@@ -9,6 +9,14 @@
                 <label for="on_date" class="form-label"><?= lang_html('Stock.filter.on_date') ?></label>
                 <input type="date" class="form-control" id="on_date" name="on_date">
             </div>
+            <div class="col-md-3">
+                <label for="status_filter" class="form-label"><?= lang_html('Stock.filter.status') ?></label>
+                <select class="form-select" id="status_filter" name="status_filter">
+                    <option value="all"><?= lang_html('Stock.filter.status_all') ?></option>
+                    <option value="available"><?= lang_html('Stock.filter.status_available') ?></option>
+                    <option value="expired"><?= lang_html('Stock.filter.status_expired') ?></option>
+                </select>
+            </div>
             <div class="col-md-4">
                 <button type="submit" class="btn btn-primary"><?= lang_html('Stock.filter.show') ?></button>
             </div>
@@ -59,7 +67,10 @@
             quantity: <?= json_encode(lang('Stock.table.quantity'), JSON_UNESCAPED_UNICODE) ?>,
             status: <?= json_encode(lang('Stock.table.status'), JSON_UNESCAPED_UNICODE) ?>,
             statusAvailable: <?= json_encode(lang('Stock.js.status_available'), JSON_UNESCAPED_UNICODE) ?>,
-            statusExpired: <?= json_encode(lang('Stock.js.status_expired'), JSON_UNESCAPED_UNICODE) ?>
+            statusExpired: <?= json_encode(lang('Stock.js.status_expired'), JSON_UNESCAPED_UNICODE) ?>,
+            filterAvailable: <?= json_encode(lang('Stock.js.filter_available'), JSON_UNESCAPED_UNICODE) ?>,
+            filterExpired: <?= json_encode(lang('Stock.js.filter_expired'), JSON_UNESCAPED_UNICODE) ?>,
+            filterEmpty: <?= json_encode(lang('Stock.js.filter_empty'), JSON_UNESCAPED_UNICODE) ?>
         }
     };
 </script>

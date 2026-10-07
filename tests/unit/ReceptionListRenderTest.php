@@ -55,7 +55,11 @@ final class ReceptionListRenderTest extends CIUnitTestCase
 
         $this->assertStringContainsString('id="stocks-filter"', $html);
         $this->assertStringContainsString('id="stocks-tbody"', $html);
+        $this->assertStringContainsString('id="status_filter"', $html);
+        $this->assertStringContainsString('value="available"', $html);
+        $this->assertStringContainsString('value="expired"', $html);
         $this->assertStringContainsString('window.FARMASI_BOOT', $html);
         $this->assertStringContainsString('assets/js/pages/stocks.js', $html);
+        $this->assertStringContainsString('filterEmpty', $html);
     }
 }

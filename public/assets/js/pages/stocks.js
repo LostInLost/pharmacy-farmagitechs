@@ -8,9 +8,21 @@
         var $form = $('#stocks-filter');
         var $tbody = $('#stocks-tbody');
         var $feedback = $('#feedback');
+        var $status = $('#status_filter');
 
-        function batchRows(batches, badgeClass, badgeText) {
+        function isExpired(batch) {
+            // Server mengirim boolean; fallback aman untuk respons lama.
+            return batch.is_expired === true;
+        }
+
+        function batchRows(batches) {
             return batches.map(function (batch) {
+                var expired = isExpired(batch);
+                var badgeClass = expired ? 'text-bg-danger' : 'text-bg-success';
+                var badgeText = expired
+                    ? Farmasi.text('statusExpired', '')
+                    : Farmasi.text('statusAvailable', '');
+
                 return '<tr>' +
                     '<td>' + esc(batch.batch_no) + '</td>' +
                     '<td>' + esc(batch.expires_on === null || batch.expires_on === undefined ? '-' : batch.expires_on) + '</td>' +
@@ -20,15 +32,33 @@
             }).join('');
         }
 
-        function batchCell(medicine) {
+        function batchesFor(medicine, statusFilter) {
             var available = medicine.available_batches || [];
             var expired = medicine.expired_batches || [];
 
-            if (available.length === 0 && expired.length === 0) {
-                return '<span class="text-muted">' + esc(Farmasi.text('noBatch', '')) + '</span>';
+            if (statusFilter === 'available') {
+                return available;
             }
 
-            var count = Farmasi.ui.fill(Farmasi.text('batchCount', ''), [available.length + expired.length]);
+            if (statusFilter === 'expired') {
+                return expired;
+            }
+
+            return available.concat(expired);
+        }
+
+        function batchCell(medicine, statusFilter) {
+            var batches = batchesFor(medicine, statusFilter);
+
+            if (batches.length === 0) {
+                var empty = statusFilter === 'all'
+                    ? Farmasi.text('noBatch', '')
+                    : Farmasi.text('filterEmpty', '');
+
+                return '<span class="text-muted">' + esc(empty) + '</span>';
+            }
+
+            var count = Farmasi.ui.fill(Farmasi.text('batchCount', ''), [batches.length]);
 
             return '<details><summary>' + esc(count) + '</summary>' +
                 '<table class="table table-sm table-bordered mb-0 mt-2">' +
@@ -38,23 +68,39 @@
                 '<th class="text-end">' + esc(Farmasi.text('quantity', '')) + '</th>' +
                 '<th>' + esc(Farmasi.text('status', '')) + '</th>' +
                 '</tr></thead><tbody>' +
-                batchRows(available, 'text-bg-success', Farmasi.text('statusAvailable', '')) +
-                batchRows(expired, 'text-bg-danger', Farmasi.text('statusExpired', '')) +
+                batchRows(batches) +
                 '</tbody></table></details>';
+        }
+
+        function matchesStatus(medicine, statusFilter) {
+            if (statusFilter === 'all') {
+                return true;
+            }
+
+            return batchesFor(medicine, statusFilter).length > 0;
         }
 
         function render(report) {
             var medicines = report.medicines || [];
+            var statusFilter = $status.val() || 'all';
 
             $('#on_date').val(report.on_date || '');
 
-            if (medicines.length === 0) {
+            var rows = medicines.filter(function (medicine) {
+                return matchesStatus(medicine, statusFilter);
+            });
+
+            if (rows.length === 0) {
+                var empty = statusFilter === 'all'
+                    ? Farmasi.text('noBatch', '')
+                    : Farmasi.text('filterEmpty', '');
+
                 $tbody.html('<tr><td colspan="7" class="text-center text-muted py-4">' +
-                    esc(Farmasi.text('noBatch', '')) + '</td></tr>');
+                    esc(empty) + '</td></tr>');
                 return;
             }
 
-            var html = medicines.map(function (medicine) {
+            var html = rows.map(function (medicine) {
                 return '<tr>' +
                     '<td>' + esc(medicine.code) + '</td>' +
                     '<td>' + esc(medicine.name) + '</td>' +
@@ -62,7 +108,7 @@
                     '<td class="text-end">' + Number(medicine.physical_quantity) + '</td>' +
                     '<td class="text-end">' + Number(medicine.available_quantity) + '</td>' +
                     '<td class="text-end">' + Number(medicine.expired_quantity) + '</td>' +
-                    '<td>' + batchCell(medicine) + '</td>' +
+                    '<td>' + batchCell(medicine, statusFilter) + '</td>' +
                     '</tr>';
             }).join('');
 
@@ -96,6 +142,11 @@
 
         $form.on('submit', function (event) {
             event.preventDefault();
+            load($('#on_date').val());
+        });
+
+        // Filter status hanya menyaring tampilan; angka tetap dari server.
+        $status.on('change', function () {
             load($('#on_date').val());
         });
 
