@@ -11,10 +11,14 @@ use Throwable;
  * `suppliers` dan `medicines` disinkronkan per id karena keduanya direferensikan
  * foreign key sehingga barisnya tidak boleh dihapus ulang. `seed_batch_stock`
  * dan `stock_usage` dimuat ulang seluruhnya supaya angka laporan persis
- * lampiran. Seeder aman dijalankan berulang.
+ * lampiran. Ledger `stock_movements` ikut disinkronkan untuk tipe `seed` dan
+ * `usage` saja, sedangkan baris `receipt` milik penerimaan nyata dibiarkan.
+ * Seeder aman dijalankan berulang.
  */
 class StockSeeder extends Seeder
 {
+    private const SEED_MOVED_AT = '2026-10-01 00:00:00';
+
     public function run()
     {
         $this->db->transBegin();
@@ -24,6 +28,7 @@ class StockSeeder extends Seeder
             $this->sync('medicines', $this->medicines());
             $this->reload('seed_batch_stock', $this->seedBatchStock());
             $this->reload('stock_usage', $this->stockUsage());
+            $this->syncMovements();
 
             $this->db->transCommit();
         } catch (Throwable $e) {
@@ -31,6 +36,45 @@ class StockSeeder extends Seeder
 
             throw $e;
         }
+    }
+
+    /**
+     * Tulis ulang baris ledger untuk data lampiran. Baris `receipt` tidak
+     * disentuh karena bersumber dari tabel `receptions`.
+     */
+    private function syncMovements(): void
+    {
+        $this->db->table('stock_movements')->whereIn('movement_type', ['seed', 'usage'])->delete();
+
+        $rows = array_map(static fn (array $batch): array => [
+            'medicine_id'   => $batch['medicine_id'],
+            'batch_no'      => $batch['batch_no'],
+            'expires_on'    => $batch['expires_on'],
+            'movement_type' => 'seed',
+            'direction'     => 'in',
+            'quantity'      => $batch['quantity'],
+            'reception_id'  => null,
+            'moved_at'      => self::SEED_MOVED_AT,
+            'unit_name'     => null,
+            'created_at'    => self::SEED_MOVED_AT,
+        ], $this->seedBatchStock());
+
+        foreach ($this->stockUsage() as $usage) {
+            $rows[] = [
+                'medicine_id'   => $usage['medicine_id'],
+                'batch_no'      => $usage['batch_no'],
+                'expires_on'    => null,
+                'movement_type' => 'usage',
+                'direction'     => 'out',
+                'quantity'      => $usage['quantity'],
+                'reception_id'  => null,
+                'moved_at'      => $usage['used_at'],
+                'unit_name'     => $usage['unit_name'],
+                'created_at'    => $usage['used_at'],
+            ];
+        }
+
+        $this->db->table('stock_movements')->insertBatch($rows);
     }
 
     /**

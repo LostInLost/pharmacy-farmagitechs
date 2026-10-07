@@ -49,6 +49,22 @@ final class StockSeederTest extends CIUnitTestCase
         $this->assertSame('Poliklinik Umum', $usage['unit_name']);
     }
 
+    public function testLampiranAlsoLoadsLedger(): void
+    {
+        $this->assertSame(10, $this->db->table('stock_movements')->where('movement_type', 'seed')->countAllResults());
+        $this->assertSame(3, $this->db->table('stock_movements')->where('movement_type', 'usage')->countAllResults());
+
+        $seed = $this->db->table('stock_movements')
+            ->where('movement_type', 'seed')
+            ->where('batch_no', 'PCT-2601')
+            ->get()
+            ->getRowArray();
+
+        $this->assertSame('2026-10-01 00:00:00', $seed['moved_at']);
+        $this->assertSame(100, (int) $seed['quantity']);
+        $this->assertSame('in', $seed['direction']);
+    }
+
     public function testBaselineNumbersMatchBrief(): void
     {
         $this->assertSame(142, $this->medicine(101)['physical_quantity']);
@@ -73,6 +89,10 @@ final class StockSeederTest extends CIUnitTestCase
         $this->assertSame(['PCT-2501'], array_column($medicine['expired_batches'], 'batch_no'));
         $this->assertSame(94, $medicine['available_batches'][0]['quantity']);
         $this->assertSame(40, $medicine['available_batches'][1]['quantity']);
+
+        $this->assertFalse($medicine['available_batches'][0]['is_expired']);
+        $this->assertFalse($medicine['available_batches'][1]['is_expired']);
+        $this->assertTrue($medicine['expired_batches'][0]['is_expired']);
     }
 
     public function testOnlyActiveMedicinesAreReported(): void
@@ -101,6 +121,8 @@ final class StockSeederTest extends CIUnitTestCase
         $this->assertSame(25, $this->db->table('medicines')->countAllResults());
         $this->assertSame(10, $this->db->table('seed_batch_stock')->countAllResults());
         $this->assertSame(3, $this->db->table('stock_usage')->countAllResults());
+        $this->assertSame(10, $this->db->table('stock_movements')->where('movement_type', 'seed')->countAllResults());
+        $this->assertSame(3, $this->db->table('stock_movements')->where('movement_type', 'usage')->countAllResults());
         $this->assertSame(134, $this->medicine(101)['available_quantity']);
     }
 
@@ -129,6 +151,8 @@ final class StockSeederTest extends CIUnitTestCase
 
         $this->assertSame(['PCT-2601', 'PCT-2602'], array_column($byId[101]['available_batches'], 'batch_no'));
         $this->assertSame(['PCT-2501'], array_column($byId[101]['expired_batches'], 'batch_no'));
+        $this->assertFalse($byId[101]['available_batches'][0]['is_expired']);
+        $this->assertTrue($byId[101]['expired_batches'][0]['is_expired']);
     }
 
     public function testApiReferencesMatchLampiran(): void

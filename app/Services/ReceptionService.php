@@ -64,6 +64,7 @@ class ReceptionService
             ]);
 
             $this->receptions->replaceItems($receptionId, $items);
+            $this->receptions->replaceStockMovements($receptionId, $items, $receivedAt);
             $this->receptions->log(
                 $receptionId,
                 $actorId,
@@ -133,6 +134,7 @@ class ReceptionService
             ]);
 
             $this->receptions->replaceItems($id, $items);
+            $this->receptions->replaceStockMovements($id, $items, $receivedAt);
             $this->receptions->log(
                 $id,
                 (int) $actor['id'],

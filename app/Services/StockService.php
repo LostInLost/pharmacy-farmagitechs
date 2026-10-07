@@ -20,47 +20,39 @@ class StockService
 
         $batchesByMedicine = [];
 
-        foreach ($this->stocks->batches() as $batch) {
-            $batchesByMedicine[$batch['medicine_id']][] = $batch;
+        foreach ($this->stocks->batches($date) as $batch) {
+            $batchesByMedicine[$batch['medicine_id']][] = [
+                'batch_no'   => $batch['batch_no'],
+                'expires_on' => $batch['expires_on'],
+                'quantity'   => $batch['quantity'],
+                'is_expired' => $batch['is_expired'],
+            ];
         }
 
-        $report = [];
+        $summaries = $this->stocks->summaries($date);
+        $report    = [];
 
         foreach ($this->stocks->activeMedicines() as $medicine) {
-            $available = [];
-            $expired   = [];
-
-            foreach ($batchesByMedicine[$medicine['id']] ?? [] as $batch) {
-                $entry = [
-                    'batch_no'   => $batch['batch_no'],
-                    'expires_on' => $batch['expires_on'],
-                    'quantity'   => $batch['quantity'],
-                ];
-
-                if ($batch['expires_on'] !== null && $batch['expires_on'] < $date) {
-                    $expired[] = $entry;
-                } else {
-                    $available[] = $entry;
-                }
-            }
-
-            $sum = static fn (array $batches): int => array_sum(array_column($batches, 'quantity'));
+            $batches   = $batchesByMedicine[$medicine['id']] ?? [];
+            $summary   = $summaries[$medicine['id']] ?? ['physical_quantity' => 0, 'available_quantity' => 0, 'expired_quantity' => 0];
+            $available = array_values(array_filter($batches, static fn (array $batch): bool => $batch['is_expired'] === false));
+            $expired   = array_values(array_filter($batches, static fn (array $batch): bool => $batch['is_expired'] === true));
 
             $report[] = [
                 'medicine_id'        => $medicine['id'],
                 'code'               => $medicine['code'],
                 'name'               => $medicine['name'],
                 'unit'               => $medicine['unit'],
-                'physical_quantity'  => $sum($available) + $sum($expired),
-                'available_quantity' => $sum($available),
-                'expired_quantity'   => $sum($expired),
+                'physical_quantity'  => $summary['physical_quantity'],
+                'available_quantity' => $summary['available_quantity'],
+                'expired_quantity'   => $summary['expired_quantity'],
                 'available_batches'  => $available,
                 'expired_batches'    => $expired,
             ];
         }
 
         return [
-            'on_date'  => $date,
+            'on_date'   => $date,
             'medicines' => $report,
         ];
     }

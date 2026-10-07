@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\Models\ReceptionItemModel;
 use App\Models\ReceptionModel;
+use App\Models\StockMovementModel;
 
 class ReceptionRepository
 {
@@ -11,6 +12,7 @@ class ReceptionRepository
         private readonly ReceptionModel $receptions = new ReceptionModel(),
         private readonly ReceptionItemModel $items = new ReceptionItemModel(),
         private readonly AuditLogRepository $audit = new AuditLogRepository(),
+        private readonly StockMovementModel $movements = new StockMovementModel(),
     ) {
     }
 
@@ -87,6 +89,35 @@ class ReceptionRepository
         $rows = array_map(static fn (array $item): array => $item + ['reception_id' => $receptionId], $items);
 
         $this->items->insertBatch($rows);
+    }
+
+    /**
+     * Tulis ulang baris ledger penerimaan. `quantity` selalu positif; arah
+     * masuk dibawa `direction = 'in'`. Waktu gerak mengikuti `received_at`
+     * agar laporan pada tanggal tertentu stabil.
+     *
+     * @param list<array{medicine_id: int, batch_no: string, expires_on: string, quantity: int}> $items
+     */
+    public function replaceStockMovements(int $receptionId, array $items, string $receivedAt): void
+    {
+        $this->movements->where('reception_id', $receptionId)->delete();
+
+        if ($items === []) {
+            return;
+        }
+
+        $this->movements->insertBatch(array_map(static fn (array $item): array => [
+            'medicine_id'   => (int) $item['medicine_id'],
+            'batch_no'      => $item['batch_no'],
+            'expires_on'    => $item['expires_on'],
+            'movement_type' => 'receipt',
+            'direction'     => 'in',
+            'quantity'      => (int) $item['quantity'],
+            'reception_id'  => $receptionId,
+            'moved_at'      => $receivedAt,
+            'unit_name'     => null,
+            'created_at'    => $receivedAt,
+        ], array_values($items)));
     }
 
     public function log(int $receptionId, int $actorId, string $action, ?array $before, ?array $after): void

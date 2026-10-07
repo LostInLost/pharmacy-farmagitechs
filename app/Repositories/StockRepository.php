@@ -4,6 +4,14 @@ namespace App\Repositories;
 
 use App\Models\MedicineModel;
 
+/**
+ * Baca laporan stok langsung dari ledger `stock_movements` (satu-satunya
+ * sumber angka). `quantity` selalu positif, arah dibawa `direction`.
+ *
+ * `is_expired` dihitung saat SELECT terhadap `on_date`: batch kedaluwarsa
+ * bila `MAX(expires_on) < on_date`. Tepat pada tanggal kedaluwarsa batch
+ * masih tersedia; `expires_on` NULL berarti tanpa kedaluwarsa.
+ */
 class StockRepository
 {
     public function __construct(
@@ -12,37 +20,97 @@ class StockRepository
     }
 
     /**
-     * Batch dengan stok fisik per obat aktif, hasil agregasi tiga sumber.
+     * Batch per obat aktif dengan stok fisik dan penanda kedaluwarsa.
      *
-     * @return list<array{medicine_id: int, batch_no: string, expires_on: string|null, quantity: int}>
+     * @return list<array{medicine_id: int, batch_no: string, expires_on: string|null, quantity: int, is_expired: bool}>
      */
-    public function batches(): array
+    public function batches(string $onDate): array
     {
-        $db = db_connect();
+        $db    = db_connect();
+        $query = $db->table('stock_movements')
+            ->select('medicine_id, batch_no', false)
+            ->select('MAX(expires_on) AS expires_on', false)
+            ->select("SUM(CASE WHEN direction = 'in' THEN quantity ELSE -quantity END) AS quantity", false)
+            ->select("CASE WHEN MAX(expires_on) IS NOT NULL AND MAX(expires_on) < " . $db->escape($onDate) . ' THEN 1 ELSE 0 END AS is_expired', false)
+            ->groupBy('medicine_id, batch_no')
+            ->orderBy('medicine_id, expires_on');
 
-        $seed = $db->table('seed_batch_stock')
-            ->select('medicine_id, batch_no, expires_on, quantity AS seed_qty, 0 AS received_qty, 0 AS used_qty', false);
-
-        $received = $db->table('reception_items')
-            ->select('medicine_id, batch_no, expires_on, 0 AS seed_qty, quantity AS received_qty, 0 AS used_qty', false);
-
-        $used = $db->table('stock_usage')
-            ->select('medicine_id, batch_no, NULL AS expires_on, 0 AS seed_qty, 0 AS received_qty, quantity AS used_qty', false);
-
-        $rows = $db->newQuery()
-            ->fromSubquery($seed->unionAll($received)->unionAll($used), 't')
-            ->select('t.medicine_id, t.batch_no, MAX(t.expires_on) AS expires_on, SUM(t.seed_qty + t.received_qty - t.used_qty) AS quantity', false)
-            ->groupBy('t.medicine_id, t.batch_no')
-            ->orderBy('t.medicine_id, expires_on')
-            ->get()
-            ->getResultArray();
+        $rows = $query->get()->getResultArray();
 
         return array_map(static fn (array $row): array => [
             'medicine_id' => (int) $row['medicine_id'],
             'batch_no'    => $row['batch_no'],
             'expires_on'  => $row['expires_on'],
             'quantity'    => (int) $row['quantity'],
+            'is_expired'  => (int) $row['is_expired'] === 1,
         ], $rows);
+    }
+
+    /**
+     * Total per obat dihitung database. Batch dinet dulu (in dikurangi out),
+     * baru dijumlah per obat, sehingga angka cocok dengan `batches()`.
+     *
+     * @return array<int, array{physical_quantity: int, available_quantity: int, expired_quantity: int}>
+     */
+    public function summaries(string $onDate): array
+    {
+        $db = db_connect();
+
+        $batches = $db->table('stock_movements')
+            ->select('medicine_id, batch_no', false)
+            ->select('MAX(expires_on) AS expires_on', false)
+            ->select("SUM(CASE WHEN direction = 'in' THEN quantity ELSE -quantity END) AS quantity", false)
+            ->groupBy('medicine_id, batch_no');
+
+        $rows = $db->newQuery()
+            ->fromSubquery($batches, 'b')
+            ->select('b.medicine_id', false)
+            ->select('SUM(b.quantity) AS physical_quantity', false)
+            ->select('SUM(CASE WHEN b.expires_on IS NULL OR b.expires_on >= ' . $db->escape($onDate) . ' THEN b.quantity ELSE 0 END) AS available_quantity', false)
+            ->select('SUM(CASE WHEN b.expires_on IS NOT NULL AND b.expires_on < ' . $db->escape($onDate) . ' THEN b.quantity ELSE 0 END) AS expired_quantity', false)
+            ->groupBy('b.medicine_id')
+            ->get()
+            ->getResultArray();
+
+        $summaries = [];
+
+        foreach ($rows as $row) {
+            $summaries[(int) $row['medicine_id']] = [
+                'physical_quantity'  => (int) $row['physical_quantity'],
+                'available_quantity' => (int) $row['available_quantity'],
+                'expired_quantity'   => (int) $row['expired_quantity'],
+            ];
+        }
+
+        return $summaries;
+    }
+
+    /**
+     * Riwayat gerak satu batch, terbaru lebih dahulu.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function movementsOf(int $medicineId, string $batchNo, ?string $direction = null): array
+    {
+        $builder = db_connect()->table('stock_movements')
+            ->where('medicine_id', $medicineId)
+            ->where('batch_no', $batchNo)
+            ->orderBy('moved_at', 'DESC')
+            ->orderBy('id', 'DESC');
+
+        if ($direction !== null) {
+            $builder->where('direction', $direction);
+        }
+
+        return array_map(static fn (array $row): array => [
+            'id'            => (int) $row['id'],
+            'movement_type' => $row['movement_type'],
+            'direction'     => $row['direction'],
+            'quantity'      => (int) $row['quantity'],
+            'reception_id'  => $row['reception_id'] === null ? null : (int) $row['reception_id'],
+            'moved_at'      => $row['moved_at'],
+            'unit_name'     => $row['unit_name'],
+        ], $builder->get()->getResultArray());
     }
 
     /**
