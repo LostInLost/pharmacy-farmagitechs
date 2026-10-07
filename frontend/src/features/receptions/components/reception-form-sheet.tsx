@@ -116,10 +116,19 @@ export function ReceptionFormSheet({
   const [formErrors, setFormErrors] = React.useState<string[]>([])
   const [saving, setSaving] = React.useState(false)
 
-  // Saran batch per obat. Ledger sudah unik per (obat, batch), jadi tidak ada
-  // duplikat yang perlu disaring; hint hanya menampilkan tanggal kedaluwarsa.
-  const batchOptions = React.useMemo(() => {
+  /**
+   * Saran batch dari ledger, disiapkan sekali saat referensi dimuat sehingga
+   * daftar muncul seketika ketika kotak difokus — tanpa fetch per fokus.
+   *
+   * `batchOptions` dipakai bila obat baris sudah dipilih (hint = kedaluwarsa).
+   * Bila belum, `allBatchOptions` menampilkan seluruh batch yang pernah
+   * tercatat dengan nama obat sebagai hint, supaya batch bisa dipilih lebih
+   * dulu; pilihannya menetapkan obatnya selama nomor itu milik satu obat.
+   */
+  const { batchOptions, allBatchOptions } = React.useMemo(() => {
     const byMedicine = new Map<number, ComboboxOption[]>()
+    const medicineById = new Map(medicines.map((m) => [m.id, m.name]))
+    const owners = new Map<string, number[]>()
 
     for (const batch of batchReferences) {
       const options = byMedicine.get(batch.medicine_id) ?? []
@@ -130,10 +139,29 @@ export function ReceptionFormSheet({
         hint: batch.expires_on ?? undefined,
       })
       byMedicine.set(batch.medicine_id, options)
+      owners.set(batch.batch_no, [
+        ...(owners.get(batch.batch_no) ?? []),
+        batch.medicine_id,
+      ])
     }
 
-    return byMedicine
-  }, [batchReferences])
+    // Satu baris per nomor batch (nilai combobox harus unik); nomor yang
+    // dipakai beberapa obat ditandai jumlahnya, bukan ditebak salah satu.
+    const all = [...owners].map(([batchNo, medicineIds]) => {
+      const names = medicineIds.map((id) => medicineById.get(id)).filter(Boolean)
+
+      const hint =
+        names.length === 1
+          ? names[0]
+          : names.length > 1
+            ? `${names.length} obat`
+            : undefined
+
+      return { value: batchNo, label: batchNo, hint }
+    })
+
+    return { batchOptions: byMedicine, allBatchOptions: all }
+  }, [batchReferences, medicines])
 
   React.useEffect(() => {
     let cancelled = false
@@ -210,6 +238,40 @@ export function ReceptionFormSheet({
       cancelled = true
     }
   }, [receptionId])
+
+  /**
+   * Isi kolom batch. Bila nomor itu ada di ledger, baris dilengkapi sekaligus:
+   * obat ditetapkan (bila belum dipilih) dan kedaluwarsa diisi dari ledger
+   * selama kolomnya masih kosong — pengguna tetap bisa menimpanya.
+   */
+  function updateBatch(key: string, batchNo: string) {
+    const row = rows.find((candidate) => candidate.key === key)
+    const candidates = batchReferences.filter(
+      (batch) => batch.batch_no === batchNo
+    )
+    const reference =
+      row !== undefined && row.medicine_id > 0
+        ? candidates.find((batch) => batch.medicine_id === row.medicine_id)
+        : candidates.length === 1
+          ? candidates[0]
+          : undefined
+
+    if (reference === undefined) {
+      updateRow(key, { batch_no: batchNo })
+      return
+    }
+
+    // Obat hanya ditetapkan bila nomor ini milik satu obat saja; kalau dipakai
+    // beberapa obat dan barisnya belum memilih salah satu, biarkan kosong.
+    updateRow(key, {
+      batch_no: batchNo,
+      medicine_id:
+        row !== undefined && row.medicine_id > 0
+          ? row.medicine_id
+          : reference.medicine_id,
+      expires_on: row?.expires_on || (reference.expires_on ?? ""),
+    })
+  }
 
   function updateRow(key: string, patch: Partial<ItemRow>) {
     setRows((current) =>
@@ -415,13 +477,21 @@ export function ReceptionFormSheet({
                             freeText
                             value={row.batch_no}
                             onValueChange={(value) =>
-                              updateRow(row.key, { batch_no: value })
+                              updateBatch(row.key, value)
                             }
-                            options={batchOptions.get(row.medicine_id) ?? []}
+                            options={
+                              row.medicine_id > 0
+                                ? (batchOptions.get(row.medicine_id) ?? [])
+                                : allBatchOptions
+                            }
                             placeholder="Ketik batch..."
                             searchPlaceholder="Ketik atau cari batch..."
                             createLabel={'Pakai batch baru "%s"'}
-                            emptyText="Belum ada batch untuk obat ini. Ketik nomor baru di atas."
+                            emptyText={
+                              row.medicine_id > 0
+                                ? "Belum ada batch untuk obat ini. Ketik nomor baru di atas."
+                                : "Belum ada batch tercatat. Ketik nomor baru di atas."
+                            }
                           />
                         </TableCell>
                         <TableCell>
