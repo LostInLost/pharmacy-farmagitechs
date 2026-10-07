@@ -335,6 +335,7 @@ try {
               success: document.body.innerText.includes('Penerimaan dibuat.'),
               sheetClosed: document.querySelector('[data-slot="sheet-content"]') === null,
               alerts: [...document.querySelectorAll('[role="alert"]')].map((node) => node.innerText),
+              toasts: [...document.querySelectorAll('[data-sonner-toast]')].map((node) => node.innerText),
             })
           `)
         )

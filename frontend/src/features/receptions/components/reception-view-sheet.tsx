@@ -105,7 +105,7 @@ export function ReceptionViewSheet({
           )}
 
           {state.status === "error" && (
-            <Feedback variant="error" messages={[state.message]} />
+            <Feedback messages={[state.message]} />
           )}
 
           {detail !== null && (

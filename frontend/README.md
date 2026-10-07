@@ -58,7 +58,7 @@ src/
     app-sidebar.tsx   # menu bergrup (Utama / Operasional)
     nav-main.tsx      # grup menu + aksi cepat "Tambah Penerimaan"
     nav-user.tsx      # blok profil + tema + keluar
-    feedback.tsx      # alert inline untuk pesan error/sukses
+    feedback.tsx      # alert inline khusus pesan error (sukses = toast)
     ui/               # komponen shadcn
   features/
     auth/             # login, sesi, guard, permission (`hasPermission`)
@@ -232,6 +232,8 @@ named pipe), dan dev server Astro (`pnpm dev`) serta backend CI4 harus hidup.
 
 ## Catatan
 
+- Pesan sukses tampil sebagai toast sonner di kanan atas (host `Toaster` di
+  `app-shell.tsx`); `Feedback` inline hanya untuk error.
 - Cookie session `ci_session` maupun cookie CSRF `csrf_cookie_name`
   keduanya HttpOnly; token CSRF selalu diambil lewat header respons.
 - Jangan membuat `package-lock.json`/`yarn.lock` di folder ini; paket

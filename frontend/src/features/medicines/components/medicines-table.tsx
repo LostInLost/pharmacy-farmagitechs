@@ -1,4 +1,5 @@
 import * as React from "react"
+import { toast } from "sonner"
 import { PencilIcon, PillIcon, PlusIcon } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
@@ -91,7 +92,6 @@ export function MedicinesTable({ initialSheet = null, permissions = [] }: Props)
   )
   const [sheetOpen, setSheetOpen] = React.useState(initialSheet !== null)
   const [sheetSeq, setSheetSeq] = React.useState(0)
-  const [notice, setNotice] = React.useState<string | null>(null)
   const [reloadToken, setReloadToken] = React.useState(0)
 
   // Pemuatan awal mengikuti pola tabel penerimaan/laporan stok: status awal
@@ -154,7 +154,6 @@ export function MedicinesTable({ initialSheet = null, permissions = [] }: Props)
 
   /** Buka sheet: remount (`sheetSeq`) + tandai terbuka. */
   function openSheet(next: MedicineSheetState) {
-    setNotice(null)
     setSheet(next)
     setSheetOpen(true)
     setSheetSeq((seq) => seq + 1)
@@ -202,8 +201,6 @@ export function MedicinesTable({ initialSheet = null, permissions = [] }: Props)
         )}
       </div>
 
-      {notice !== null && <Feedback variant="success" messages={[notice]} />}
-
       <Card>
         <CardContent>
           <form
@@ -247,7 +244,7 @@ export function MedicinesTable({ initialSheet = null, permissions = [] }: Props)
       </Card>
 
       {state.status === "error" && (
-        <Feedback variant="error" messages={[state.message]} />
+        <Feedback messages={[state.message]} />
       )}
 
       <Card className="py-0">
@@ -324,7 +321,7 @@ export function MedicinesTable({ initialSheet = null, permissions = [] }: Props)
           }}
           onSaved={() => {
             reloadRows()
-            setNotice("Obat dibuat.")
+            toast.success("Obat dibuat.")
           }}
         />
       )}
@@ -342,7 +339,7 @@ export function MedicinesTable({ initialSheet = null, permissions = [] }: Props)
           }}
           onSaved={() => {
             reloadRows()
-            setNotice("Obat diperbarui.")
+            toast.success("Obat diperbarui.")
           }}
         />
       )}

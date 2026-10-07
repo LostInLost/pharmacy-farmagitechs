@@ -1,38 +1,31 @@
-import { CircleAlertIcon, CircleCheckIcon } from "lucide-react"
+import { CircleAlertIcon } from "lucide-react"
 
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { cn } from "@/foundations/ui/cn"
-
-type Variant = "error" | "success"
 
 /**
- * Alert inline untuk pesan error/sukses di dalam halaman.
- * Padanan `Farmasi.ui.error()/success()` di frontend CI4: menampilkan daftar
- * pesan (mis. `errors[]` dari validasi server) tanpa toast yang mudah terlewat.
+ * Alert inline untuk pesan error di dalam halaman atau form.
  *
- * Sekarang dibangun di atas block shadcn `Alert` — yang sudah membawa
- * `role="alert"` sendiri, sehingga pembaca `[role="alert"]` di skrip verifikasi
- * tetap menemukan pesan tanpa atribut manual.
+ * Pesan sukses tidak lewat komponen ini — pakai `toast.success` dari sonner
+ * (host `Toaster` ada di `app-shell.tsx`). Error tetap inline karena daftar
+ * pesan (mis. `errors[]` dari validasi server) harus menempel pada form yang
+ * bermasalah, bukan notifikasi yang mudah terlewat.
+ *
+ * Dibangun di atas block shadcn `Alert` — yang sudah membawa `role="alert"`
+ * sendiri, sehingga pembaca `[role="alert"]` di skrip verifikasi tetap
+ * menemukan pesan tanpa atribut manual.
  */
 export function Feedback({
-  variant,
   messages,
   className,
 }: {
-  variant: Variant
   messages: string[]
   className?: string
 }) {
   if (messages.length === 0) return null
 
-  const Icon = variant === "error" ? CircleAlertIcon : CircleCheckIcon
-
   return (
-    <Alert
-      variant={variant === "error" ? "destructive" : "default"}
-      className={cn(variant === "success" && "border-primary/30 bg-primary/10", className)}
-    >
-      <Icon />
+    <Alert variant="destructive" className={className}>
+      <CircleAlertIcon />
       <AlertDescription className="flex flex-col gap-1">
         {messages.map((message, index) => (
           <p key={index}>{message}</p>

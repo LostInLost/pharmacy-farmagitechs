@@ -109,7 +109,7 @@ export function DashboardOverview({
   if (state.status === "error") {
     return (
       <div className="px-4 lg:px-6">
-        <Feedback variant="error" messages={[state.message]} />
+        <Feedback messages={[state.message]} />
       </div>
     )
   }

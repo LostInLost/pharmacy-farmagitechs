@@ -219,7 +219,7 @@ export function StockReport({ initialViewId = null }: Props) {
         </Card>
 
         {state.status === "error" && (
-          <Feedback variant="error" messages={[state.message]} />
+          <Feedback messages={[state.message]} />
         )}
 
         <Card className="py-0">

@@ -62,6 +62,9 @@ function initialInput(medicine: MedicineRow | null): MedicineFormInput {
   }
 }
 
+/** Penolakan yang sama untuk jalur induk (`canWrite === false`) dan detail (`can_write === false`). */
+const FORBIDDEN_MESSAGE = "Anda tidak berhak mengubah obat ini."
+
 /**
  * Form tambah/ubah obat di dalam sheet.
  *
@@ -80,7 +83,7 @@ export function MedicineFormSheet({
   onSaved,
   canWrite,
 }: Props) {
-  const [load, setLoad] = React.useState<LoadState>({
+  const [loadState, setLoadState] = React.useState<LoadState>({
     status: medicineId === null ? "ready" : "loading",
   })
   const [input, setInput] = React.useState<MedicineFormInput>(() =>
@@ -90,42 +93,43 @@ export function MedicineFormSheet({
   const [formErrors, setFormErrors] = React.useState<string[]>([])
   const [saving, setSaving] = React.useState(false)
 
+  // Penolakan yang sudah pasti dari induk diturunkan saat render, bukan lewat
+  // setState di dalam efek: status `forbidden` sudah benar sejak render
+  // pertama dan efek pemuatan tidak perlu dijalankan sama sekali.
+  const load: LoadState =
+    medicineId !== null && canWrite === false
+      ? { status: "forbidden", message: FORBIDDEN_MESSAGE }
+      : loadState
+
   React.useEffect(() => {
-    // Mode tambah tidak memanggil server: status awal sudah "ready", jadi
-    // tidak ada setState di badan efek (pola yang sama dengan view sheet).
+    // Mode tambah tidak memanggil server: status awal sudah "ready".
     if (medicineId === null) return
 
-    let cancelled = false
+    // Penolakan yang sudah pasti (induk selesai memuat daftar) menghentikan
+    // pemuatan; detail sendiri juga memeriksa `can_write`.
+    if (canWrite === false) return
 
-    // Hanya penolakan yang sudah pasti (induk sudah selesai memuat daftar)
-    // yang menghentikan pemuatan; detail sendiri juga memeriksa `can_write`.
-    if (canWrite === false) {
-      setLoad({
-        status: "forbidden",
-        message: "Anda tidak berhak mengubah obat ini.",
-      })
-      return
-    }
+    let cancelled = false
 
     getMedicine(medicineId).then((result) => {
       if (cancelled) return
 
       if (!result.ok) {
-        setLoad({ status: "error", message: result.message })
+        setLoadState({ status: "error", message: result.message })
         return
       }
 
       // Policy backend menentukan hak ubah; form hanya mengikuti.
       if (!result.data.canWrite) {
-        setLoad({
+        setLoadState({
           status: "forbidden",
-          message: "Anda tidak berhak mengubah obat ini.",
+          message: FORBIDDEN_MESSAGE,
         })
         return
       }
 
       setInput(initialInput(result.data.medicine))
-      setLoad({ status: "ready" })
+      setLoadState({ status: "ready" })
     })
 
     return () => {
@@ -203,11 +207,11 @@ export function MedicineFormSheet({
           )}
 
           {load.status === "error" && (
-            <Feedback variant="error" messages={[load.message]} />
+            <Feedback messages={[load.message]} />
           )}
 
           {load.status === "forbidden" && (
-            <Feedback variant="error" messages={[load.message]} />
+            <Feedback messages={[load.message]} />
           )}
 
           {load.status === "ready" && (
@@ -218,7 +222,7 @@ export function MedicineFormSheet({
               className="flex flex-col gap-4"
             >
               {formErrors.length > 0 && (
-                <Feedback variant="error" messages={formErrors} />
+                <Feedback messages={formErrors} />
               )}
 
               <Field>

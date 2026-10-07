@@ -1,4 +1,5 @@
 import * as React from "react"
+import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -82,7 +83,6 @@ export function ReceptionsView({
   )
   const [sheetOpen, setSheetOpen] = React.useState(initialSheet !== null)
   const [sheetSeq, setSheetSeq] = React.useState(0)
-  const [notice, setNotice] = React.useState<string | null>(null)
   const [reloadToken, setReloadToken] = React.useState(0)
 
   React.useEffect(() => {
@@ -136,7 +136,6 @@ export function ReceptionsView({
 
   /** Buka sheet: remount (`sheetSeq`) + tandai terbuka. */
   function openSheet(next: ReceptionSheetState) {
-    setNotice(null)
     setSheet(next)
     setSheetOpen(true)
     setSheetSeq((seq) => seq + 1)
@@ -175,10 +174,8 @@ export function ReceptionsView({
         )}
       </div>
 
-      {notice !== null && <Feedback variant="success" messages={[notice]} />}
-
       {state.status === "error" && (
-        <Feedback variant="error" messages={[state.message]} />
+        <Feedback messages={[state.message]} />
       )}
 
       <Card className="py-0">
@@ -248,7 +245,7 @@ export function ReceptionsView({
           }}
           onSaved={() => {
             reloadRows()
-            setNotice("Penerimaan dibuat.")
+            toast.success("Penerimaan dibuat.")
           }}
         />
       )}
@@ -265,7 +262,7 @@ export function ReceptionsView({
           }}
           onSaved={() => {
             reloadRows()
-            setNotice("Penerimaan diperbarui.")
+            toast.success("Penerimaan diperbarui.")
           }}
           onViewDetail={openView}
         />

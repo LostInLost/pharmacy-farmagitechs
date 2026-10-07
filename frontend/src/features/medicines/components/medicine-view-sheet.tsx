@@ -94,7 +94,7 @@ export function MedicineViewSheet({
           )}
 
           {state.status === "error" && (
-            <Feedback variant="error" messages={[state.message]} />
+            <Feedback messages={[state.message]} />
           )}
 
           {medicine !== null && (

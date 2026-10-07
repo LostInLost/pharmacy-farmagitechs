@@ -209,6 +209,7 @@ try {
               sheetClosed: document.querySelector('[data-slot="sheet-content"]') === null,
               success: document.body.innerText.includes('Penerimaan diperbarui.'),
               alerts: [...document.querySelectorAll('[role="alert"]')].map((node) => node.innerText),
+              toasts: [...document.querySelectorAll('[data-sonner-toast]')].map((node) => node.innerText),
             })
           `)
         )

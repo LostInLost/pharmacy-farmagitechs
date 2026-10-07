@@ -302,12 +302,12 @@ export function ReceptionFormSheet({
           )}
 
           {load.status === "error" && (
-            <Feedback variant="error" messages={[load.message]} />
+            <Feedback messages={[load.message]} />
           )}
 
           {load.status === "forbidden" && (
             <div className="flex flex-col gap-4">
-              <Feedback variant="error" messages={[load.message]} />
+              <Feedback messages={[load.message]} />
               <p className="text-sm text-muted-foreground">
                 Penerimaan milik petugas lain tetap dapat dibuka dalam mode
                 lihat.
@@ -334,7 +334,7 @@ export function ReceptionFormSheet({
               className="flex flex-col gap-6"
             >
               {formErrors.length > 0 && (
-                <Feedback variant="error" messages={formErrors} />
+                <Feedback messages={formErrors} />
               )}
 
               <div className="grid gap-4 md:grid-cols-3">
