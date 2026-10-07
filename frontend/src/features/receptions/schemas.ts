@@ -54,8 +54,9 @@ export const receptionItemSchema = z.object({
 export type ReceptionItem = z.infer<typeof receptionItemSchema>
 
 /**
- * Jejak audit. `action` adalah token kanonik (`CREATE`/`UPDATE`/`DELETE`) —
- * label tampilan dirakit saat render, bukan disimpan di database.
+ * Jejak audit. `action` berisi kunci i18n itu sendiri
+ * (mis. `Audit.receptions.action.create`) — labelnya dirakit saat render
+ * lewat `auditActionLabel()`, jadi nilai dari server dipakai apa adanya.
  */
 export const auditLogSchema = z.object({
   id: z.number(),

@@ -157,7 +157,7 @@ try {
       auditVisible: document.body.innerText.includes('Riwayat Aksi'),
       auditActions: [...document.querySelectorAll('td')]
         .map((cell) => cell.innerText)
-        .filter((text) => /Menambah data penerimaan|Mengubah data penerimaan/.test(text)),
+        .filter((text) => /Menambahkan data penerimaan|Mengubah data penerimaan/.test(text)),
     })
   `)
 

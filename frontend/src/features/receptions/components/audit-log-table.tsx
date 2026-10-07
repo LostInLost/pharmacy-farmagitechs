@@ -13,24 +13,13 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { formatDateTime } from "@/foundations/format"
+import { auditActionLabel } from "@/features/audit"
 import type { AuditLog } from "@/features/receptions/schemas"
 
-/**
- * Token kanonik di database → label tampilan. Token tak dikenal
- * dikembalikan apa adanya agar log lama tidak hilang dari tampilan.
- */
-const ACTION_LABELS: Record<string, string> = {
-  CREATE: "Menambah data penerimaan",
-  UPDATE: "Mengubah data penerimaan",
-  DELETE: "Menghapus data penerimaan",
-}
-
-function actionLabel(action: string): string {
-  return ACTION_LABELS[action.toUpperCase()] ?? action
-}
-
 function changeSummary(log: AuditLog): string {
-  if (log.action === "CREATE") return "Penerimaan dibuat"
+  // Aksi buat dikenali dari ketiadaan snapshot sebelum, bukan dari nilai
+  // `action`: nilainya kini kunci i18n yang bisa bertambah kapan saja.
+  if (log.data_before === null) return "Penerimaan dibuat"
 
   const before = JSON.stringify(log.data_before)
   const after = JSON.stringify(log.data_after)
@@ -62,7 +51,7 @@ export function AuditLogTable({ logs }: { logs: AuditLog[] }) {
                 <TableCell className="whitespace-nowrap">
                   {formatDateTime(log.created_at)}
                 </TableCell>
-                <TableCell>{actionLabel(log.action)}</TableCell>
+                <TableCell>{auditActionLabel(log.action)}</TableCell>
                 <TableCell>{log.actor_name ?? "-"}</TableCell>
                 <TableCell>
                   <ChangeDetails log={log} />
