@@ -32,6 +32,7 @@ import {
 import {
   Tooltip,
   TooltipContent,
+  TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import type { ApiResult } from "@/foundations/api/request"
@@ -159,145 +160,155 @@ export function StockReport({ initialViewId = null }: Props) {
       : (medicines.find((medicine) => medicine.medicine_id === viewId) ?? null)
 
   return (
-    <div className="flex flex-col gap-4 px-4 lg:px-6">
-      <div>
-        <h2 className="font-heading text-lg font-medium">Laporan Stok</h2>
-        <p className="text-sm text-muted-foreground">
-          Jumlah stok selalu dihitung dari seluruh transaksi tersimpan; tanggal
-          hanya menentukan status kedaluwarsa.
-        </p>
-      </div>
+    // Provider lokal, bukan mengandalkan milik `AppShell`: island Astro punya
+    // React root sendiri, sehingga konteks dari island tetangga tidak sampai.
+    <TooltipProvider>
+      <div className="flex flex-col gap-4 px-4 lg:px-6">
+        <div>
+          <h2 className="font-heading text-lg font-medium">Laporan Stok</h2>
+          <p className="text-sm text-muted-foreground">
+            Jumlah stok selalu dihitung dari seluruh transaksi tersimpan;
+            tanggal hanya menentukan status kedaluwarsa.
+          </p>
+        </div>
 
-      <Card>
-        <CardContent>
-          <form onSubmit={onSubmit} className="flex flex-wrap items-end gap-3">
-            <Field className="w-48">
-              <FieldLabel htmlFor="on_date">
-                Tanggal pemeriksaan kedaluwarsa
-              </FieldLabel>
-              <Input
-                id="on_date"
-                type="date"
-                value={onDate}
-                onChange={(event) => setOnDate(event.target.value)}
-              />
-            </Field>
+        <Card>
+          <CardContent>
+            <form
+              onSubmit={onSubmit}
+              className="flex flex-wrap items-end gap-3"
+            >
+              <Field className="w-48">
+                <FieldLabel htmlFor="on_date">
+                  Tanggal pemeriksaan kedaluwarsa
+                </FieldLabel>
+                <Input
+                  id="on_date"
+                  type="date"
+                  value={onDate}
+                  onChange={(event) => setOnDate(event.target.value)}
+                />
+              </Field>
 
-            <Field className="w-48">
-              <FieldLabel htmlFor="status_filter">Status batch</FieldLabel>
-              <Select
-                value={statusFilter}
-                onValueChange={(value) =>
-                  setStatusFilter(value as StatusFilter)
-                }
-              >
-                <SelectTrigger id="status_filter" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem value="all">Semua status</SelectItem>
-                    <SelectItem value="available">Hanya tersedia</SelectItem>
-                    <SelectItem value="expired">Hanya kedaluwarsa</SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </Field>
+              <Field className="w-48">
+                <FieldLabel htmlFor="status_filter">Status batch</FieldLabel>
+                <Select
+                  value={statusFilter}
+                  onValueChange={(value) =>
+                    setStatusFilter(value as StatusFilter)
+                  }
+                >
+                  <SelectTrigger id="status_filter" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectItem value="all">Semua status</SelectItem>
+                      <SelectItem value="available">Hanya tersedia</SelectItem>
+                      <SelectItem value="expired">Hanya kedaluwarsa</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </Field>
 
-            <Button type="submit" disabled={state.status === "loading"}>
-              {state.status === "loading" ? "Memuat..." : "Tampilkan"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+              <Button type="submit" disabled={state.status === "loading"}>
+                {state.status === "loading" ? "Memuat..." : "Tampilkan"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
 
-      {state.status === "error" && (
-        <Feedback variant="error" messages={[state.message]} />
-      )}
+        {state.status === "error" && (
+          <Feedback variant="error" messages={[state.message]} />
+        )}
 
-      <Card className="py-0">
-        <CardContent className="px-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                {COLUMNS.map((column) => (
-                  <TableHead key={column.label} className={alignClass(column)}>
-                    {column.label}
-                  </TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {state.status === "loading" &&
-                Array.from({ length: 4 }).map((_, index) => (
-                  <TableRow key={index}>
-                    <TableCell colSpan={COLUMNS.length}>
-                      <Skeleton className="h-5 w-full" />
-                    </TableCell>
-                  </TableRow>
-                ))}
-
-              {state.status === "ready" && rows.length === 0 && (
+        <Card className="py-0">
+          <CardContent className="px-0">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={COLUMNS.length} className="p-0">
-                    <Empty className="rounded-none border-0 py-10">
-                      <EmptyHeader>
-                        <EmptyMedia variant="icon">
-                          <PackageXIcon />
-                        </EmptyMedia>
-                        <EmptyTitle>
-                          {statusFilter === "all"
-                            ? "Belum ada data stok."
-                            : "Tidak ada obat yang cocok dengan status ini."}
-                        </EmptyTitle>
-                        <EmptyDescription>
-                          Coba ubah tanggal pemeriksaan atau status batch.
-                        </EmptyDescription>
-                      </EmptyHeader>
-                    </Empty>
-                  </TableCell>
+                  {COLUMNS.map((column) => (
+                    <TableHead
+                      key={column.label}
+                      className={alignClass(column)}
+                    >
+                      {column.label}
+                    </TableHead>
+                  ))}
                 </TableRow>
-              )}
+              </TableHeader>
+              <TableBody>
+                {state.status === "loading" &&
+                  Array.from({ length: 4 }).map((_, index) => (
+                    <TableRow key={index}>
+                      <TableCell colSpan={COLUMNS.length}>
+                        <Skeleton className="h-5 w-full" />
+                      </TableCell>
+                    </TableRow>
+                  ))}
 
-              {state.status === "ready" &&
-                rows.map((medicine) => (
-                  <TableRow key={medicine.medicine_id}>
-                    <TableCell>{medicine.code}</TableCell>
-                    <TableCell className="whitespace-normal">
-                      {medicine.name}
-                    </TableCell>
-                    <TableCell>{medicine.unit}</TableCell>
-                    <TableCell className="text-right">
-                      {medicine.physical_quantity}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {medicine.available_quantity}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {medicine.expired_quantity}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <BatchAction medicine={medicine} onView={openView} />
+                {state.status === "ready" && rows.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={COLUMNS.length} className="p-0">
+                      <Empty className="rounded-none border-0 py-10">
+                        <EmptyHeader>
+                          <EmptyMedia variant="icon">
+                            <PackageXIcon />
+                          </EmptyMedia>
+                          <EmptyTitle>
+                            {statusFilter === "all"
+                              ? "Belum ada data stok."
+                              : "Tidak ada obat yang cocok dengan status ini."}
+                          </EmptyTitle>
+                          <EmptyDescription>
+                            Coba ubah tanggal pemeriksaan atau status batch.
+                          </EmptyDescription>
+                        </EmptyHeader>
+                      </Empty>
                     </TableCell>
                   </TableRow>
-                ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                )}
 
-      {viewed !== null && (
-        <StockBatchSheet
-          key={`batch-${viewed.medicine_id}-${sheetSeq}`}
-          medicine={viewed}
-          onDate={onDate}
-          open={sheetOpen}
-          onOpenChange={(open) => {
-            if (!open) closeSheet()
-          }}
-        />
-      )}
-    </div>
+                {state.status === "ready" &&
+                  rows.map((medicine) => (
+                    <TableRow key={medicine.medicine_id}>
+                      <TableCell>{medicine.code}</TableCell>
+                      <TableCell className="whitespace-normal">
+                        {medicine.name}
+                      </TableCell>
+                      <TableCell>{medicine.unit}</TableCell>
+                      <TableCell className="text-right">
+                        {medicine.physical_quantity}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {medicine.available_quantity}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {medicine.expired_quantity}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <BatchAction medicine={medicine} onView={openView} />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        {viewed !== null && (
+          <StockBatchSheet
+            key={`batch-${viewed.medicine_id}-${sheetSeq}`}
+            medicine={viewed}
+            onDate={onDate}
+            open={sheetOpen}
+            onOpenChange={(open) => {
+              if (!open) closeSheet()
+            }}
+          />
+        )}
+      </div>
+    </TooltipProvider>
   )
 }
 
