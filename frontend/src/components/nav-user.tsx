@@ -12,9 +12,15 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
@@ -24,7 +30,20 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import type { AuthUser } from "@/features/auth/schemas"
-import { EllipsisVerticalIcon, LogOutIcon, UserRoundIcon } from "lucide-react"
+import {
+  applyTheme,
+  currentDark,
+  readTheme,
+  subscribeTheme,
+  type Theme,
+} from "@/foundations/theme"
+import {
+  CircleUserRoundIcon,
+  EllipsisVerticalIcon,
+  LogOutIcon,
+  MoonIcon,
+  SunIcon,
+} from "lucide-react"
 
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean)
@@ -36,12 +55,23 @@ function initials(name: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
 }
 
+const THEME_LABELS: Record<Theme, string> = {
+  light: "Terang",
+  dark: "Gelap",
+  system: "Ikuti sistem",
+}
+
 /**
- * Menu pengguna di dasar sidebar — padanan blok pengguna `layout.php` CI4
- * (avatar inisial + nama + role + keluar), digubah ke pola shadcn: trigger
- * dropdown berisi ringkasan akun, lalu "Profil Saya" membuka dialog berisi
- * data sesi asli dari `GET /api/me` (bukan tautan ke halaman yang tidak ada)
- * dan "Keluar" memicu logout.
+ * Menu pengguna di dasar sidebar — bentuknya mengikuti blok `nav-user`
+ * dashboard-01 (tombol user + dropdown berisi grup item, submenu, dan keluar),
+ * tapi isinya hanya yang benar-benar berfungsi di aplikasi ini:
+ *
+ * - ringkasan akun + "Profil Saya" → dialog data sesi `GET /api/me`
+ * - submenu "Tema" → terang / gelap / ikuti sistem (palet `.dark` sudah ada)
+ * - "Keluar" → logout seperti blok pengguna `layout.php` CI4
+ *
+ * Item demo template (Account/Billing/Notifications) sengaja tidak dibawa
+ * karena tidak ada halaman maupun endpoint-nya.
  */
 export function NavUser({
   user,
@@ -53,6 +83,11 @@ export function NavUser({
   const { isMobile } = useSidebar()
   const [profileOpen, setProfileOpen] = React.useState(false)
   const fallback = initials(user.name)
+
+  // Tema dibaca dari external store, bukan `setState` di dalam effect: nilai
+  // server (`false`) dipakai saat render pertama, lalu klien menyesuaikan.
+  const theme = React.useSyncExternalStore(subscribeTheme, readTheme, () => "system")
+  const dark = React.useSyncExternalStore(subscribeTheme, currentDark, () => false)
 
   return (
     <SidebarMenu>
@@ -100,10 +135,30 @@ export function NavUser({
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => setProfileOpen(true)}>
-              <UserRoundIcon />
-              Profil Saya
-            </DropdownMenuItem>
+            <DropdownMenuGroup>
+              <DropdownMenuItem onSelect={() => setProfileOpen(true)}>
+                <CircleUserRoundIcon />
+                Profil Saya
+              </DropdownMenuItem>
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  {dark ? <MoonIcon /> : <SunIcon />}
+                  Tema
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  <DropdownMenuRadioGroup
+                    value={theme}
+                    onValueChange={(value) => applyTheme(value as Theme)}
+                  >
+                    {(Object.keys(THEME_LABELS) as Theme[]).map((option) => (
+                      <DropdownMenuRadioItem key={option} value={option}>
+                        {THEME_LABELS[option]}
+                      </DropdownMenuRadioItem>
+                    ))}
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+            </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={() => onLogout?.()}>
               <LogOutIcon />
@@ -112,13 +167,17 @@ export function NavUser({
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <ProfileDialog user={user} open={profileOpen} onOpenChange={setProfileOpen} />
+        <ProfileDialog
+          user={user}
+          open={profileOpen}
+          onOpenChange={setProfileOpen}
+        />
       </SidebarMenuItem>
     </SidebarMenu>
   )
 }
 
-/** Detail akun dari sesi berjalan; hanya menampilkan apa yang memang dimiliki backend. */
+/** Detail akun dari sesi berjalan; hanya menampilkan apa yang dimiliki backend. */
 function ProfileDialog({
   user,
   open,
