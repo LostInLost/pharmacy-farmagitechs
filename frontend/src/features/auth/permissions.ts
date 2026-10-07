@@ -16,6 +16,8 @@ export const PERMISSIONS = {
   receiptUpdateAny: "receipt.update-any",
   medicineView: "medicine.view",
   medicineWrite: "medicine.write",
+  supplierView: "supplier.view",
+  supplierWrite: "supplier.write",
 } as const
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS]

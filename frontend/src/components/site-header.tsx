@@ -10,21 +10,42 @@ import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 
 /**
- * Judul halaman per rute. Form tambah/ubah penerimaan kini berupa sheet di
- * `/receptions`, jadi tidak ada lagi remah untuk rute form terpisah.
+ * Judul halaman per rute. Form tambah/ubah kini berupa sheet di halaman
+ * daftarnya, jadi tidak ada lagi remah untuk rute form terpisah.
  */
 const ROUTE_TITLES: Record<string, string> = {
   "/dashboard": "Dashboard",
   "/receptions": "Penerimaan",
   "/stocks": "Laporan Stok",
   "/medicines": "Master Obat",
+  "/suppliers": "Master Pemasok",
 }
 
-function crumbsFor(pathname: string, title: string) {
+/**
+ * Halaman yang di sidebar berada di grup "Master Data". Remah menampilkan grup
+ * itu tanpa tautan — grup menu tidak punya halaman sendiri, jadi tidak ada
+ * tujuan yang masuk akal untuk diklik.
+ */
+const MASTER_DATA_GROUP = "Master Data"
+
+const MASTER_DATA_PATHS = new Set(["/medicines", "/suppliers"])
+
+/** `href: null` = remah induk tanpa tautan (mis. nama grup menu). */
+type Parent = { label: string; href: string | null }
+
+function crumbsFor(
+  pathname: string,
+  title: string
+): { parent: Parent | null; current: string } {
   const exact = ROUTE_TITLES[pathname]
 
   if (exact !== undefined) {
-    return { parent: null, current: title }
+    return {
+      parent: MASTER_DATA_PATHS.has(pathname)
+        ? { label: MASTER_DATA_GROUP, href: null }
+        : null,
+      current: title,
+    }
   }
 
   // Rute anak apa pun di bawah /receptions memakai remah induknya.
@@ -60,9 +81,13 @@ export function SiteHeader({
             {parent !== null && (
               <>
                 <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href={parent.href}>
-                    {parent.label}
-                  </BreadcrumbLink>
+                  {parent.href === null ? (
+                    <span>{parent.label}</span>
+                  ) : (
+                    <BreadcrumbLink href={parent.href}>
+                      {parent.label}
+                    </BreadcrumbLink>
+                  )}
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="hidden md:block" />
               </>

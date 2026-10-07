@@ -13,6 +13,7 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 import {
+  Building2Icon,
   CommandIcon,
   LayoutDashboardIcon,
   PackageIcon,
@@ -27,12 +28,12 @@ import type { AuthUser } from "@/features/auth/schemas"
  *
  * Urutannya mengikuti sidebar CI4 (`app/Views/layout.php`) — Penerimaan lalu
  * Stok — dengan Dashboard sebagai entri pertama karena versi Astro memakai
- * Dashboard sebagai halaman arahan setelah masuk, dan Master Obat sebagai
- * katalog penunjang di grup yang sama. Grup "Utama"/"Operasional" hanya
- * pemisah tampilan, bukan hak akses: menu Master Obat tetap tampil untuk
- * petugas karena halamannya sendiri hanya membaca; tombol tambah/ubah baru
- * muncul bila server menyatakan `can_write`. Aksi cepat "Tambah Penerimaan"
- * digating permission `receipt.create` dari `GET /api/me`.
+ * Dashboard sebagai halaman arahan setelah masuk. Master data (Pemasok, Obat)
+ * menempati grup tersendiri di bawah Operasional. Grup-grup ini hanya pemisah
+ * tampilan, bukan hak akses: menu master tetap tampil untuk petugas karena
+ * halamannya sendiri hanya membaca; tombol tambah/ubah baru muncul bila server
+ * menyatakan `can_write`. Aksi cepat "Tambah Penerimaan" digating permission
+ * `receipt.create` dari `GET /api/me`.
  *
  * `icon` disimpan sebagai referensi komponen (bukan elemen JSX) karena
  * `collapsible="icon"` merender ulang ikonnya saat sidebar menyusut.
@@ -49,7 +50,13 @@ const navGroups = [
     items: [
       { title: "Penerimaan", url: "/receptions", icon: TruckIcon },
       { title: "Laporan Stok", url: "/stocks", icon: PackageIcon },
-      { title: "Master Obat", url: "/medicines", icon: PillIcon },
+    ],
+  },
+  {
+    label: "Master Data",
+    items: [
+      { title: "Pemasok", url: "/suppliers", icon: Building2Icon },
+      { title: "Obat", url: "/medicines", icon: PillIcon },
     ],
   },
 ]
