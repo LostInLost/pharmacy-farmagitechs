@@ -2,15 +2,22 @@
 
 namespace App\Validation;
 
-use App\Models\MedicineModel;
 use App\Models\SupplierModel;
+use App\Repositories\MedicineRepository;
+use App\Repositories\StockRepository;
 use CodeIgniter\I18n\Time;
 
+/**
+ * Aturan payload penerimaan. Pemeriksaan bentuk tiap baris berjalan di memori;
+ * seluruh data yang dibutuhkan diambil sekaligus sebelum loop (status obat dan
+ * kedaluwarsa batch), sehingga jumlah query tidak tumbuh mengikuti jumlah item.
+ */
 class ReceptionValidator
 {
     public function __construct(
         private readonly SupplierModel $suppliers = new SupplierModel(),
-        private readonly MedicineModel $medicines = new MedicineModel(),
+        private readonly MedicineRepository $medicines = new MedicineRepository(),
+        private readonly StockRepository $stocks = new StockRepository(),
     ) {
     }
 
@@ -48,21 +55,22 @@ class ReceptionValidator
             return $errors;
         }
 
+        $activeFlags = $this->medicines->activeFlags($this->medicineIds($items));
         $seenBatches = [];
 
         foreach ($items as $index => $item) {
             $line = lang('Reception.validation.line', [$index + 1]);
 
             $medicineId = (int) ($item['medicine_id'] ?? 0);
-            $medicine   = $medicineId > 0 ? $this->medicines->find($medicineId) : null;
+            $isActive   = $activeFlags[$medicineId] ?? null;
 
-            if ($medicine === null) {
+            if ($isActive === null) {
                 $errors[] = lang('Reception.validation.medicine_not_found', [$line]);
 
                 continue;
             }
 
-            if ((int) $medicine['is_active'] !== 1) {
+            if ($isActive === false) {
                 $errors[] = lang('Reception.validation.medicine_inactive', [$line]);
             }
 
@@ -97,9 +105,23 @@ class ReceptionValidator
             }
         }
 
-        $errors = array_merge($errors, $this->batchExpiryConflicts($seenBatches));
+        return array_merge($errors, $this->batchExpiryConflicts($seenBatches));
+    }
 
-        return $errors;
+    /**
+     * @param array<int, mixed> $items
+     *
+     * @return list<int>
+     */
+    private function medicineIds(array $items): array
+    {
+        $ids = [];
+
+        foreach ($items as $item) {
+            $ids[(int) ($item['medicine_id'] ?? 0)] = true;
+        }
+
+        return array_values(array_filter(array_keys($ids), static fn (int $id): bool => $id > 0));
     }
 
     /**
@@ -109,45 +131,30 @@ class ReceptionValidator
      */
     private function batchExpiryConflicts(array $seenBatches): array
     {
+        if ($seenBatches === []) {
+            return [];
+        }
+
+        $batches = [];
+
+        foreach (array_keys($seenBatches) as $key) {
+            [$medicineId, $batchNo] = explode('|', $key, 2);
+            $batches[]               = ['medicine_id' => (int) $medicineId, 'batch_no' => $batchNo];
+        }
+
+        $known  = $this->stocks->knownExpiries($batches);
         $errors = [];
 
         foreach ($seenBatches as $key => $expiresOn) {
-            [$medicineId, $batchNo] = explode('|', $key, 2);
-
-            $existing = $this->knownExpiry((int) $medicineId, $batchNo);
+            $existing = $known[$key] ?? null;
 
             if ($existing !== null && $existing !== $expiresOn) {
-                $errors[] = lang('Reception.validation.batch_expiry_conflict', [$batchNo, $medicineId, $existing, $expiresOn]);
+                [$medicineId, $batchNo] = explode('|', $key, 2);
+                $errors[]               = lang('Reception.validation.batch_expiry_conflict', [$batchNo, $medicineId, $existing, $expiresOn]);
             }
         }
 
         return $errors;
-    }
-
-    private function knownExpiry(int $medicineId, string $batchNo): ?string
-    {
-        $db = db_connect();
-
-        $seed = $db->table('seed_batch_stock')
-            ->select('expires_on')
-            ->where('medicine_id', $medicineId)
-            ->where('batch_no', $batchNo)
-            ->get()
-            ->getRowArray();
-
-        if ($seed !== null) {
-            return $seed['expires_on'];
-        }
-
-        $received = $db->table('reception_items')
-            ->select('expires_on')
-            ->where('medicine_id', $medicineId)
-            ->where('batch_no', $batchNo)
-            ->orderBy('id', 'ASC')
-            ->get()
-            ->getRowArray();
-
-        return $received['expires_on'] ?? null;
     }
 
     private function referenceNoTaken(string $referenceNo, ?int $receptionId): bool

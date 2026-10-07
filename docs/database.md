@@ -131,6 +131,16 @@ stok fisik batch = SUM(CASE WHEN direction = 'in' THEN quantity ELSE -quantity E
 
 Kunci agregasi adalah pasangan `(medicine_id, batch_no)` sesuai identitas batch. Batch dikelompokkan menjadi tersedia bila `expires_on >= on_date` dan kedaluwarsa bila `expires_on < on_date`; batch tepat pada tanggal kedaluwarsa masih tersedia, dan `expires_on` NULL berarti tanpa kedaluwarsa. Stok kedaluwarsa tetap dihitung sebagai stok fisik. Penanda `is_expired` dihitung saat SELECT (tidak disimpan) agar satu query tetap konsisten dengan `on_date` yang diminta.
 
+### Satu query untuk satu laporan
+
+`StockRepository::reportRows()` membangun laporan dalam satu SELECT: subquery batch (dinetted per `(medicine_id, batch_no)`) di-join ke `medicines` dengan `LEFT JOIN`, sehingga obat aktif yang belum punya gerak tetap muncul sebagai satu baris ber-`batch_no` NULL. Subquery itu juga yang menghitung `is_expired`, jadi angka total dan penanda batch selalu berasal dari baris agregat yang sama — tidak ada dua definisi kedaluwarsa yang bisa berbeda.
+
+`StockService::report()` lalu menjumlahkan total per obat dalam satu lintasan atas baris yang sudah terurut `medicine_id, expires_on, batch_no`; tidak ada query kedua (`summaries()`) maupun penyaringan batch per obat (`array_filter`). Ongkos laporan tetap satu query berapa pun jumlah obat dan batch, dan di kunci oleh `tests/Feature/QueryCountTest.php`.
+
+Metode lama `batches()`, `summaries()`, dan `activeMedicines()` dihapus bersama peralihan ini. `batchReferences()` tetap terpisah karena dropdown form penerimaan memang perlu daftar batch unik tanpa jumlah dan tanpa filter obat aktif.
+
+### Sumber tulis
+
 Tabel domain (`seed_batch_stock`, `reception_items`, `stock_usage`) tetap menjadi sumber tulis dan menyimpan rincian asalnya — batch awal, item penerimaan, dan pemakaian per unit. Baris ledger ditulis bersamaan (write-through) dalam transaksi yang sama, lalu seluruh laporan membaca ledger saja. Migrasi `CreateStockMovements` membackfill ledger dari ketiga tabel itu secara idempoten, sehingga database yang sudah berisi data tidak kehilangan angka.
 
 Alasan model ini: pembaruan penerimaan memakai keadaan akhir lengkap (`PUT` mengganti seluruh item), sehingga menghapus item cukup menghapus barisnya — dan baris ledger ikut diganti pada transaksi yang sama — tanpa rekonsiliasi manual. Pengiriman `PUT` identik dua kali tidak menggandakan stok karena tidak ada penambahan kumulatif di luar baris item. Batch nol tetap ditampilkan agar jejak batch tidak hilang dan urutan `expires_on` mendukung pemilihan FEFO manual.
@@ -139,6 +149,7 @@ Alasan model ini: pembaruan penerimaan memakai keadaan akhir lengkap (`PUT` meng
 
 Setiap operasi buat/ubah penerimaan dijalankan dalam satu transaksi database:
 
+0. Validasi mengambil seluruh data yang dibutuhkannya sekaligus sebelum memeriksa baris: status aktif semua obat lewat `MedicineRepository::activeFlags()`, dan kedaluwarsa yang sudah tercatat lewat `StockRepository::knownExpiries()` (satu query per tabel sumber). Jumlah query validasi tidak tumbuh mengikuti jumlah item.
 1. Validasi payload dan hak akses dijalankan sebelum write. Kegagalan mengembalikan HTTP 4xx tanpa mengubah data.
 2. Header penerimaan, seluruh item, log aksi, dan baris ledger `stock_movements` ditulis dalam transaksi yang sama.
 3. Jika satu baris item gagal, transaksi di-rollback sehingga penerimaan, stok, dan log tidak berubah sebagian.

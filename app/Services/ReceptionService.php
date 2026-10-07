@@ -153,30 +153,41 @@ class ReceptionService
         }
     }
 
-    private function mapItems(array $items): array
+    /**
+     * Bentuk item yang dikirim ke repository: murni transformasi nilai, tanpa
+     * I/O. Dipakai juga oleh snapshot audit supaya normalisasinya satu tempat.
+     *
+     * @return array{medicine_id: int, batch_no: string, expires_on: string, quantity: int}
+     */
+    private function normalizeItem(array $item): array
     {
-        return array_map(static fn (array $item): array => [
+        return [
             'medicine_id' => (int) $item['medicine_id'],
             'batch_no'    => trim((string) $item['batch_no']),
             'expires_on'  => $item['expires_on'],
             'quantity'    => (int) $item['quantity'],
-        ], array_values($items));
+        ];
+    }
+
+    /**
+     * @param list<array<string, mixed>> $items
+     *
+     * @return list<array{medicine_id: int, batch_no: string, expires_on: string, quantity: int}>
+     */
+    private function mapItems(array $items): array
+    {
+        return array_map(fn (array $item): array => $this->normalizeItem($item), array_values($items));
     }
 
     /**
      * Snapshot ternormalisasi untuk audit: item diurutkan agar perbandingan
      * before/after stabil meski urutan kiriman berbeda.
      *
-     * @param list<array{medicine_id: int, batch_no: string, expires_on: string, quantity: int}> $items
+     * @param list<array<string, mixed>> $items
      */
     private function snapshot(string $referenceNo, int $supplierId, string $receivedAt, array $items): array
     {
-        $items = array_map(static fn (array $item): array => [
-            'medicine_id' => (int) $item['medicine_id'],
-            'batch_no'    => $item['batch_no'],
-            'expires_on'  => $item['expires_on'],
-            'quantity'    => (int) $item['quantity'],
-        ], $items);
+        $items = array_map(fn (array $item): array => $this->normalizeItem($item), $items);
 
         usort($items, static fn (array $a, array $b): int => [$a['medicine_id'], $a['batch_no']] <=> [$b['medicine_id'], $b['batch_no']]);
 

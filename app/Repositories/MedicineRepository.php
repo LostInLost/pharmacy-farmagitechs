@@ -53,6 +53,34 @@ class MedicineRepository
         return $row === null ? null : $this->normalize($row);
     }
 
+    /**
+     * Status aktif sekumpulan obat dalam satu query — dipakai validator
+     * penerimaan supaya tidak ada satu query per baris item.
+     *
+     * @param list<int> $ids
+     *
+     * @return array<int, bool> id => is_active; id yang tidak ada tidak muncul
+     */
+    public function activeFlags(array $ids): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+
+        $rows = $this->medicines
+            ->select('id, is_active')
+            ->whereIn('id', $ids)
+            ->findAll();
+
+        $flags = [];
+
+        foreach ($rows as $row) {
+            $flags[(int) $row['id']] = (int) $row['is_active'] === 1;
+        }
+
+        return $flags;
+    }
+
     public function codeTaken(string $code, ?int $exceptId = null): bool
     {
         $builder = $this->medicines->like('code', $this->escapeLike($code), 'none', true);

@@ -12,43 +12,59 @@ class StockService
     ) {
     }
 
+    /**
+     * Laporan per obat aktif. Angka dihitung database lewat satu query agregat
+     * (`StockRepository::reportRows()`); di sini barisnya hanya dirapikan dan
+     * totalnya dijumlahkan dalam satu lintasan — tanpa query tambahan dan tanpa
+     * penyaringan ulang batch per obat.
+     *
+     * Baris datang terurut `medicine_id, expires_on, batch_no`, jadi obat baru
+     * dibuka cukup dengan membandingkan id baris sebelumnya.
+     */
     public function report(?string $onDate = null): array
     {
         $date = $onDate === null || trim($onDate) === ''
             ? Time::now()->toDateString()
             : trim($onDate);
 
-        $batchesByMedicine = [];
+        $report = [];
+        $index  = -1;
 
-        foreach ($this->stocks->batches($date) as $batch) {
-            $batchesByMedicine[$batch['medicine_id']][] = [
-                'batch_no'   => $batch['batch_no'],
-                'expires_on' => $batch['expires_on'],
-                'quantity'   => $batch['quantity'],
-                'is_expired' => $batch['is_expired'],
+        foreach ($this->stocks->reportRows($date) as $row) {
+            $medicineId = (int) $row['medicine_id'];
+
+            if ($index < 0 || $report[$index]['medicine_id'] !== $medicineId) {
+                $report[] = [
+                    'medicine_id'        => $medicineId,
+                    'code'               => $row['code'],
+                    'name'               => $row['name'],
+                    'unit'               => $row['unit'],
+                    'physical_quantity'  => 0,
+                    'available_quantity' => 0,
+                    'expired_quantity'   => 0,
+                    'available_batches'  => [],
+                    'expired_batches'    => [],
+                ];
+
+                $index = array_key_last($report);
+            }
+
+            if ($row['batch_no'] === null) {
+                continue;
+            }
+
+            $quantity = (int) $row['quantity'];
+            $expired  = (int) $row['is_expired'] === 1;
+
+            $report[$index][$expired ? 'expired_batches' : 'available_batches'][] = [
+                'batch_no'   => $row['batch_no'],
+                'expires_on' => $row['expires_on'],
+                'quantity'   => $quantity,
+                'is_expired' => $expired,
             ];
-        }
 
-        $summaries = $this->stocks->summaries($date);
-        $report    = [];
-
-        foreach ($this->stocks->activeMedicines() as $medicine) {
-            $batches   = $batchesByMedicine[$medicine['id']] ?? [];
-            $summary   = $summaries[$medicine['id']] ?? ['physical_quantity' => 0, 'available_quantity' => 0, 'expired_quantity' => 0];
-            $available = array_values(array_filter($batches, static fn (array $batch): bool => $batch['is_expired'] === false));
-            $expired   = array_values(array_filter($batches, static fn (array $batch): bool => $batch['is_expired'] === true));
-
-            $report[] = [
-                'medicine_id'        => $medicine['id'],
-                'code'               => $medicine['code'],
-                'name'               => $medicine['name'],
-                'unit'               => $medicine['unit'],
-                'physical_quantity'  => $summary['physical_quantity'],
-                'available_quantity' => $summary['available_quantity'],
-                'expired_quantity'   => $summary['expired_quantity'],
-                'available_batches'  => $available,
-                'expired_batches'    => $expired,
-            ];
+            $report[$index]['physical_quantity'] += $quantity;
+            $report[$index][$expired ? 'expired_quantity' : 'available_quantity'] += $quantity;
         }
 
         return [

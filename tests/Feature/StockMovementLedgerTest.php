@@ -152,30 +152,44 @@ final class StockMovementLedgerTest extends CIUnitTestCase
         $this->assertSame(50, $this->medicine(106)['available_quantity']);
     }
 
-    public function testSummariesMatchBatchTotals(): void
+    /**
+     * `reportRows()` mengirim satu baris per batch (dan satu baris batch NULL
+     * untuk obat tanpa gerak), jadi total per obat dihitung dari baris itu.
+     */
+    public function testReportRowsMatchPerMedicineTotals(): void
     {
-        $repo      = new StockRepository();
-        $batches   = $repo->batches('2026-10-03');
-        $summaries = $repo->summaries('2026-10-03');
+        $rows = (new StockRepository())->reportRows('2026-10-03');
 
-        $expected = [];
+        $totals = [];
 
-        foreach ($batches as $batch) {
-            $id                          = $batch['medicine_id'];
-            $expected[$id]['physical']   = ($expected[$id]['physical'] ?? 0) + $batch['quantity'];
-            $key                         = $batch['is_expired'] ? 'expired' : 'available';
-            $expected[$id][$key]         = ($expected[$id][$key] ?? 0) + $batch['quantity'];
+        foreach ($rows as $row) {
+            $id = (int) $row['medicine_id'];
+
+            if ($row['batch_no'] === null) {
+                continue;
+            }
+
+            $quantity = (int) $row['quantity'];
+
+            $totals[$id]['physical'] = ($totals[$id]['physical'] ?? 0) + $quantity;
+            $key                     = (int) $row['is_expired'] === 1 ? 'expired' : 'available';
+            $totals[$id][$key]       = ($totals[$id][$key] ?? 0) + $quantity;
         }
 
-        foreach ($summaries as $id => $summary) {
-            $this->assertSame($expected[$id]['physical'] ?? 0, $summary['physical_quantity'], "physical {$id}");
-            $this->assertSame($expected[$id]['available'] ?? 0, $summary['available_quantity'], "available {$id}");
-            $this->assertSame($expected[$id]['expired'] ?? 0, $summary['expired_quantity'], "expired {$id}");
-        }
+        $this->assertSame(142, $totals[101]['physical']);
+        $this->assertSame(134, $totals[101]['available']);
+        $this->assertSame(8, $totals[101]['expired']);
 
-        $this->assertSame(142, $summaries[101]['physical_quantity']);
-        $this->assertSame(134, $summaries[101]['available_quantity']);
-        $this->assertSame(8, $summaries[101]['expired_quantity']);
+        // Angka dari repository harus sama dengan laporan yang dilihat pengguna.
+        $report = (new StockService())->report('2026-10-03');
+
+        foreach ($report['medicines'] as $medicine) {
+            $id = $medicine['medicine_id'];
+
+            $this->assertSame($totals[$id]['physical'] ?? 0, $medicine['physical_quantity'], "physical {$id}");
+            $this->assertSame($totals[$id]['available'] ?? 0, $medicine['available_quantity'], "available {$id}");
+            $this->assertSame($totals[$id]['expired'] ?? 0, $medicine['expired_quantity'], "expired {$id}");
+        }
     }
 
     public function testMovementsOfBatchIsNewestFirstAndFilterable(): void
