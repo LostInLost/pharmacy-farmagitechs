@@ -1,5 +1,7 @@
 # CORS backend untuk frontend Astro
 
+> Bagian dari [README](../README.md). Lihat juga [Keamanan](security.md#proteksi-csrf) dan [frontend/README.md](../frontend/README.md) (sisi klien, halaman, verifikasi browser).
+
 Frontend Astro berjalan di origin berbeda saat pengembangan
 (`http://localhost:4321`) dari backend CI4 (`http://localhost:8080`), jadi
 API perlu mengizinkan request lintas origin sekaligus tetap mengirim cookie
@@ -60,6 +62,8 @@ produksi **dan** set `Config\Cookie::$samesite = 'None'` + `$secure = true`
 (keduanya wajib berpasangan).
 
 ## Verifikasi
+
+Langkah verifikasi end-to-end lewat browser (skrip CDP) ada di [`frontend/README.md`](../frontend/README.md#verifikasi-browser-opsional).
 
 - Otomatis: `tests/Feature/CorsTest.php` (preflight 204 + header, origin
   asing tidak ter-echo, header CORS pada 200/422/403, endpoint bootstrap,

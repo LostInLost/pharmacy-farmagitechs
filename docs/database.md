@@ -1,5 +1,7 @@
 # Desain Database
 
+> Bagian dari [README](../README.md). Lihat juga [Keamanan](security.md#proteksi-csrf), [Konvensi Kode](conventions.md#lapisan), dan [Postman Collection](postman.md).
+
 ## Diagram ERD
 
 ```mermaid
@@ -49,8 +51,8 @@ erDiagram
         int id PK
         int medicine_id FK
         varchar batch_no
-        datetime used_at "NULL = tidak disebut lampiran"
-        varchar unit_name "NULL = tidak disebut lampiran"
+        datetime used_at "NULL = tidak diisi seed"
+        varchar unit_name "NULL = tidak diisi seed"
         int quantity
     }
     receptions {
@@ -110,7 +112,7 @@ erDiagram
 | `reception_items` | Rincian obat, batch, kedaluwarsa, dan jumlah per penerimaan. |
 | `audit_logs` | Jejak aksi tulis semua entitas (kini `reception` dan `medicine`) beserta snapshot sebelum/sesudah; polimorfik lewat pasangan `entity_type`/`entity_id`. |
 
-`suppliers`, `medicines`, `seed_batch_stock`, dan `stock_usage` berasal dari lampiran `app/Database/seed_farmasi.sql`. Isinya dipindahkan apa adanya ke `StockSeeder` (3 pemasok, 25 obat, 10 batch awal, 3 baris pemakaian) supaya angka laporan stok sama dengan contoh soal tanpa impor SQL manual. Seeder mencocokkan baris per `id`: `suppliers` dan `medicines` diperbarui di tempat karena dirujuk foreign key, sedangkan `seed_batch_stock` dan `stock_usage` dimuat ulang seluruhnya agar stok penerimaan lama tidak menumpuk. Kolom `used_at` dan `unit_name` hanya dibaca lampiran; perhitungan stok tetap memakai `quantity`. Ledger `stock_movements` ikut disinkronkan untuk tipe `seed` dan `usage`, sedangkan baris `receipt` milik penerimaan nyata dibiarkan utuh.
+`suppliers`, `medicines`, `seed_batch_stock`, dan `stock_usage` berasal dari berkas seed `app/Database/seed_farmasi.sql`. Isinya dipindahkan apa adanya ke `StockSeeder` (3 pemasok, 25 obat, 10 batch awal, 3 baris pemakaian) supaya angka laporan stok konsisten tanpa impor SQL manual. Seeder mencocokkan baris per `id`: `suppliers` dan `medicines` diperbarui di tempat karena dirujuk foreign key, sedangkan `seed_batch_stock` dan `stock_usage` dimuat ulang seluruhnya agar stok penerimaan lama tidak menumpuk. Kolom `used_at` dan `unit_name` hanya dibaca dari seed; perhitungan stok tetap memakai `quantity`. Ledger `stock_movements` ikut disinkronkan untuk tipe `seed` dan `usage`, sedangkan baris `receipt` milik penerimaan nyata dibiarkan utuh.
 
 ## Kunci dan Indeks
 
@@ -127,7 +129,7 @@ Stok dihitung dari ledger `stock_movements`, bukan kolom stok yang dimutasi. Set
 stok fisik batch = SUM(CASE WHEN direction = 'in' THEN quantity ELSE -quantity END)
 ```
 
-Kunci agregasi adalah pasangan `(medicine_id, batch_no)` sesuai identitas batch pada soal. Batch dikelompokkan menjadi tersedia bila `expires_on >= on_date` dan kedaluwarsa bila `expires_on < on_date`; batch tepat pada tanggal kedaluwarsa masih tersedia, dan `expires_on` NULL berarti tanpa kedaluwarsa. Stok kedaluwarsa tetap dihitung sebagai stok fisik. Penanda `is_expired` dihitung saat SELECT (tidak disimpan) agar satu query tetap konsisten dengan `on_date` yang diminta.
+Kunci agregasi adalah pasangan `(medicine_id, batch_no)` sesuai identitas batch. Batch dikelompokkan menjadi tersedia bila `expires_on >= on_date` dan kedaluwarsa bila `expires_on < on_date`; batch tepat pada tanggal kedaluwarsa masih tersedia, dan `expires_on` NULL berarti tanpa kedaluwarsa. Stok kedaluwarsa tetap dihitung sebagai stok fisik. Penanda `is_expired` dihitung saat SELECT (tidak disimpan) agar satu query tetap konsisten dengan `on_date` yang diminta.
 
 Tabel domain (`seed_batch_stock`, `reception_items`, `stock_usage`) tetap menjadi sumber tulis dan menyimpan rincian asalnya — batch awal, item penerimaan, dan pemakaian per unit. Baris ledger ditulis bersamaan (write-through) dalam transaksi yang sama, lalu seluruh laporan membaca ledger saja. Migrasi `CreateStockMovements` membackfill ledger dari ketiga tabel itu secara idempoten, sehingga database yang sudah berisi data tidak kehilangan angka.
 
@@ -188,7 +190,7 @@ Pembuktian pertama perluasan itu adalah master obat (`MedicineService`): ia mema
 - `receptions.created_by` tidak pernah berubah. `receptions.updated_by` bernilai `NULL` selama penerimaan belum pernah diubah, sehingga beda antara "belum diubah" dan "diubah oleh pembuat" tetap terlihat.
 - `receptions.received_at` adalah waktu barang datang sesuai payload dan boleh di-backdate; `receptions.created_at` adalah waktu petugas mencatat di sistem. Keduanya berbeda makna dan tidak saling menggantikan.
 - `receptions.updated_at` simetris dengan `updated_by`: keduanya `NULL` selama belum pernah diubah, sehingga pasangan `(updated_by, updated_at)` selalu null-null atau terisi bersama. Waktu diisi otomatis oleh model event (`beforeInsert`, `beforeInsertBatch`, `beforeUpdate`) memakai `Time::now()` yang mengikuti `appTimezone` Asia/Jakarta; identitas petugas tetap di-set service dari sesi.
-- Database tidak memakai `DEFAULT CURRENT_TIMESTAMP` maupun trigger MySQL. `CURRENT_TIMESTAMP` mengikuti zona waktu server database, bukan Asia/Jakarta yang diwajibkan soal, dan default kolom tidak dapat menjaga `updated_at` tetap `NULL` sampai edit pertama. Sebagai jaring pengaman, insert tanpa `created_at` ditolak database (`ERROR 1364`).
+- Database tidak memakai `DEFAULT CURRENT_TIMESTAMP` maupun trigger MySQL. `CURRENT_TIMESTAMP` mengikuti zona waktu server database, bukan Asia/Jakarta (zona waktu aplikasi), dan default kolom tidak dapat menjaga `updated_at` tetap `NULL` sampai edit pertama. Sebagai jaring pengaman, insert tanpa `created_at` ditolak database (`ERROR 1364`).
 - Model CI4 memakai `useTimestamps = false`. Bila diaktifkan, CI4 mengisi `updated_at` pada saat insert juga (`BaseModel::insert()`), sehingga merusak konvensi null di atas.
 - `reception_items` tidak punya timestamp: item selalu diganti penuh saat pembaruan sehingga waktu per baris menyesatkan. Waktu perubahan tercatat di `receptions.updated_at` dan `audit_logs.created_at`.
 - Setiap aksi buat/ubah menambah satu baris `audit_logs` berisi `entity_type`, `entity_id`, `actor_id`, `action` (kunci i18n, mis. `Audit.receptions.action.create`), snapshot `data_before`/`data_after`, dan `created_at`.

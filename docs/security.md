@@ -1,5 +1,7 @@
 # Keamanan
 
+> Bagian dari [README](../README.md). Lihat juga [Desain Database](database.md#audit-trail), [Konvensi Kode](conventions.md#lapisan), dan [Postman Collection](postman.md#4-autentikasi-dan-csrf) untuk urutan request yang membuktikan alur token.
+
 ## Proteksi CSRF
 
 ### Konfigurasi
@@ -49,5 +51,7 @@ Konsekuensi: klien harus mengakhiri sesi (`POST /api/logout`) sebelum berganti a
 - Logout web hanya tersedia lewat `POST /logout` (dilindungi CSRF), bukan `GET`.
 
 ### Batas yang belum ditangani
+
+Untuk sisi klien lintas origin (frontend Astro), konfigurasi CORS dan endpoint `/api/csrf` dijelaskan di [`docs/backend-cors.md`](backend-cors.md#kenapa-perlu-endpoint-apicsrf).
 
 Cookie sesi belum memakai flag `Secure` (`Config\Cookie::$secure = false`) karena pengembangan berjalan di HTTP. Saat aplikasi dipasang di HTTPS, aktifkan `Secure` dan `app.forceGlobalSecureRequests` agar cookie tidak dapat disadap pada jaringan tidak terenkripsi.

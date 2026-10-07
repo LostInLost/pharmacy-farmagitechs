@@ -1,5 +1,7 @@
 # Tema frontend Farmagitechs (Astro + shadcn)
 
+> Bagian dari [README](../README.md). Lihat juga [frontend/README.md](../frontend/README.md) untuk cara menjalankan dan struktur frontend.
+
 Sumber tema: preset shadcn `b7D6016rcO`, base **radix**, template **astro**.
 
 Perintah init yang dipakai:

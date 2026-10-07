@@ -1,5 +1,7 @@
 # Running Application Tests
 
+> Bagian dari [README utama](../README.md). Lihat juga [Konvensi Kode](../docs/conventions.md#lapisan) dan [Desain Database](../docs/database.md#konsistensi-transaksi). Ringkasan pengujian proyek ini ada di [README](../README.md) dan [docs/postman.md](../docs/postman.md) untuk uji API.
+
 This is the quick-start to CodeIgniter testing. Its intent is to describe what
 it takes to set up your application and get it ready to run unit tests.
 It is not intended to be a full description of the test features that you can

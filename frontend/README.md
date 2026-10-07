@@ -222,6 +222,14 @@ node scripts/verify-medicines.mjs <chromePath> <petugasCookie> <supervisorCookie
 Chrome headless perlu dijalankan di luar sandbox ketat (butuh spawn proses dan
 named pipe), dan dev server Astro (`pnpm dev`) serta backend CI4 harus hidup.
 
+## Dokumentasi terkait
+
+- [README utama](../README.md) — setup backend, endpoint API, akun demo.
+- [Tema frontend](../docs/frontend-theme.md) — token warna dan tipografi.
+- [CORS backend](../docs/backend-cors.md) — konfigurasi lintas origin dan `/api/csrf`.
+- [Postman Collection](../docs/postman.md) — uji API langsung tanpa UI.
+- [Keamanan](../docs/security.md#proteksi-csrf) — alur token CSRF.
+
 ## Catatan
 
 - Cookie session `ci_session` maupun cookie CSRF `csrf_cookie_name`
