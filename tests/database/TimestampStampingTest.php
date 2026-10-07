@@ -150,7 +150,7 @@ final class TimestampStampingTest extends CIUnitTestCase
             'entity_type' => 'reception',
             'entity_id'   => $receptionId,
             'actor_id'    => $userId,
-            'action'      => 'CREATE',
+            'action'      => 'Audit.receptions.action.create',
         ]);
 
         $row = $logs->find($logId);

@@ -179,7 +179,9 @@ final class MedicineApiTest extends CIUnitTestCase
             ->getResultArray();
 
         $this->assertCount(1, $logs);
-        $this->assertSame('CREATE', $logs[0]['action']);
+        // Nilai audit adalah kunci i18n untuk semua entitas (satu penulis,
+        // satu format kolom); label obat menyusul saat tampilan auditnya ada.
+        $this->assertSame('Audit.medicines.action.create', $logs[0]['action']);
         $this->assertSame($this->supervisorId, (int) $logs[0]['actor_id']);
         $this->assertNull($logs[0]['data_before']);
         $this->assertStringContainsString('OBT-NEW', (string) $logs[0]['data_after']);
@@ -209,7 +211,7 @@ final class MedicineApiTest extends CIUnitTestCase
             ->get()
             ->getResultArray();
 
-        $this->assertSame(['CREATE', 'UPDATE'], array_column($logs, 'action'));
+        $this->assertSame(['Audit.medicines.action.create', 'Audit.medicines.action.update'], array_column($logs, 'action'));
         $this->assertStringContainsString('Obat Baru 500 mg tablet', (string) $logs[1]['data_before']);
         $this->assertStringContainsString('Obat Baru 250 mg tablet', (string) $logs[1]['data_after']);
     }

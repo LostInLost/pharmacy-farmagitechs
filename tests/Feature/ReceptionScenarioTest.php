@@ -158,7 +158,7 @@ final class ReceptionScenarioTest extends CIUnitTestCase
         $this->assertNotNull($detail['updated_at']);
 
         $actions = array_column($detail['logs'], 'action');
-        $this->assertSame(['CREATE', 'UPDATE'], $actions);
+        $this->assertSame(['Audit.receptions.action.create', 'Audit.receptions.action.update'], $actions);
         $this->assertSame($this->petugasId, $detail['logs'][0]['actor_id']);
         $this->assertSame($this->supervisorId, $detail['logs'][1]['actor_id']);
     }

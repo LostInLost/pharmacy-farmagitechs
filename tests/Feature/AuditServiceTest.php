@@ -42,7 +42,7 @@ final class AuditServiceTest extends CIUnitTestCase
 
         $row = $this->row();
 
-        $this->assertSame('CREATE', $row['action']);
+        $this->assertSame('Audit.medicines.action.create', $row['action']);
         $this->assertNull($row['data_before']);
         $this->assertSame(10, json_decode($row['data_after'], true)['quantity']);
     }
@@ -53,7 +53,7 @@ final class AuditServiceTest extends CIUnitTestCase
 
         $row = $this->row();
 
-        $this->assertSame('UPDATE', $row['action']);
+        $this->assertSame('Audit.medicines.action.update', $row['action']);
         $this->assertSame(10, json_decode($row['data_before'], true)['quantity']);
         $this->assertSame(7, json_decode($row['data_after'], true)['quantity']);
     }
@@ -64,7 +64,7 @@ final class AuditServiceTest extends CIUnitTestCase
 
         $row = $this->row();
 
-        $this->assertSame('DELETE', $row['action']);
+        $this->assertSame('Audit.medicines.action.delete', $row['action']);
         $this->assertSame(10, json_decode($row['data_before'], true)['quantity']);
         $this->assertNull($row['data_after']);
     }
@@ -88,7 +88,7 @@ final class AuditServiceTest extends CIUnitTestCase
 
         $logs = $this->audit->forEntity('medicine', 101);
 
-        $this->assertSame(['CREATE', 'UPDATE'], array_column($logs, 'action'));
+        $this->assertSame(['Audit.medicines.action.create', 'Audit.medicines.action.update'], array_column($logs, 'action'));
         $this->assertSame('Dewi Petugas', $logs[0]['actor_name']);
     }
 

@@ -51,7 +51,7 @@ final class ReceptionAuditTest extends CIUnitTestCase
         $logs = $this->receptions->detail($created['id'])['logs'];
 
         $this->assertCount(1, $logs);
-        $this->assertSame('CREATE', $logs[0]['action']);
+        $this->assertSame('Audit.receptions.action.create', $logs[0]['action']);
         $this->assertNull($logs[0]['data_before']);
 
         $after = $logs[0]['data_after'];
@@ -86,7 +86,7 @@ final class ReceptionAuditTest extends CIUnitTestCase
         $logs = $this->receptions->detail($created['id'])['logs'];
 
         $this->assertCount(2, $logs);
-        $this->assertSame('UPDATE', $logs[1]['action']);
+        $this->assertSame('Audit.receptions.action.update', $logs[1]['action']);
 
         $before = $logs[1]['data_before'];
         $after  = $logs[1]['data_after'];
@@ -177,7 +177,7 @@ final class ReceptionAuditTest extends CIUnitTestCase
 
         $this->assertCount(1, $rows);
         $this->assertSame(101, (int) $rows[0]['entity_id']);
-        $this->assertSame('UPDATE', $rows[0]['action']);
+        $this->assertSame('Audit.medicines.action.update', $rows[0]['action']);
     }
 
     public function testAuditColumnsAreNullableJson(): void
@@ -187,5 +187,14 @@ final class ReceptionAuditTest extends CIUnitTestCase
         $this->assertSame('json', strtolower((string) $fields['data_before']));
         $this->assertSame('json', strtolower((string) $fields['data_after']));
         $this->assertSame('varchar', strtolower((string) $fields['entity_type']));
+    }
+
+    public function testActionColumnHoldsI18nKeys(): void
+    {
+        $fields = array_column($this->db->getFieldData('audit_logs'), 'type', 'name');
+
+        // Bukan lagi ENUM: nilainya kunci i18n, dan entitas baru boleh
+        // menambah grupnya sendiri tanpa mengubah skema.
+        $this->assertSame('varchar', strtolower((string) $fields['action']));
     }
 }
