@@ -13,7 +13,7 @@ Proyek ini dikembangkan bersama asisten AI yang menyimpan memorinya di dalam rep
 | [`.harness/memory/tasks/`](../.harness/memory/tasks) | Progres dan rencana per sesi kerja | Dilacak |
 | `.harness/tmp/` | Arsip sementara (mis. salinan README sebelum dipangkas) | Diabaikan `.gitignore` |
 
-Per 7 Oktober 2026 ada **49 entri** yang ikut ter-commit, sehingga riwayatnya terlihat langsung di GitHub tanpa perlu alat khusus. Katalog di bawah ikut bertambah setiap kali sesi AI mencatat temuan baru.
+Per 7 Oktober 2026 ada **53 entri** yang ikut ter-commit, sehingga riwayatnya terlihat langsung di GitHub tanpa perlu alat khusus. Katalog di bawah ikut bertambah setiap kali sesi AI mencatat temuan baru.
 
 ## Format satu entri
 
@@ -122,6 +122,7 @@ Angka-angka ini dikutip dari catatan memori pada tiap titik, jadi terlihat bagai
 - [Log operasi medicines: detail obat menyertakan riwayat audit (data.logs), label Audit.medicines, tanpa migrasi](../.harness/memory/decisions/2026-10-07T11-01-22-log-operasi-medicines-detail-obat-menyertakan-riwa.md) — Detail obat kini menyertakan `logs` via `AuditService::forEntity`; label `Audit.medicines` di id/en + mirror frontend; item Postman 4.13; 151 test/504 assertion & Newman 108 assertion hijau.
 - [Combobox pemasok & obat di form penerimaan: dibangun dari Radix Popover, bukan registry shadcn](../.harness/memory/decisions/2026-10-07T11-21-40-combobox-pemasok-obat-di-form-penerimaan-dibangun-.md) — Select pemasok & obat diganti Combobox berbasis primitif Radix yang sudah terpasang (Popover + Input + daftar tersaring); registry shadcn ditolak karena butuh `@base-ui/react` yang tak bisa dipasang di sandbox.
 - [Master obat pindah dari modal ke sheet (?new=1/?view=/?edit=), MedicineFormDialog dihapus](../.harness/memory/decisions/2026-10-07T11-30-15-master-obat-pindah-dari-modal-ke-sheet-new-1-view-.md) — Master obat memakai pola sheet seperti penerimaan: `MedicinesTable` jadi orkestrator (URL `?new=1`/`?view=`/`?edit=` via `history.replaceState`), `MedicineFormSheet` menggantikan `MedicineFormDialog` yang dihapus, `MedicineViewSheet` baru untuk detail tanpa audit log; gating tombol tambah via `PERMISSIONS.medicineWrite` + `can_write`; api/schemas/backend tidak berubah; typecheck/lint/build belum dijalankan.
+- [Laporan stok: detail batch jadi sheet + aksi baris berupa ikon](../.harness/memory/decisions/2026-10-07T11-44-34-laporan-stok-detail-batch-jadi-sheet-aksi-baris-be.md) — Collapsible batch di dalam baris diganti aksi ikon `BoxesIcon` + tooltip yang membuka `StockBatchSheet` (read-only, tanpa fetch — data sudah di klien): ringkasan 3 angka + tabel batch tersedia/kedaluwarsa; deep link `?view=<medicine_id>` via `history.replaceState` dan diparse di `stocks.astro`; typecheck 91 file 0 error, build SSR OK, commit `5a66e53`.
 
 ### Pelajaran teknis
 
