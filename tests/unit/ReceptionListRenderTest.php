@@ -44,13 +44,14 @@ final class ReceptionListRenderTest extends CIUnitTestCase
             'receptionId' => 7,
         ]);
 
-        // Label aksi dikirim via i18n boot; token mentah tetap dari API.
-        $this->assertStringContainsString('logActionCreate', $html);
-        $this->assertStringContainsString('logActionUpdate', $html);
-        $this->assertStringContainsString('logActionDelete', $html);
-        $this->assertStringContainsString(lang('Reception.log.action_create'), $html);
-        $this->assertStringContainsString(lang('Reception.log.action_update'), $html);
-        $this->assertStringContainsString(lang('Reception.log.action_delete'), $html);
+        // Label aksi dipetakan per kunci i18n — kunci yang sama dengan isi
+        // audit_logs.action, sehingga nilai mentah dari API tinggal dicari.
+        $this->assertStringContainsString('Audit.receptions.action.create', $html);
+        $this->assertStringContainsString('Audit.receptions.action.update', $html);
+        $this->assertStringContainsString('Audit.receptions.action.delete', $html);
+        $this->assertStringContainsString(lang('Audit.receptions.action.create'), $html);
+        $this->assertStringContainsString(lang('Audit.receptions.action.update'), $html);
+        $this->assertStringContainsString(lang('Audit.receptions.action.delete'), $html);
     }
 
     public function testFormRendersShellWithoutReceptionId(): void

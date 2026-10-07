@@ -71,20 +71,15 @@
             $('#received_at').val(toDatetimeLocal(reception.received_at));
         }
 
+        // Nilai audit_logs.action adalah kunci i18n itu sendiri
+        // (mis. Audit.receptions.action.create). Kunci tak dikenal tetap
+        // tampil apa adanya agar log lama tidak hilang dari tampilan.
         function actionLabel(action) {
-            var keys = {
-                CREATE: 'logActionCreate',
-                UPDATE: 'logActionUpdate',
-                DELETE: 'logActionDelete'
-            };
-            var key = keys[String(action).toUpperCase()];
-
-            // Token tak dikenal tetap tampil apa adanya agar log lama tak hilang.
-            return key === undefined ? action : Farmasi.text(key, action);
+            return Farmasi.text(action, action);
         }
 
         function logSummary(log) {
-            if (log.action === 'CREATE') {
+            if (log.data_before === null) {
                 return Farmasi.text('logCreated', '');
             }
 
