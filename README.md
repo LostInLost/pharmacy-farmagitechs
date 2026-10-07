@@ -68,10 +68,16 @@ Kata sandi disimpan sebagai hash Argon2id (`Config\Hash`, dapat diubah lewat `ha
 | GET | `/api/receipts/{id}` | Detail satu penerimaan | Session |
 | PUT | `/api/receipts/{id}` | Memperbarui penerimaan (keadaan akhir lengkap) | Session |
 | GET | `/api/stocks?on_date=YYYY-MM-DD` | Laporan stok per obat dan batch | Session |
+| GET | `/api/medicines?q=&status=` | Master obat: seluruh katalog (`status` = `all`/`active`/`inactive`) | Session |
+| POST | `/api/medicines` | Menambah obat | Session + supervisor |
+| GET | `/api/medicines/{id}` | Detail satu obat | Session |
+| PUT | `/api/medicines/{id}` | Mengubah obat, termasuk status aktif/nonaktif | Session + supervisor |
 | GET | `/api/references/suppliers` | Dropdown pemasok aktif (`id`, `name`) | Session |
 | GET | `/api/references/medicines` | Dropdown obat aktif (`id`, `name`, `unit`) | Session |
 
 Halaman web (`/login`, `/receptions`, `/receptions/new`, `/receptions/{id}/edit`, `/stocks`) tidak mengambil data sendiri: controller Web hanya merender cangkang + objek `window.FARMASI_BOOT` (endpoint, string bahasa), dan jQuery di `public/assets/js/` (bootstrap `app.js`, pustaka bersama `lib/`, satu file per halaman di `pages/`) memanggil endpoint di atas. `GET /api/receipts` menyertakan `can_update` per baris agar UI tahu kapan menampilkan tombol Ubah; penegakan hak tetap di server (`ReceptionPolicy` via service).
+
+Selain itu ada frontend terpisah berbasis Astro di `frontend/` (cara menjalankannya ada di [`frontend/README.md`](frontend/README.md)) yang memakai API yang sama, termasuk halaman **Master Obat** (`/medicines`). Endpoint baca master menyertakan `can_write` — padanan `can_update` — sehingga tombol tambah/ubah hanya muncul bagi supervisor, sementara penegakan tetap di server (`MedicinePolicy` via service).
 
 Status implementasi: seluruh endpoint sudah berfungsi penuh. Autentikasi memakai session cookie (`ci_session`), sehingga request berikutnya setelah login cukup mengirim cookie tersebut. Request tanpa login ditolak: `401` JSON untuk path `/api/*` dan redirect ke `/login` untuk halaman web. Sebaliknya, rute tamu (`GET /login` dan `POST /api/login`) dilindungi filter `guest`: pengguna yang sudah login menerima `403` — halaman error "Sudah Masuk" berisi tautan ke `/receptions` untuk web, JSON `{"message": "..."}` (beserta header `X-CSRF-TOKEN` terbaru) untuk `/api/*`.
 
@@ -114,7 +120,7 @@ GET /api/stocks?on_date=2026-10-03
 
 ## 6. Pengujian dan Verifikasi
 
-Pengujian otomatis (125 test, 397 assertion):
+Pengujian otomatis (139 test, 449 assertion):
 
 ```
 composer run test
@@ -128,7 +134,7 @@ Secara default skrip menjalankan PHPUnit persis seperti `vendor/bin/phpunit`, ja
 vendor/bin/phpunit
 ```
 
-Mencakup: skenario 1-5 soal, angka laporan stok contoh soal, batas `expires_on` sama dengan `on_date`, ledger `stock_movements` (write-through penerimaan, backfill seeder, flag `is_expired`), isolasi rollback, stamping timestamp, autentikasi, proteksi CSRF (token wajib, rotasi, tolak pakai ulang), audit trail (snapshot before/after), endpoint references (hanya aktif, field minimal, butuh login), `can_update` di daftar, dan helper hash. Test berjalan pada database `pharmacy_farmagitechs_test` (lihat `database.tests.*` di `.env`), sehingga tidak menyentuh data development. Tanpa `.env` (mis. di CI), test otomatis memakai fallback SQLite3 `:memory:`; seluruh migrasi dan query aplikasi dijaga tetap portabel agar kedua driver sama-sama lulus. Laporan coverage tidak diaktifkan di `phpunit.dist.xml` agar mesin tanpa driver coverage tidak gagal; jalankan `vendor/bin/phpunit --coverage-text` bila driver Xdebug/PCOV tersedia.
+Mencakup: skenario 1-5 soal, angka laporan stok contoh soal, batas `expires_on` sama dengan `on_date`, ledger `stock_movements` (write-through penerimaan, backfill seeder, flag `is_expired`), isolasi rollback, stamping timestamp, autentikasi, proteksi CSRF (token wajib, rotasi, tolak pakai ulang), audit trail (snapshot before/after), endpoint references (hanya aktif, field minimal, butuh login), `can_update` di daftar, master obat (hak baca petugas vs hak tulis supervisor, `can_write` pada respons baca, validasi kode unik case-insensitive, pencarian/filter status, wildcard `%` tidak bocor sebagai wildcard SQL, dan efek nonaktif terhadap dropdown penerimaan), serta helper hash. Test berjalan pada database `pharmacy_farmagitechs_test` (lihat `database.tests.*` di `.env`), sehingga tidak menyentuh data development. Tanpa `.env` (mis. di CI), test otomatis memakai fallback SQLite3 `:memory:`; seluruh migrasi dan query aplikasi dijaga tetap portabel agar kedua driver sama-sama lulus. Laporan coverage tidak diaktifkan di `phpunit.dist.xml` agar mesin tanpa driver coverage tidak gagal; jalankan `vendor/bin/phpunit --coverage-text` bila driver Xdebug/PCOV tersedia.
 
 Verifikasi manual:
 
@@ -149,16 +155,16 @@ Asumsi dan batasan saat ini:
 
 Tersedia di [`postman/`](postman):
 
-- `Pharmacy-Farmagitechs.postman_collection.json` — 30 request dalam 5 folder (74 assertion)
-- `Local.postman_environment.json` — variabel `base_url` (`http://localhost:8080`). `receipt_id` dan `foreign_receipt_id` di-set otomatis oleh collection saat request berjalan, jadi tidak perlu diisi di environment.
+- `Pharmacy-Farmagitechs.postman_collection.json` — 42 request dalam 6 folder (99 assertion)
+- `Local.postman_environment.json` — variabel `base_url` (`http://localhost:8080`). `receipt_id`, `foreign_receipt_id`, `medicine_id`, dan `medicine_code` di-set otomatis oleh collection saat request berjalan, jadi tidak perlu diisi di environment.
 
 Cara menjalankan:
 
 1. Jalankan aplikasi (`php spark serve --port 8080`) dengan database baseline.
 2. Di Postman: Import kedua berkas, pilih environment `Pharmacy Farmagitechs - Local`.
-3. Jalankan folder secara berurutan: **0. Bootstrap CSRF** → **1. Auth** → **2. Stocks** → **3. Receipts** → **4. Unauthenticated**.
+3. Jalankan folder secara berurutan: **0. Bootstrap CSRF** → **1. Auth** → **2. Stocks** → **3. Receipts** → **4. Medicines** → **5. Unauthenticated**.
 
-Urutan penting: folder **0. Bootstrap CSRF** menerbitkan cookie `csrf_cookie_name` yang dipakai seluruh request berikutnya; folder **2. Stocks** memeriksa angka baseline sehingga harus dijalankan sebelum ada penerimaan baru; dan folder **4. Unauthenticated** sengaja memakai cookie tidak valid sehingga dijalankan paling akhir. Karena `POST /api/login` ditolak saat sesi masih aktif, setiap pergantian akun (mis. petugas → supervisor) didahului `POST /api/logout`.
+Urutan penting: folder **0. Bootstrap CSRF** menerbitkan cookie `csrf_cookie_name` yang dipakai seluruh request berikutnya; folder **2. Stocks** memeriksa angka baseline sehingga harus dijalankan sebelum ada penerimaan baru; folder **4. Medicines** membaca master sebagai petugas, menolak tulis petugas dengan `403`, lalu berganti ke supervisor untuk menambah/menonaktifkan obat dan mengembalikan sesi ke petugas di akhir; dan folder **5. Unauthenticated** sengaja memakai cookie tidak valid sehingga dijalankan paling akhir. Karena `POST /api/login` ditolak saat sesi masih aktif, setiap pergantian akun (mis. petugas → supervisor) didahului `POST /api/logout`.
 
 Autentikasi memakai cookie session: request `1.4 Login petugas` menyimpan `ci_session` otomatis, dan Postman mengirimkannya pada request berikutnya. Script level koleksi menyisipkan header `X-CSRF-TOKEN` dari cookie `csrf_cookie_name` pada setiap request, lalu menyimpan nilai terbaru dari header response karena token berotasi tiap mutasi. Jalur CLI:
 

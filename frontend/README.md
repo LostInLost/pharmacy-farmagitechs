@@ -54,21 +54,55 @@ Salin `.env.example` menjadi `.env` lalu sesuaikan bila perlu:
 ```
 src/
   components/
-    auth/         # island React: login-form, logout-button
-    ui/           # komponen shadcn (button, input, label, card)
+    app-shell.tsx     # chrome bersama: sidebar + header + toaster
+    app-sidebar.tsx   # menu bergrup (Utama / Operasional)
+    nav-main.tsx      # grup menu + aksi cepat "Tambah Penerimaan"
+    nav-user.tsx      # blok profil + tema + keluar
+    feedback.tsx      # alert inline untuk pesan error/sukses
+    ui/               # komponen shadcn
+  features/
+    auth/             # login, sesi, guard
+    dashboard/        # ringkasan
+    receptions/       # daftar, form, riwayat aksi
+    stocks/           # laporan stok
+    medicines/        # master obat (daftar + dialog tambah/ubah)
+  foundations/
+    api/              # client, requestJson ber-CSRF, skema error
+    format.ts         # format tanggal/waktu tanpa new Date()
+    storage.ts, theme.ts
   layouts/
     base-layout.astro
-  lib/
-    auth.ts         # login/logout + klasifikasi error
-    csrf.ts         # baca token CSRF dari cookie/header
-    server-auth.ts  # cek sesi dari server (GET /api/me)
-    utils.ts        # cn()
-  middleware.ts   # guard berantai: session → guest → authenticated
+  middleware.ts       # guard berantai: session → guest → authenticated
   pages/
-    index.astro   # redirect pintar: login ↔ dashboard sesuai sesi
-    login.astro   # halaman tamu (island LoginForm)
+    index.astro       # redirect pintar: login ↔ dashboard sesuai sesi
+    login.astro       # halaman tamu (island LoginForm)
     dashboard.astro
+    receptions/       # index, new, [id]/edit
+    stocks.astro
+    medicines.astro
 ```
+
+Aturan lapisan: `foundations/` adalah infra generik dan **tidak boleh**
+mengimpor `features/` (ditegakkan ESLint `no-restricted-imports`);
+`features/` menyimpan skema Zod, pemanggilan API, dan komponen per domain.
+
+## Halaman
+
+| Rute | Isi |
+| --- | --- |
+| `/login` | Form masuk (halaman tamu) |
+| `/dashboard` | Ringkasan penerimaan, stok tersedia, dan obat perlu perhatian |
+| `/receptions`, `/receptions/new`, `/receptions/{id}/edit` | Daftar, tambah, dan ubah penerimaan beserta riwayat aksinya |
+| `/stocks` | Laporan stok per obat dan batch |
+| `/medicines` | Master obat: cari/filter, tambah, ubah, dan aktif/nonaktif |
+
+Halaman **Master Obat** mengikuti pola `can_update` pada penerimaan:
+`GET /api/medicines` mengembalikan `can_write` dari `MedicinePolicy`, jadi
+petugas penerimaan melihat katalognya tanpa tombol tambah/ubah, sedangkan
+supervisor mendapat keduanya. Tampilan itu hanya affordance — penegakan
+tetap di server, dan permintaan tulis dari petugas dijawab `403`.
+Obat **tidak dihapus** dari halaman ini: yang tersedia adalah menandainya
+nonaktif, sehingga riwayat stok dan penerimaannya tetap utuh.
 
 ## Middleware (guard berantai)
 
@@ -122,6 +156,29 @@ Frontend (`localhost:4321`) dan backend (`localhost:8080`) berbagi host
 `localhost`, jadi keduanya same-site dan cookie `SameSite=Lax` tetap
 terkirim. Saat deploy, tambahkan origin frontend produksi ke
 `allowedOrigins` (jangan pakai wildcard).
+
+## Verifikasi browser (opsional)
+
+Skrip di `scripts/` menjalankan Chrome headless lewat Chrome DevTools Protocol
+untuk memeriksa DOM yang benar-benar tampil, bukan hanya membaca kode:
+
+| Skrip | Yang dibuktikan |
+| --- | --- |
+| `verify-pages.mjs` | Halaman SSR + island React memanggil API dan merender data |
+| `verify-stocks.mjs` | Angka laporan stok cocok dengan server; filter tanggal/status |
+| `verify-permission.mjs` | Baris tanpa hak ubah tidak menampilkan aksi Ubah |
+| `verify-write.mjs`, `verify-update.mjs`, `verify-csrf-validation.mjs` | Alur simpan, ubah, dan kegagalan CSRF/validasi |
+| `verify-medicines.mjs` | Master obat: petugas tanpa tombol tulis, supervisor bisa menyimpan, filter status lewat server |
+
+Pemakaian umum (cookie sesi HttpOnly hanya bisa dipasang dari CDP, jadi harus
+diberikan sebagai argumen):
+
+```bash
+node scripts/verify-medicines.mjs <chromePath> <petugasCookie> <supervisorCookie>
+```
+
+Chrome headless perlu dijalankan di luar sandbox ketat (butuh spawn proses dan
+named pipe), dan dev server Astro (`pnpm dev`) serta backend CI4 harus hidup.
 
 ## Catatan
 
