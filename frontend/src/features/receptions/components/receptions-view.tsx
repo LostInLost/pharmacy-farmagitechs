@@ -64,6 +64,13 @@ type Props = {
  * URL lewat `history.replaceState` (tanpa entri baru), sehingga tautan
  * `?view=<id>` tetap bisa dibagikan dan dimuat langsung lewat SSR. Konsekuensi
  * yang disadari: tombol Back browser keluar dari halaman, bukan menutup sheet.
+ *
+ * Penutupan sheet memakai dua state terpisah (`sheet` + `sheetOpen`) supaya
+ * Radix sempat memainkan animasi keluar: komponennya tetap ter-mount saat
+ * `open` menjadi `false`, dan Presence yang melepasnya setelah animasi usai.
+ * `sheetSeq` menggantikan peran `key` per-id agar pembukaan berikutnya tetap
+ * me-remount komponen — tanpa itu, komponen yang sempat tertahan akan
+ * mewariskan isian percobaan sebelumnya.
  */
 export function ReceptionsView({
   initialSheet = null,
@@ -73,6 +80,8 @@ export function ReceptionsView({
   const [sheet, setSheet] = React.useState<ReceptionSheetState | null>(
     initialSheet
   )
+  const [sheetOpen, setSheetOpen] = React.useState(initialSheet !== null)
+  const [sheetSeq, setSheetSeq] = React.useState(0)
   const [notice, setNotice] = React.useState<string | null>(null)
   const [reloadToken, setReloadToken] = React.useState(0)
 
@@ -95,7 +104,9 @@ export function ReceptionsView({
   }, [reloadToken])
 
   // Sinkronkan URL dengan sheet yang terbuka. `replaceState` dipilih agar
-  // membuka/menutup sheet tidak menumpuk riwayat.
+  // membuka/menutup sheet tidak menumpuk riwayat. Kuncinya `sheetOpen`, bukan
+  // `sheet`: saat menutup, `sheet` sengaja masih terisi (lihat `closeSheet`)
+  // sehingga URL harus ikut bersih begitu animasi keluar dimulai.
   React.useEffect(() => {
     const url = new URL(window.location.href)
 
@@ -103,36 +114,44 @@ export function ReceptionsView({
     url.searchParams.delete("view")
     url.searchParams.delete("edit")
 
-    if (sheet !== null) {
+    if (sheet !== null && sheetOpen) {
       if (sheet.mode === "create") url.searchParams.set("new", "1")
       if (sheet.mode === "view") url.searchParams.set("view", String(sheet.id))
       if (sheet.mode === "edit") url.searchParams.set("edit", String(sheet.id))
     }
 
     window.history.replaceState(null, "", url)
-  }, [sheet])
+  }, [sheet, sheetOpen])
 
   function closeSheet() {
-    setSheet(null)
+    // `sheet` sengaja tidak dikosongkan di sini: Radix `Presence` butuh
+    // komponennya tetap ter-mount untuk memainkan animasi keluar, lalu ia
+    // sendiri yang melepas isi portal setelah animasi usai.
+    setSheetOpen(false)
   }
 
   function reloadRows() {
     setReloadToken((token) => token + 1)
   }
 
-  function openCreate() {
+  /** Buka sheet: remount (`sheetSeq`) + tandai terbuka. */
+  function openSheet(next: ReceptionSheetState) {
     setNotice(null)
-    setSheet({ mode: "create" })
+    setSheet(next)
+    setSheetOpen(true)
+    setSheetSeq((seq) => seq + 1)
+  }
+
+  function openCreate() {
+    openSheet({ mode: "create" })
   }
 
   function openView(id: number) {
-    setNotice(null)
-    setSheet({ mode: "view", id })
+    openSheet({ mode: "view", id })
   }
 
   function openEdit(id: number) {
-    setNotice(null)
-    setSheet({ mode: "edit", id })
+    openSheet({ mode: "edit", id })
   }
 
   const rows = state.status === "ready" ? state.rows : []
@@ -214,11 +233,16 @@ export function ReceptionsView({
         </CardContent>
       </Card>
 
+      {/*
+        Sheet sengaja dibiarkan ter-mount saat ditutup: `open` yang menjadi
+        `false` memicu animasi keluar Radix, dan `sheet` baru dikosongkan
+        lewat `key`/nilai baru saat sheet berikutnya dibuka.
+      */}
       {sheet !== null && sheet.mode === "create" && (
         <ReceptionFormSheet
-          key="create"
+          key={`create-${sheetSeq}`}
           receptionId={null}
-          open
+          open={sheetOpen}
           onOpenChange={(open) => {
             if (!open) closeSheet()
           }}
@@ -231,11 +255,11 @@ export function ReceptionsView({
 
       {sheet !== null && sheet.mode === "edit" && (
         <ReceptionFormSheet
-          // `key` per id: berpindah penerimaan me-remount form dengan state
-          // segar, jadi isian percobaan sebelumnya tidak terbawa.
-          key={`edit-${sheet.id}`}
+          // `key` per pembukaan: form di-remount dengan state segar, jadi
+          // isian percobaan sebelumnya tidak terbawa.
+          key={`edit-${sheet.id}-${sheetSeq}`}
           receptionId={sheet.id}
-          open
+          open={sheetOpen}
           onOpenChange={(open) => {
             if (!open) closeSheet()
           }}
@@ -249,9 +273,9 @@ export function ReceptionsView({
 
       {sheet !== null && sheet.mode === "view" && (
         <ReceptionViewSheet
-          key={`view-${sheet.id}`}
+          key={`view-${sheet.id}-${sheetSeq}`}
           receptionId={sheet.id}
-          open
+          open={sheetOpen}
           onOpenChange={(open) => {
             if (!open) closeSheet()
           }}

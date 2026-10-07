@@ -174,7 +174,8 @@ try {
     `)
   )
 
-  // 2. Tutup sheet: URL kembali bersih.
+  // 2. Tutup sheet: animasi keluar harus jalan (konten masih ada sesaat
+  //    dengan `data-state="closed"`), lalu URL kembali bersih.
   report.closed = JSON.parse(
     await evaluate(`
       (async function () {
@@ -185,11 +186,23 @@ try {
         if (!close) return JSON.stringify({ closeFound: false })
 
         close.click()
+
+        // Sesi animasi keluar: Radix menandai kontennya closed sebelum
+        // melepasnya dari DOM, jadi kelas animate-out sempat terpasang.
+        await new Promise((resolve) => setTimeout(resolve, 60))
+
+        const during = document.querySelector('[data-slot="sheet-content"]')
+        const duringState = during === null ? null : during.getAttribute('data-state')
+        const duringAnimation = during === null ? null : getComputedStyle(during).animationName
+
         await new Promise((resolve) => setTimeout(resolve, 900))
 
         return JSON.stringify({
           closeFound: true,
+          duringState,
+          duringAnimation,
           sheetClosed: document.querySelector('[data-slot="sheet-content"]') === null,
+          overlayClosed: document.querySelector('[data-slot="sheet-overlay"]') === null,
           url: location.pathname + location.search,
         })
       })()
@@ -247,7 +260,9 @@ try {
 }
 
 // Lebar sheet harus lega untuk tabel item (viewport 1280 → ±768px), bukan
-// `sm:max-w-sm` (384px) bawaan.
+// `sm:max-w-sm` (384px) bawaan. Saat ditutup, konten sempat berstatus
+// `data-state="closed"` dengan animasi aktif — itu bukti animasi keluar
+// benar-benar dijalankan, bukan sekadar unmount seketika.
 report.pass =
   report.create.buttonFound &&
   report.create.sheetOpen &&
@@ -255,7 +270,10 @@ report.pass =
   report.create.url === '/receptions?new=1' &&
   report.create.width >= 600 &&
   report.closed.closeFound &&
+  report.closed.duringState === 'closed' &&
+  /(^|,)\s*(animate-out|exit)/.test(report.closed.duringAnimation ?? '') &&
   report.closed.sheetClosed &&
+  report.closed.overlayClosed &&
   report.closed.url === '/receptions' &&
   report.view.sheetOpen &&
   report.view.hasItems &&
