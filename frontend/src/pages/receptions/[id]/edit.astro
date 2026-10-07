@@ -14,7 +14,12 @@ const receptionId = Number(raw)
 ---
 
 <BaseLayout title="Ubah Penerimaan">
-  <AppShell user={Astro.locals.user} pathname={Astro.url.pathname} title="Detail & Ubah Penerimaan">
+  <AppShell
+    client:load
+    user={Astro.locals.user}
+    pathname={Astro.url.pathname}
+    title="Detail & Ubah Penerimaan"
+  >
     <ReceptionForm client:load receptionId={receptionId} />
   </AppShell>
 </BaseLayout>

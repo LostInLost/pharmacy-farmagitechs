@@ -5,7 +5,12 @@ import { ReceptionsTable } from "@/features/receptions/components/receptions-tab
 ---
 
 <BaseLayout title="Penerimaan">
-  <AppShell user={Astro.locals.user} pathname={Astro.url.pathname} title="Penerimaan">
+  <AppShell
+    client:load
+    user={Astro.locals.user}
+    pathname={Astro.url.pathname}
+    title="Penerimaan"
+  >
     <ReceptionsTable client:load />
   </AppShell>
 </BaseLayout>

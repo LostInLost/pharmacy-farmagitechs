@@ -5,7 +5,12 @@ import { DashboardOverview } from "@/features/dashboard/components/dashboard-ove
 ---
 
 <BaseLayout title="Dashboard">
-  <AppShell user={Astro.locals.user} pathname={Astro.url.pathname} title="Dashboard">
+  <AppShell
+    client:load
+    user={Astro.locals.user}
+    pathname={Astro.url.pathname}
+    title="Dashboard"
+  >
     <DashboardOverview client:load />
   </AppShell>
 </BaseLayout>

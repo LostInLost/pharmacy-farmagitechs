@@ -5,7 +5,12 @@ import { StockReport } from "@/features/stocks/components/stock-report"
 ---
 
 <BaseLayout title="Laporan Stok">
-  <AppShell user={Astro.locals.user} pathname={Astro.url.pathname} title="Laporan Stok">
+  <AppShell
+    client:load
+    user={Astro.locals.user}
+    pathname={Astro.url.pathname}
+    title="Laporan Stok"
+  >
     <StockReport client:load />
   </AppShell>
 </BaseLayout>

@@ -5,7 +5,12 @@ import { ReceptionForm } from "@/features/receptions/components/reception-form"
 ---
 
 <BaseLayout title="Penerimaan Baru">
-  <AppShell user={Astro.locals.user} pathname={Astro.url.pathname} title="Penerimaan Baru">
+  <AppShell
+    client:load
+    user={Astro.locals.user}
+    pathname={Astro.url.pathname}
+    title="Penerimaan Baru"
+  >
     <ReceptionForm client:load receptionId={null} />
   </AppShell>
 </BaseLayout>
