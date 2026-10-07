@@ -1,6 +1,20 @@
 # Pharmacy Farmagitechs
 
-Aplikasi pencatatan penerimaan obat dan laporan stok untuk fasilitas kesehatan. Dibuat sebagai jawaban Tes Fullstack Web Developer PT Farma Global Teknologi.
+Aplikasi pencatatan penerimaan obat dan laporan stok untuk fasilitas kesehatan: PHP + CodeIgniter 4 dengan MySQL, UI jQuery, dan frontend alternatif Astro.
+
+> Setup dan endpoint ada di README ini; pendalaman ada di dokumen berikut.
+
+## Peta Dokumentasi
+
+- [**docs/database.md**](docs/database.md) — [ERD](docs/database.md#diagram-erd), tabel, [kunci & indeks](docs/database.md#kunci-dan-indeks), [model stok](docs/database.md#model-stok), [konsistensi transaksi](docs/database.md#konsistensi-transaksi), [audit trail](docs/database.md#audit-trail).
+- [**docs/security.md**](docs/security.md) — [proteksi CSRF](docs/security.md#proteksi-csrf), urutan filter, rute tamu, batas keamanan.
+- [**docs/conventions.md**](docs/conventions.md) — [aturan lapisan](docs/conventions.md#lapisan), [struktur proyek](docs/conventions.md#struktur-proyek), gaya kode.
+- [**docs/testing.md**](docs/testing.md) — menjalankan test, cakupan, database test, verifikasi manual, asumsi & batasan.
+- [**docs/postman.md**](docs/postman.md) — menjalankan collection, [autentikasi & CSRF](docs/postman.md#4-autentikasi-dan-csrf), bentuk respons, aturan validasi payload.
+- [**docs/backend-cors.md**](docs/backend-cors.md) — konfigurasi CORS dan endpoint [/api/csrf](docs/backend-cors.md#kenapa-perlu-endpoint-apicsrf).
+- [**docs/frontend-theme.md**](docs/frontend-theme.md) — [token tema](docs/frontend-theme.md#token-utama-light) shadcn (warna, tipografi).
+- [**frontend/README.md**](frontend/README.md) — [menjalankan Astro](frontend/README.md#menjalankan), halaman, middleware, [verifikasi browser](frontend/README.md#verifikasi-browser-opsional).
+- [**tests/README.md**](tests/README.md) — [menjalankan test](tests/README.md#running-the-tests) (`composer run test` via [scripts/run-tests.php](scripts/run-tests.php)), CI [.github/workflows/phpunit.yml](.github/workflows/phpunit.yml).
 
 ## 1. Versi dan Prasyarat
 
@@ -15,16 +29,16 @@ Prasyarat lain: ekstensi PHP `mysqli`, `intl`, `mbstring`, dan `json` aktif. Apl
 
 ## 2. Diagram Database dan Urutan Setup Skema
 
-Diagram ERD Mermaid ada di [`docs/database.md`](docs/database.md), lengkap dengan penjelasan primary key, foreign key, unique constraint, indeks, model stok, dan aturan konsistensi transaksi.
+Diagram ERD Mermaid ada di [`docs/database.md`](docs/database.md), lengkap dengan penjelasan [primary key, foreign key, unique constraint, dan indeks](docs/database.md#kunci-dan-indeks), [model stok](docs/database.md#model-stok), serta [aturan konsistensi transaksi](docs/database.md#konsistensi-transaksi).
 
 Urutan pembuatan skema dari database kosong:
 
 1. Buat database kosong: `CREATE DATABASE pharmacy_farmagitechs CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`
 2. Jalankan migrasi aplikasi: `php spark migrate`
-3. Muat data awal lampiran: `php spark db:seed StockSeeder`
+3. Muat data awal (seed): `php spark db:seed StockSeeder`
 4. Buat dua akun demo: `php spark db:seed DemoUsersSeeder`
 
-Catatan: isi lampiran `app/Database/seed_farmasi.sql` (3 pemasok, 25 obat, 10 batch stok awal, 3 baris pemakaian) sudah dipindahkan ke `StockSeeder`, sehingga tidak perlu impor SQL manual. Seeder mencocokkan `suppliers` dan `medicines` per `id`, lalu memuat ulang `seed_batch_stock` dan `stock_usage` agar aman dijalankan berulang. Ledger `stock_movements` ikut disinkronkan untuk baris seed/usage, sedangkan baris receipt milik penerimaan nyata dibiarkan utuh.
+Catatan: isi `app/Database/seed_farmasi.sql` (3 pemasok, 25 obat, 10 batch awal, 3 pemakaian) sudah dipindah ke `StockSeeder` — tidak perlu impor SQL manual, aman dijalankan berulang, dan ledger `stock_movements` ikut disinkronkan (baris receipt penerimaan nyata dibiarkan utuh).
 
 ## 3. Cara Menjalankan Aplikasi
 
@@ -55,7 +69,8 @@ Dua akun dibuat oleh `DemoUsersSeeder`:
 | Rina Supervisor | `supervisor` | `supervisor@farmagitechs.test` | `supervisor123` | Supervisor farmasi |
 | Dewi Petugas | `petugas` | `petugas@farmagitechs.test` | `petugas123` | Petugas penerimaan |
 
-Kata sandi disimpan sebagai hash Argon2id (`Config\Hash`, dapat diubah lewat `hash.algo` di `.env`; otomatis jatuh ke bcrypt bila Argon2 tidak tersedia di mesin tersebut). `email` wajib dan unik agar alur pemulihan kata sandi berbasis email dapat ditambahkan nanti; fitur pemulihan itu sendiri di luar cakupan tes. Autentikasi memakai session CodeIgniter 4: login lewat `POST /api/login` (JSON, dipakai form login via jQuery), logout lewat `POST /logout` (form web) atau `POST /api/logout`. Identitas pembuat/pengubah selalu diambil server dari session, bukan dari body request.
+- Kata sandi disimpan sebagai hash Argon2id (`Config\Hash`; bisa diubah lewat `hash.algo` di `.env`, fallback bcrypt). `email` wajib dan unik.
+- Login `POST /api/login` (JSON), logout `POST /logout` (web) atau `POST /api/logout`. Identitas pembuat/pengubah selalu diambil dari session, bukan body request.
 
 ## 5. Endpoint Utama
 
@@ -63,6 +78,7 @@ Kata sandi disimpan sebagai hash Argon2id (`Config\Hash`, dapat diubah lewat `ha
 | --- | --- | --- | --- |
 | POST | `/api/login` | Login, mengembalikan JSON | Tidak perlu (ditolak `403` bila sudah login) |
 | POST | `/api/logout` | Logout | Session |
+| GET | `/api/csrf` | Token CSRF untuk klien lintas origin (frontend Astro) | Tidak perlu |
 | GET | `/api/me` | Identitas sesi + `permissions` role (dipakai middleware SSR Astro) | Session |
 | GET | `/api/receipts` | Daftar seluruh penerimaan | Session |
 | POST | `/api/receipts` | Membuat penerimaan beserta seluruh item | Session |
@@ -76,27 +92,9 @@ Kata sandi disimpan sebagai hash Argon2id (`Config\Hash`, dapat diubah lewat `ha
 | GET | `/api/references/suppliers` | Dropdown pemasok aktif (`id`, `name`) | Session |
 | GET | `/api/references/medicines` | Dropdown obat aktif (`id`, `name`, `unit`) | Session |
 
-Halaman web (`/login`, `/receptions`, `/receptions/new`, `/receptions/{id}/edit`, `/stocks`) tidak mengambil data sendiri: controller Web hanya merender cangkang + objek `window.FARMASI_BOOT` (endpoint, string bahasa), dan jQuery di `public/assets/js/` (bootstrap `app.js`, pustaka bersama `lib/`, satu file per halaman di `pages/`) memanggil endpoint di atas. `GET /api/receipts` menyertakan `can_update` per baris agar UI tahu kapan menampilkan tombol Ubah; penegakan hak tetap di server (`ReceptionPolicy` via service).
+Detail perilaku API — hak akses & policy, CSRF, validasi payload, permissions, dan audit trail — ada di [`docs/security.md`](docs/security.md), [`docs/database.md`](docs/database.md), dan [`docs/postman.md`](docs/postman.md).
 
-Selain itu ada frontend terpisah berbasis Astro di `frontend/` (cara menjalankannya ada di [`frontend/README.md`](frontend/README.md)) yang memakai API yang sama, termasuk halaman **Master Obat** (`/medicines`). Endpoint baca master menyertakan `can_write` — padanan `can_update` — sehingga tombol tambah/ubah hanya muncul bagi supervisor, sementara penegakan tetap di server (`MedicinePolicy` via service). Di sisi Astro, tambah/detail/ubah penerimaan terjadi dalam sheet di atas daftar `/receptions` (`?new=1`, `?view=<id>`, `?edit=<id>`); riwayat aksi tidak dirender di sana karena disiapkan menjadi menu Audit tersendiri.
-
-Status implementasi: seluruh endpoint sudah berfungsi penuh. Autentikasi memakai session cookie (`ci_session`), sehingga request berikutnya setelah login cukup mengirim cookie tersebut. Request tanpa login ditolak: `401` JSON untuk path `/api/*` dan redirect ke `/login` untuk halaman web. Sebaliknya, rute tamu (`GET /login` dan `POST /api/login`) dilindungi filter `guest`: pengguna yang sudah login menerima `403` — halaman error "Sudah Masuk" berisi tautan ke `/receptions` untuk web, JSON `{"message": "..."}` (beserta header `X-CSRF-TOKEN` terbaru) untuk `/api/*`.
-
-Aturan hak ubah: petugas penerimaan hanya dapat mengubah penerimaan yang ia buat; supervisor dapat mengubah semua. Pelanggaran mengembalikan `403` tanpa mengubah penerimaan, stok, maupun log aksi. Identitas pembuat/pengubah diambil server dari sesi, bukan dari body request.
-
-`POST /api/login` dan `GET /api/me` sama-sama mengembalikan `user.permissions`: array datar permission milik role (mis. `["receipt.create", "receipt.view", "receipt.update-own", "medicine.view"]`) yang dihitung `Config\Permissions::forRole()` pada setiap request — tidak disimpan di session, jadi mengubah konfigurasi langsung berlaku tanpa login ulang. Frontend memakainya hanya untuk menggating tampilan (mis. tombol "Tambah Penerimaan" butuh `receipt.create`), sedangkan keputusan per baris tetap memakai `can_update`/`can_write` dari respons server karena butuh data pemilik baris. Penegakan sesungguhnya tetap di policy server; bentuk array datar sengaja dipilih agar mudah dipindah ke klaim cookie JWT nanti.
-
-Validasi penerimaan yang berlaku: `reference_no` wajib dan unik; pemasok dan obat harus ada serta aktif; `items` minimal satu baris; `quantity` bilangan bulat positif; kombinasi `(medicine_id, batch_no)` hanya sekali per penerimaan; `expires_on` konsisten untuk batch yang sama; dan `expires_on` harus lebih akhir daripada tanggal penerimaan (zona Asia/Jakarta). Kegagalan mengembalikan `422` dengan daftar pesan, dan seluruh perubahan dibatalkan.
-
-CSRF aktif untuk **semua** POST/PUT, termasuk `/api/*`. Token dikirim lewat header `X-CSRF-TOKEN`; nilainya sama dengan cookie `csrf_cookie_name` yang diterbitkan saat halaman login dimuat (`GET /login`). Karena itu klien API harus memulai dari `GET /login` untuk mendapatkan cookie tersebut. Token **berotasi** setiap mutasi berhasil, dan nilai terbaru selalu dikembalikan pada header `X-CSRF-TOKEN` di setiap response API — klien wajib memakai nilai terakhir itu untuk request berikutnya. Kegagalan token dijawab `403` JSON berisi `"error": "csrf"` (disertai token segar) untuk `/api/*`, dan redirect kembali ke halaman asal untuk form web. Detail alasan desain ada di [`docs/security.md`](docs/security.md).
-
-Audit trail: setiap aksi buat/ubah menulis satu baris `audit_logs` berisi `entity_type`, `entity_id`, `actor_id`, `action`, dan waktu, ditambah kolom `data_before`/`data_after` (JSON) berisi snapshot penerimaan sebelum dan sesudah perubahan. Kolom snapshot adalah tambahan di atas syarat minimal soal (soal menyebut isi sebelum/sesudah "tidak diwajibkan") dan dipakai agar perubahan yang menggeser stok tetap dapat ditelusuri; tanpa itu, item yang dihapus saat `PUT` hilang tanpa jejak karena `reception_items` selalu diganti penuh. `data_before` bernilai `null` pada `CREATE`, dan `PUT` identik tetap tercatat dengan `data_before == data_after`. Baris audit bertahan saat entitasnya dihapus (`entity_id` polimorfik tanpa FK), berbeda dari `reception_items` yang memakai `CASCADE`. Detail kontrak snapshot ada di [`docs/database.md`](docs/database.md).
-
-Tabel log sengaja **generik** lewat pasangan `entity_type`/`entity_id`, bukan reception-scoped: kolom inti audit (`actor_id`, `action`, waktu, snapshot) sama untuk entitas apa pun, sehingga domain tulis lain (mis. master obat) cukup memakai tabel yang sama tanpa skema baru. `entity_type` berisi `reception` untuk baris penerimaan. Trade-off-nya `entity_id` tidak dapat di-FK karena menunjuk ke banyak tabel — diterima karena jejak audit justru harus hidup ketika datanya dihapus; `actor_id` tetap ber-FK ke `users`.
-
-Kolom `action` menyimpan **kunci i18n** (`Audit.receptions.action.create` dkk. untuk entitas penerimaan), bukan kalimat siap tampil. Labelnya tinggal diterjemahkan di lapisan render: view form mengirim peta kunci→label lewat boot i18n, JS mencari label berdasarkan nilai yang dikirim API, dan sisi Astro memakai peta padanan di `features/audit/labels.ts`. Nilai yang tidak punya label tampil apa adanya, sehingga baris lama tidak hilang. Kunci ditulis kapital pada segmen berkasnya karena `lang()` mencari `Language/{locale}/{file}.php` apa adanya — kunci huruf kecil akan gagal dimuat di sistem berkas case-sensitive. Berkas labelnya sengaja terpisah (`app/Language/{id,en}/Audit.php`) agar tidak tercampur berkas domain, dan entitas baru cukup menambah grup di dalamnya (`Audit.medicines.…`) tanpa mengubah skema kolom.
-
-Penulisan audit terpusat di `App\Services\AuditService` (`logCreated`/`logUpdated`/`logDeleted`, plus `forEntity` untuk membaca). Service domain memanggilnya **di dalam transaksinya sendiri**, sehingga baris audit ikut batal ketika operasi gagal dan tidak ada service yang menulis log untuk transaksi milik service lain.
+Panduan lain: [struktur proyek & lapisan](docs/conventions.md#struktur-proyek), [pengujian](docs/testing.md), [Postman](docs/postman.md), [frontend Astro](frontend/README.md).
 
 Contoh request membuat penerimaan (setelah login, kirim cookie session):
 
@@ -121,84 +119,9 @@ Contoh request laporan stok:
 GET /api/stocks?on_date=2026-10-03
 ```
 
-## 6. Pengujian dan Verifikasi
-
-Pengujian otomatis (139 test, 449 assertion):
-
-```
-composer run test
-```
-
-`composer run test` menjalankan `scripts/run-tests.php`, yang memakai interpreter PHP pemanggil Composer dan meneruskan argumen apa pun ke PHPUnit (mis. `composer run test -- --filter HashTest`). Skrip memindahkan direktori kerja ke root proyek agar `phpunit.dist.xml` selalu ditemukan, dan mencari binary PHPUnit mengikuti aturan Composer (`COMPOSER_BIN_DIR`, `config.bin-dir`/`vendor-dir` di `composer.json`, PATH, lalu default `vendor/bin`).
-
-Secara default skrip menjalankan PHPUnit persis seperti `vendor/bin/phpunit`, jadi konfigurasi dan fallback bawaan CodeIgniter (SQLite3 `:memory:` di `Config\Database::$tests`) tetap berlaku. Bila test gagal karena `mysqli` tidak aktif di php.ini, test diulang dengan `-d extension=mysqli`; bila ekstensi itu tetap tidak bisa dimuat, skrip berhenti dengan pesan yang menyebut binary PHP dan php.ini penyebabnya. Alternatif langsung:
-
-```
-vendor/bin/phpunit
-```
-
-Mencakup: skenario 1-5 soal, angka laporan stok contoh soal, batas `expires_on` sama dengan `on_date`, ledger `stock_movements` (write-through penerimaan, backfill seeder, flag `is_expired`), isolasi rollback, stamping timestamp, autentikasi, proteksi CSRF (token wajib, rotasi, tolak pakai ulang), audit trail (snapshot before/after), endpoint references (hanya aktif, field minimal, butuh login), `can_update` di daftar, master obat (hak baca petugas vs hak tulis supervisor, `can_write` pada respons baca, validasi kode unik case-insensitive, pencarian/filter status, wildcard `%` tidak bocor sebagai wildcard SQL, dan efek nonaktif terhadap dropdown penerimaan), serta helper hash. Test berjalan pada database `pharmacy_farmagitechs_test` (lihat `database.tests.*` di `.env`), sehingga tidak menyentuh data development. Tanpa `.env` (mis. di CI), test otomatis memakai fallback SQLite3 `:memory:`; seluruh migrasi dan query aplikasi dijaga tetap portabel agar kedua driver sama-sama lulus. Laporan coverage tidak diaktifkan di `phpunit.dist.xml` agar mesin tanpa driver coverage tidak gagal; jalankan `vendor/bin/phpunit --coverage-text` bila driver Xdebug/PCOV tersedia.
-
-Verifikasi manual:
-
-1. Dari database kosong, jalankan `php spark migrate`, `php spark db:seed StockSeeder`, lalu `php spark db:seed DemoUsersSeeder`.
-2. Jalankan `composer run test`; semua test harus lulus.
-3. Jalankan `php spark migrate:rollback` lalu `php spark migrate` untuk memastikan migrasi turun dan naik bersih.
-4. Buka `/receptions` tanpa login; harus redirect ke `/login`. Akses `/api/stocks` tanpa login; harus `401` JSON.
-5. `POST /api/receipts` tanpa header `X-CSRF-TOKEN`; harus `403` JSON berisi `"error": "csrf"` walau sudah login. Ulangi dengan token dari cookie `csrf_cookie_name` (didapat dari `GET /login`); harus lolos ke validasi (`422`).
-6. Login, lalu buka `/login`; harus `403` halaman "Sudah Masuk" (bukan redirect). `POST /api/login` dengan sesi aktif harus `403` JSON `{"message": "Sudah masuk."}`.
-7. Jalankan `php spark routes` untuk memastikan seluruh path terdaftar: `auth` untuk halaman/endpoint privat dan `guest` untuk `/login` dan `POST /api/login`.
-
-Asumsi dan batasan saat ini:
-
-- Data awal berasal dari lampiran `app/Database/seed_farmasi.sql`, dipindahkan ke `StockSeeder`. Jalankan seeder itu sebelum memakai angka contoh soal (obat 101, 102, 103, 104, 106, 107); menjalankannya ulang aman dan tidak menggandakan data.
-- UI menyediakan 4 tampilan wajib (login, daftar/detail penerimaan, form penerimaan, daftar stok). Filter tanggal `on_date` dan filter status batch (semua/tersedia/kedaluwarsa) tersedia di halaman stok; angka contoh soal paling akurat diverifikasi lewat API.
-
-## 7. Postman Collection
-
-Tersedia di [`postman/`](postman):
-
-- `Pharmacy-Farmagitechs.postman_collection.json` — 42 request dalam 6 folder (99 assertion)
-- `Local.postman_environment.json` — variabel `base_url` (`http://localhost:8080`). `receipt_id`, `foreign_receipt_id`, `medicine_id`, dan `medicine_code` di-set otomatis oleh collection saat request berjalan, jadi tidak perlu diisi di environment.
-
-Cara menjalankan:
-
-1. Jalankan aplikasi (`php spark serve --port 8080`) dengan database baseline.
-2. Di Postman: Import kedua berkas, pilih environment `Pharmacy Farmagitechs - Local`.
-3. Jalankan folder secara berurutan: **0. Bootstrap CSRF** → **1. Auth** → **2. Stocks** → **3. Receipts** → **4. Medicines** → **5. Unauthenticated**.
-
-Urutan penting: folder **0. Bootstrap CSRF** menerbitkan cookie `csrf_cookie_name` yang dipakai seluruh request berikutnya; folder **2. Stocks** memeriksa angka baseline sehingga harus dijalankan sebelum ada penerimaan baru; folder **4. Medicines** membaca master sebagai petugas, menolak tulis petugas dengan `403`, lalu berganti ke supervisor untuk menambah/menonaktifkan obat dan mengembalikan sesi ke petugas di akhir; dan folder **5. Unauthenticated** sengaja memakai cookie tidak valid sehingga dijalankan paling akhir. Karena `POST /api/login` ditolak saat sesi masih aktif, setiap pergantian akun (mis. petugas → supervisor) didahului `POST /api/logout`.
-
-Autentikasi memakai cookie session: request `1.4 Login petugas` menyimpan `ci_session` otomatis, dan Postman mengirimkannya pada request berikutnya. Script level koleksi menyisipkan header `X-CSRF-TOKEN` dari cookie `csrf_cookie_name` pada setiap request, lalu menyimpan nilai terbaru dari header response karena token berotasi tiap mutasi. Jalur CLI:
-
-```
-node node_modules/newman/bin/newman.js run postman/Pharmacy-Farmagitechs.postman_collection.json -e postman/Local.postman_environment.json
-```
-
-## Struktur Proyek
-
-```
-app/
-  Config/         Konfigurasi, peta permission hardcoded, konfigurasi hash
-  Controllers/    Api/ menerjemahkan HTTP; Web/ hanya cangkang halaman + boot object
-  Database/       Migrations/ dan Seeds/
-  Filters/        AuthFilter (menolak request tanpa login), GuestFilter (menolak rute tamu saat sudah login), dan CsrfFilter (403 JSON untuk /api/*)
-  Models/         CRUD tipis + model event stamping timestamp
-  Policies/       Keputusan hak ubah
-  Repositories/   Query database
-  Services/       Logika transaksi
-  Validation/     Aturan validasi payload
-  Views/          Cangkang web + objek window.FARMASI_BOOT (data diisi jQuery dari API)
-  Helpers/        Helper lintas lapisan (Hash)
-docs/             Dokumentasi database, keamanan, dan konvensi kode
-postman/          Postman collection dan environment
-public/assets/    CSS dan JS untuk UI (`js/app.js`, `js/lib/`, `js/pages/`)
-scripts/          Runner `composer run test` (menangani ekstensi mysqli)
-tests/            Test otomatis (Feature, database, unit)
-```
-
-Aturan lapisan ada di [`docs/conventions.md`](docs/conventions.md); detail proteksi CSRF ada di [`docs/security.md`](docs/security.md).
-
 ## Catatan Alat AI dan Referensi
 
-Solusi ini disusun dengan bantuan AI (CodeBuddy) dan referensi dokumentasi resmi CodeIgniter 4. Keputusan desain, alasan pemilihan model stok, dan peta hak akses diverifikasi dan disesuaikan manual; detail keputusan tercatat di riwayat commit dan dokumentasi pada folder `docs/`.
+- **Tools**: Deepseek Harness dengan beberapa plugin (persistent memory, MCP) untuk membantu AI mengenal konteks proyek.
+- **Model planning**: Muse 1.3 Spark, Mimo V2.6 Pro, Kimi K3.
+- **Model eksekutor**: Deepseek V4.1 Flash, GLM 5.3 Flash, Mimo V2.6 Flash, Kimi 2.7 Code.
+- **Referensi**: dokumentasi resmi CodeIgniter 4 (backend) dan Astro (frontend, lihat [`frontend/README.md`](frontend/README.md)). Keputusan desain diverifikasi manual; detail tercatat di riwayat commit dan berkas pada `docs/`.
