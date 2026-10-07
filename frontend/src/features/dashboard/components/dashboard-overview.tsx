@@ -20,6 +20,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { formatDateTime } from "@/foundations/format"
+import { hasPermission, PERMISSIONS } from "@/features/auth"
 import { listReceptions } from "@/features/receptions/api"
 import type { ReceptionRow } from "@/features/receptions/schemas"
 import { getStockReport } from "@/features/stocks/api"
@@ -42,7 +43,16 @@ const LOW_STOCK_THRESHOLD = 10
 
 const RECENT_LIMIT = 5
 
-export function DashboardOverview() {
+/**
+ * Ringkasan + pintasan. Tombol "Tambah Penerimaan" digating permission
+ * `receipt.create` (dari `GET /api/me` lewat `Astro.locals.user`), sedangkan
+ * tautan baris selalu boleh: detail penerimaan dapat dilihat semua role.
+ */
+export function DashboardOverview({
+  permissions = [],
+}: {
+  permissions?: string[]
+}) {
   const [state, setState] = React.useState<State>({ status: "loading" })
 
   React.useEffect(() => {
@@ -148,9 +158,11 @@ export function DashboardOverview() {
               <Button asChild variant="outline" size="sm">
                 <a href="/stocks">Lihat stok</a>
               </Button>
-              <Button asChild size="sm">
-                <a href="/receptions/new">Tambah Penerimaan</a>
-              </Button>
+              {hasPermission(permissions, PERMISSIONS.receiptCreate) && (
+                <Button asChild size="sm">
+                  <a href="/receptions?new=1">Tambah Penerimaan</a>
+                </Button>
+              )}
             </div>
           </CardHeader>
           <CardContent className="px-0 pb-0">
@@ -190,7 +202,7 @@ export function DashboardOverview() {
                       <TableCell>
                         <a
                           className="font-medium text-primary underline-offset-4 hover:underline"
-                          href={`/receptions/${row.id}/edit`}
+                          href={`/receptions?view=${row.id}`}
                         >
                           {row.reference_no}
                         </a>

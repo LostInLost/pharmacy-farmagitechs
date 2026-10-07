@@ -31,7 +31,8 @@ import type { AuthUser } from "@/features/auth/schemas"
  * katalog penunjang di grup yang sama. Grup "Utama"/"Operasional" hanya
  * pemisah tampilan, bukan hak akses: menu Master Obat tetap tampil untuk
  * petugas karena halamannya sendiri hanya membaca; tombol tambah/ubah baru
- * muncul bila server menyatakan `can_write`.
+ * muncul bila server menyatakan `can_write`. Aksi cepat "Tambah Penerimaan"
+ * digating permission `receipt.create` dari `GET /api/me`.
  *
  * `icon` disimpan sebagai referensi komponen (bukan elemen JSX) karena
  * `collapsible="icon"` merender ulang ikonnya saat sidebar menyusut.
@@ -63,7 +64,7 @@ export function AppSidebar({
   pathname: string
   onLogout: () => void
 }) {
-  // Halaman anak ikut menyalakan menu induknya, mis. /receptions/new.
+  // Halaman anak ikut menyalakan menu induknya, mis. /receptions/1/edit.
   const groups = navGroups.map((group) => ({
     ...group,
     items: group.items.map((item) => ({
@@ -91,7 +92,7 @@ export function AppSidebar({
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain groups={groups} />
+        <NavMain groups={groups} permissions={user.permissions} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={user} onLogout={onLogout} />

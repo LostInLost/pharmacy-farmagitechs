@@ -7,6 +7,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { hasPermission, PERMISSIONS } from "@/features/auth"
 import { CirclePlusIcon, type LucideIcon } from "lucide-react"
 
 type NavItem = {
@@ -27,40 +28,50 @@ type NavItem = {
  * Jarak antar item diatur di sini (`gap-1`), bukan di `ui/sidebar.tsx`:
  * `SidebarMenu` bawaan memakai `gap-0` (tombol menempel tanpa jeda) dan
  * komponen `ui/` sengaja dibiarkan sebisa mungkin sama dengan upstream.
+ *
+ * Aksi cepat "Tambah Penerimaan" hanya tampil bila role punya
+ * `receipt.create` (permission dari `GET /api/me`). Menu navigasi sendiri
+ * tidak digating karena semua halaman boleh dibaca; yang dibatasi hanya aksi.
  */
 export function NavMain({
   groups,
+  permissions = [],
 }: {
   groups: {
     label: string
     items: NavItem[]
   }[]
+  permissions?: string[]
 }) {
+  const canCreate = hasPermission(permissions, PERMISSIONS.receiptCreate)
+
   return (
     <>
       {/*
         Aksi cepat sengaja tidak diberi label grup: ia perintah, bukan
         navigasi, jadi tidak masuk hitungan "Utama" maupun "Operasional".
       */}
-      <SidebarGroup>
-        <SidebarGroupContent>
-          <SidebarMenu className="gap-1">
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild tooltip="Penerimaan baru">
-                <Button
-                  asChild
-                  className="w-full justify-start bg-primary text-primary-foreground duration-200 ease-linear hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground"
-                >
-                  <a href="/receptions/new">
-                    <CirclePlusIcon />
-                    <span>Tambah Penerimaan</span>
-                  </a>
-                </Button>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
+      {canCreate && (
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu className="gap-1">
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild tooltip="Penerimaan baru">
+                  <Button
+                    asChild
+                    className="w-full justify-start bg-primary text-primary-foreground duration-200 ease-linear hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground"
+                  >
+                    <a href="/receptions?new=1">
+                      <CirclePlusIcon />
+                      <span>Tambah Penerimaan</span>
+                    </a>
+                  </Button>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      )}
 
       {groups.map((group) => (
         <SidebarGroup key={group.label}>

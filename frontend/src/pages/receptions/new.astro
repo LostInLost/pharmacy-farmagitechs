@@ -1,16 +1,4 @@
 ---
-import BaseLayout from "@/layouts/base-layout.astro"
-import { AppShell } from "@/components/app-shell"
-import { ReceptionForm } from "@/features/receptions/components/reception-form"
+// Rute lama: form tambah kini berupa sheet di daftar penerimaan.
+return Astro.redirect("/receptions?new=1")
 ---
-
-<BaseLayout title="Penerimaan Baru">
-  <AppShell
-    client:load
-    user={Astro.locals.user}
-    pathname={Astro.url.pathname}
-    title="Penerimaan Baru"
-  >
-    <ReceptionForm client:load receptionId={null} />
-  </AppShell>
-</BaseLayout>

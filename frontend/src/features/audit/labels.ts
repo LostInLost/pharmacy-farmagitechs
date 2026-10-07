@@ -9,6 +9,10 @@
  * sama persis dengan nilai di database dan dengan berkas
  * `app/Language/{id,en}/Audit.php` di backend; berkas ini adalah padanan
  * TypeScript-nya karena Astro belum memakai sistem terjemahan.
+ *
+ * Dipakai menu Audit tersendiri (belum ada). Riwayat aksi sengaja tidak lagi
+ * dirender di form/detail penerimaan; berkas ini tetap dipertahankan karena
+ * padanan label backend-nya masih berlaku untuk menu itu nanti.
  */
 const ACTION_LABELS: Record<string, string> = {
   "Audit.receptions.action.create": "Menambahkan data penerimaan",

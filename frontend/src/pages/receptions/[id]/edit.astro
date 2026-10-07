@@ -1,8 +1,5 @@
 ---
-import BaseLayout from "@/layouts/base-layout.astro"
-import { AppShell } from "@/components/app-shell"
-import { ReceptionForm } from "@/features/receptions/components/reception-form"
-
+// Rute lama: detail & ubah kini berupa sheet di daftar penerimaan.
 // Segmen dinamis tidak dijamin numerik, sedangkan API hanya menerima angka.
 const raw = Astro.params.id ?? ""
 
@@ -10,16 +7,5 @@ if (!/^\d+$/.test(raw)) {
   return Astro.redirect("/receptions")
 }
 
-const receptionId = Number(raw)
+return Astro.redirect(`/receptions?edit=${raw}`)
 ---
-
-<BaseLayout title="Ubah Penerimaan">
-  <AppShell
-    client:load
-    user={Astro.locals.user}
-    pathname={Astro.url.pathname}
-    title="Detail & Ubah Penerimaan"
-  >
-    <ReceptionForm client:load receptionId={receptionId} />
-  </AppShell>
-</BaseLayout>

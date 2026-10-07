@@ -2,9 +2,14 @@
  * Verifikasi label aksi audit hasil render nyata di browser (CDP).
  *
  * Membuktikan nilai `audit_logs.action` yang berupa kunci i18n
- * (`Audit.receptions.action.create`) benar-benar diterjemahkan saat tampil:
- * halaman CI4 lewat boot i18n + `reception-form.js`, halaman Astro lewat peta
- * `features/audit/labels.ts` — bukan sekadar "seharusnya jalan".
+ * (`Audit.receptions.action.create`) benar-benar diterjemahkan saat tampil di
+ * halaman CI4 lewat boot i18n + `reception-form.js` — bukan sekadar
+ * "seharusnya jalan".
+ *
+ * Halaman Astro diperiksa kebalikannya: sheet penerimaan **tidak** merender
+ * riwayat aksi lagi (audit disiapkan menjadi menu tersendiri), jadi yang
+ * dibuktikan di sana adalah ketiadaan tabel tersebut sementara datanya tetap
+ * ada di API.
  *
  * Pemakaian:
  *   node scripts/verify-audit-label.mjs <chromePath> <sessionCookie> <receptionId>
@@ -143,17 +148,14 @@ try {
   })
   report.ci4 = JSON.parse(ci4.result.value)
 
-  // --- 2. Halaman Astro: island React memakai features/audit/labels.ts -----
-  await client.send("Page.navigate", { url: `${ASTRO}/receptions/${receptionId}/edit` })
+  // --- 2. Halaman Astro: sheet ubah tidak lagi merender riwayat aksi -------
+  await client.send("Page.navigate", { url: `${ASTRO}/receptions?edit=${receptionId}` })
   await sleep(7000)
 
   const astro = await client.send("Runtime.evaluate", {
     expression: `JSON.stringify({
+      sheetOpen: document.querySelector('[data-slot="sheet-content"]') !== null,
       hasHistory: document.body.innerText.includes('Riwayat Aksi'),
-      rows: [...document.querySelectorAll('tbody tr')].map((row) => {
-        const cells = [...row.querySelectorAll('td')]
-        return cells.length >= 4 ? { action: cells[1].innerText.trim(), summary: cells[3].innerText.trim() } : null
-      }).filter(Boolean)
     })`,
     returnByValue: true,
   })
@@ -164,10 +166,12 @@ try {
   chrome.kill()
 }
 
-// --- Kesimpulan: setiap baris aksi harus terbaca sebagai kalimat terjemahan.
+// --- Kesimpulan ---------------------------------------------------------
+// CI4: setiap baris aksi harus terbaca sebagai kalimat terjemahan.
+// Astro: riwayat aksi tidak boleh muncul lagi di sheet penerimaan.
 const checks = []
 
-for (const [page, rows] of [["ci4", report.ci4?.rows ?? []], ["astro", report.astro?.rows ?? []]]) {
+for (const [page, rows] of [["ci4", report.ci4?.rows ?? []]]) {
   const translated = rows.filter((row) => Object.values(EXPECTED).includes(row.action))
   const rawKeys = rows.filter((row) => /^Audit\./.test(row.action))
 
@@ -175,7 +179,10 @@ for (const [page, rows] of [["ci4", report.ci4?.rows ?? []], ["astro", report.as
 }
 
 report.checks = checks
-report.pass = checks.every((row) => row.rows > 0 && row.rawKeys === 0)
+report.pass =
+  checks.every((row) => row.rows > 0 && row.rawKeys === 0) &&
+  report.astro?.sheetOpen === true &&
+  report.astro?.hasHistory === false
 
 console.log(JSON.stringify(report, null, 2))
 

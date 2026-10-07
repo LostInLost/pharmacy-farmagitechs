@@ -61,9 +61,10 @@ src/
     feedback.tsx      # alert inline untuk pesan error/sukses
     ui/               # komponen shadcn
   features/
-    auth/             # login, sesi, guard
+    auth/             # login, sesi, guard, permission (`hasPermission`)
+    audit/            # label aksi audit (disiapkan untuk menu Audit)
     dashboard/        # ringkasan
-    receptions/       # daftar, form, riwayat aksi
+    receptions/       # daftar + sheet tambah/detail/ubah
     stocks/           # laporan stok
     medicines/        # master obat (daftar + dialog tambah/ubah)
   foundations/
@@ -77,7 +78,7 @@ src/
     index.astro       # redirect pintar: login ↔ dashboard sesuai sesi
     login.astro       # halaman tamu (island LoginForm)
     dashboard.astro
-    receptions/       # index, new, [id]/edit
+    receptions/       # index (daftar + sheet); new & [id]/edit hanya redirect
     stocks.astro
     medicines.astro
 ```
@@ -92,9 +93,27 @@ mengimpor `features/` (ditegakkan ESLint `no-restricted-imports`);
 | --- | --- |
 | `/login` | Form masuk (halaman tamu) |
 | `/dashboard` | Ringkasan penerimaan, stok tersedia, dan obat perlu perhatian |
-| `/receptions`, `/receptions/new`, `/receptions/{id}/edit` | Daftar, tambah, dan ubah penerimaan beserta riwayat aksinya |
+| `/receptions` | Daftar penerimaan + sheet tambah/detail/ubah (`?new=1`, `?view=<id>`, `?edit=<id>`) |
+| `/receptions/new`, `/receptions/{id}/edit` | Rute lama; hanya mengalihkan ke sheet di atas |
 | `/stocks` | Laporan stok per obat dan batch |
 | `/medicines` | Master obat: cari/filter, tambah, ubah, dan aktif/nonaktif |
+
+### Sheet penerimaan
+
+Semua alur dokumen terjadi di atas daftar `/receptions`:
+
+- **Tambah** — tombol header / aksi cepat sidebar / `?new=1`.
+- **Detail** — klik reference atau `?view=<id>`; read-only, boleh dibuka
+  semua role (petugas dapat melihat dokumen milik orang lain) dan
+  **tidak menampilkan Riwayat Aksi** (audit akan jadi menu tersendiri).
+- **Ubah** — tombol Ubah di baris (bila `can_update`) atau di dalam sheet
+  detail, atau `?edit=<id>`; bila policy menolak, sheet menampilkan pesan
+  beserta tombol "Lihat detail".
+
+Membuka/menutup sheet menyinkronkan URL lewat `history.replaceState`
+(tanpa entri riwayat baru), jadi tautan `?view=<id>` bisa dimuat langsung
+lewat SSR. Konsekuensinya tombol Back browser keluar dari halaman, bukan
+menutup sheet.
 
 Halaman **Master Obat** mengikuti pola `can_update` pada penerimaan:
 `GET /api/medicines` mengembalikan `can_write` dari `MedicinePolicy`, jadi
@@ -103,6 +122,28 @@ supervisor mendapat keduanya. Tampilan itu hanya affordance — penegakan
 tetap di server, dan permintaan tulis dari petugas dijawab `403`.
 Obat **tidak dihapus** dari halaman ini: yang tersedia adalah menandainya
 nonaktif, sehingga riwayat stok dan penerimaannya tetap utuh.
+
+## Permission di UI
+
+`GET /api/me` (dan `POST /api/login`) mengembalikan `user.permissions` —
+array datar permission milik role, mis.
+`["receipt.create", "receipt.view", "receipt.update-own", "medicine.view"]`
+— hasil `Config\Permissions::forRole()`. Backend menghitungnya per request
+(tidak disimpan di session), jadi mengubah konfigurasi langsung berlaku
+tanpa login ulang. Bentuk array datar sengaja dipilih agar nanti mudah
+dipindah apa adanya ke klaim cookie JWT.
+
+Frontend memakainya lewat `features/auth/permissions.ts`
+(`PERMISSIONS` + `hasPermission()`) untuk **menggating tampilan**:
+
+- tombol yang tidak bergantung baris: "Tambah Penerimaan" (aksi cepat
+  sidebar + header daftar + dashboard) → `receipt.create`;
+- untuk aksi **per baris** tetap dipakai `can_update`/`can_write` dari
+  respons server, karena `receipt.update-own` butuh data pemilik baris.
+
+Bila field `permissions` tidak ada (mis. backend versi lama), skema Zod
+memberi nilai bawaan `[]` sehingga tombol aksi hilang — fail-closed, bukan
+error. Semua ini murni affordance: penegakan tetap di policy server.
 
 ## Middleware (guard berantai)
 
@@ -166,8 +207,9 @@ untuk memeriksa DOM yang benar-benar tampil, bukan hanya membaca kode:
 | --- | --- |
 | `verify-pages.mjs` | Halaman SSR + island React memanggil API dan merender data |
 | `verify-stocks.mjs` | Angka laporan stok cocok dengan server; filter tanggal/status |
-| `verify-permission.mjs` | Baris tanpa hak ubah tidak menampilkan aksi Ubah |
-| `verify-write.mjs`, `verify-update.mjs`, `verify-csrf-validation.mjs` | Alur simpan, ubah, dan kegagalan CSRF/validasi |
+| `verify-sheets.mjs` | Sheet penerimaan: buka/tutup + sinkron URL, deep link `?view=`, pindah ke `?edit=`, lebar sheet |
+| `verify-permission.mjs` | Petugas: baris orang lain tanpa Ubah, detail tetap bisa dibuka, sheet ubah diblokir |
+| `verify-write.mjs`, `verify-update.mjs`, `verify-csrf-validation.mjs` | Alur simpan/ubah lewat sheet, dan kegagalan CSRF/validasi |
 | `verify-medicines.mjs` | Master obat: petugas tanpa tombol tulis, supervisor bisa menyimpan, filter status lewat server |
 
 Pemakaian umum (cookie sesi HttpOnly hanya bisa dipasang dari CDP, jadi harus

@@ -1,9 +1,11 @@
 /**
- * Verifikasi alur ubah (PUT) dari browser: buka form edit penerimaan yang ada,
- * ubah jumlah item, simpan, lalu pastikan backend menerima perubahannya.
+ * Verifikasi alur ubah (PUT) dari browser: buka sheet Ubah penerimaan lewat
+ * deep link `?edit=<id>`, ubah jumlah item, simpan, lalu pastikan backend
+ * menerima perubahannya.
  *
  * PUT belum pernah dipakai frontend sebelum ini, jadi jalur CSRF-nya
  * (bootstrap token -> kirim -> retry sekali bila 403) wajib dibuktikan.
+ * Sekaligus memastikan Riwayat Aksi tidak lagi dirender di dalam form.
  *
  * Pemakaian:
  *   node scripts/verify-update.mjs <chromePath> <sessionCookie> <receptionId>
@@ -133,8 +135,10 @@ try {
     httpOnly: true,
   })
 
-  await client.send("Page.navigate", { url: `${APP}/receptions/${receptionId}/edit` })
-  await sleep(5500)
+  await client.send("Page.navigate", {
+    url: `${APP}/receptions?edit=${receptionId}`,
+  })
+  await sleep(6000)
 
   const evaluate = async (expression) => {
     const { result } = await client.send("Runtime.evaluate", {
@@ -146,18 +150,18 @@ try {
     return result.value
   }
 
-  // Bukti form terisi dari detail: header + baris item + riwayat aksi.
+  // Bukti sheet ubah terisi dari detail: header + baris item, dan Riwayat
+  // Aksi tidak dirender di mana pun lagi.
   report.loaded = await evaluate(`
     JSON.stringify({
+      sheetOpen: document.querySelector('[data-slot="sheet-content"]') !== null,
+      title: document.body.innerText.includes('Ubah Penerimaan'),
       reference: document.querySelector('#reference_no')?.value ?? null,
       supplier: document.querySelector('#supplier_id')?.textContent?.trim() ?? null,
       receivedAt: document.querySelector('#received_at')?.value ?? null,
       itemRows: [...document.querySelectorAll('tbody tr')]
         .filter((row) => row.querySelector('input[type="date"]')).length,
       auditVisible: document.body.innerText.includes('Riwayat Aksi'),
-      auditActions: [...document.querySelectorAll('td')]
-        .map((cell) => cell.innerText)
-        .filter((text) => /Menambahkan data penerimaan|Mengubah data penerimaan/.test(text)),
     })
   `)
 
@@ -170,7 +174,7 @@ try {
     })()
   `)
 
-  // Ubah jumlah lalu simpan.
+  // Ubah jumlah lalu simpan. Sheet tertutup setelah sukses (tanpa navigasi).
   report.changed = await evaluate(`
     (function () {
       const row = [...document.querySelectorAll('tbody tr')]
@@ -185,7 +189,7 @@ try {
       qty.dispatchEvent(new Event('input', { bubbles: true }))
       qty.dispatchEvent(new Event('change', { bubbles: true }))
 
-      document.querySelector('form').requestSubmit()
+      document.querySelector('#reception-form').requestSubmit()
 
       return 'submitted'
     })()
@@ -201,7 +205,9 @@ try {
         JSON.parse(
           await evaluate(`
             JSON.stringify({
-              path: location.pathname,
+              path: location.pathname + location.search,
+              sheetClosed: document.querySelector('[data-slot="sheet-content"]') === null,
+              success: document.body.innerText.includes('Penerimaan diperbarui.'),
               alerts: [...document.querySelectorAll('[role="alert"]')].map((node) => node.innerText),
             })
           `)
@@ -214,6 +220,7 @@ try {
 
   report.saved = snapshots
   report.finalPath = snapshots[snapshots.length - 1]?.path ?? null
+  report.sheetClosed = snapshots[snapshots.length - 1]?.sheetClosed ?? null
   report.consoleErrors = consoleErrors.slice(0, 5)
 
   client.close()

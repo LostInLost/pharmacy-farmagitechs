@@ -1,9 +1,11 @@
 /**
- * Verifikasi alur tulis dari browser sungguhan: isi form penerimaan, simpan,
- * lalu pastikan backend benar-benar menerima datanya.
+ * Verifikasi alur tulis dari browser sungguhan: buka sheet "Penerimaan Baru"
+ * dari daftar, isi form, simpan, lalu pastikan backend benar-benar menerima
+ * datanya.
  *
- * Ini menguji jalur yang paling berisiko: bootstrap token CSRF, POST lintas
- * origin dengan cookie sesi, dan validasi Zod sebelum kirim.
+ * Ini menguji jalur yang paling berisiko: sheet di atas daftar, bootstrap
+ * token CSRF, POST lintas origin dengan cookie sesi, dan validasi Zod sebelum
+ * kirim.
  *
  * Pemakaian:
  *   node scripts/verify-write.mjs <chromePath> <sessionCookie>
@@ -134,8 +136,9 @@ try {
     httpOnly: true,
   })
 
-  await client.send("Page.navigate", { url: `${APP}/receptions/new` })
-  await sleep(5000)
+  // Deep link: daftar dengan `?new=1` langsung membuka sheet tambah.
+  await client.send("Page.navigate", { url: `${APP}/receptions?new=1` })
+  await sleep(5500)
 
   const evaluate = async (expression) => {
     const { result } = await client.send("Runtime.evaluate", {
@@ -146,6 +149,18 @@ try {
 
     return result.value
   }
+
+  report.sheetOpen = JSON.parse(
+    await evaluate(`
+      JSON.stringify({
+        title: document.body.innerText.includes('Penerimaan Baru'),
+        url: location.pathname + location.search,
+        width: Math.round(
+          document.querySelector('[data-slot="sheet-content"]')?.getBoundingClientRect().width ?? 0
+        ),
+      })
+    `)
+  )
 
   // Isi header. React mengendalikan input, jadi nilai diset lewat setter
   // native lalu event input dipicu agar state ikut berubah.
@@ -241,11 +256,11 @@ try {
     })()
   `)
 
-  // Simpan. Pengalihan ke /receptions akan mematikan konteks evaluasi, jadi
-  // status dipantau dari sisi Node (bukan di dalam satu evaluate panjang).
+  // Simpan. Sheet tertutup setelah sukses (bukan navigasi), jadi snapshot
+  // berikutnya dibaca di halaman daftar yang sama.
   const submit = await evaluate(`
     (function () {
-      const form = document.querySelector('form')
+      const form = document.querySelector('#reception-form')
       if (!form) return 'no-form'
 
       form.requestSubmit()
@@ -264,8 +279,9 @@ try {
     try {
       const snapshot = await evaluate(`
         JSON.stringify({
-          path: location.pathname,
-          success: document.body.innerText.includes('Tersimpan'),
+          path: location.pathname + location.search,
+          success: document.body.innerText.includes('Penerimaan dibuat.'),
+          sheetClosed: document.querySelector('[data-slot="sheet-content"]') === null,
           alerts: [...document.querySelectorAll('[role="alert"]')].map((node) => node.innerText),
         })
       `)
@@ -279,6 +295,7 @@ try {
 
   report.saved = snapshots
   report.finalPath = snapshots[snapshots.length - 1]?.path ?? null
+  report.sheetClosed = snapshots[snapshots.length - 1]?.sheetClosed ?? null
 
   report.consoleErrors = consoleErrors.slice(0, 5)
 

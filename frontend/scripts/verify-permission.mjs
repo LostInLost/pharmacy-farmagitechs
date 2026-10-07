@@ -1,8 +1,9 @@
 /**
- * Verifikasi tampilan izin di browser: baris yang `can_update = false` harus
- * menyembunyikan aksi Ubah (sel aksi kosong, tanpa badge apa pun), dan
- * membuka form editnya harus diblokir dengan pesan + tautan kembali (bukan
- * form yang bisa disimpan).
+ * Verifikasi tampilan izin di browser (akun petugas): baris yang
+ * `can_update = false` menyembunyikan tombol Ubah, detailnya tetap bisa
+ * dibuka lewat sheet lihat (`?view=<id>`) dengan catatan "hanya melihat",
+ * dan membuka sheet ubahnya (`?edit=<id>`) diblokir dengan pesan + tombol
+ * pindah ke mode lihat.
  *
  * Pemakaian:
  *   node scripts/verify-permission.mjs <chromePath> <sessionCookie> <ownId> <otherId>
@@ -118,35 +119,67 @@ try {
     return result.value
   }
 
-  // Daftar: baris milik orang lain harus tanpa tombol Ubah dan tanpa badge.
+  // Daftar: baris milik orang lain tanpa tombol Ubah; tombol header
+  // "Tambah Penerimaan" tetap ada karena petugas punya receipt.create.
   await client.send("Page.navigate", { url: `${APP}/receptions` })
   await sleep(5500)
 
   report.list = JSON.parse(
     await evaluate(`
       (() => {
-        const actionCellText = (id) => {
+        const rowFor = (id) => {
           const link = [...document.querySelectorAll('a')]
-            .find((anchor) => anchor.getAttribute('href') === '/receptions/' + id + '/edit');
-          const row = link && link.closest('tr');
-          return row ? row.lastElementChild.textContent.trim() : null;
+            .find((anchor) => anchor.getAttribute('href') === '/receptions?view=' + id);
+          return link && link.closest('tr');
+        };
+
+        const rowHasUbah = (id) => {
+          const row = rowFor(id);
+          return row === null
+            ? null
+            : [...row.querySelectorAll('button')].some((button) => button.textContent.trim() === 'Ubah');
         };
 
         return JSON.stringify({
-          ubahButtons: [...document.querySelectorAll('a')]
-            .filter((anchor) => anchor.textContent.trim() === 'Ubah')
-            .map((anchor) => anchor.getAttribute('href')),
-          ownActionCell: actionCellText(${ownId}),
-          otherActionCell: actionCellText(${otherId}),
+          ownRowUbah: rowHasUbah(${ownId}),
+          otherRowUbah: rowHasUbah(${otherId}),
+          viewLinks: [...document.querySelectorAll('a')]
+            .map((anchor) => anchor.getAttribute('href'))
+            .filter((href) => href && href.startsWith('/receptions?view=')),
+          addButton: [...document.querySelectorAll('button')]
+            .some((button) => button.textContent.includes('Tambah Penerimaan')),
           notAllowedText: document.body.innerText.includes('tidak berhak'),
         });
       })()
     `)
   )
 
-  // Form edit milik orang lain: diblokir, tanpa form yang bisa disimpan.
-  await client.send("Page.navigate", { url: `${APP}/receptions/${otherId}/edit` })
-  await sleep(5000)
+  // Detail milik orang lain: sheet lihat terbuka, tanpa tombol Ubah di dalam
+  // sheet (tombol di baris tabel tidak dihitung — itu milik baris lain).
+  await client.send("Page.navigate", { url: `${APP}/receptions?view=${otherId}` })
+  await sleep(5500)
+
+  report.otherView = JSON.parse(
+    await evaluate(`
+      (() => {
+        const sheet = document.querySelector('[data-slot="sheet-content"]');
+
+        return JSON.stringify({
+          sheetOpen: sheet !== null,
+          onlyReadNote: document.body.innerText.includes('Anda hanya dapat melihat penerimaan ini.'),
+          ubahButtonInSheet: sheet === null
+            ? null
+            : [...sheet.querySelectorAll('button')].some((button) => button.textContent.trim() === 'Ubah'),
+          auditVisible: document.body.innerText.includes('Riwayat Aksi'),
+        });
+      })()
+    `)
+  )
+
+  // Sheet ubah milik orang lain: diblokir, tanpa form yang bisa disimpan,
+  // tetapi ada jalan ke mode lihat.
+  await client.send("Page.navigate", { url: `${APP}/receptions?edit=${otherId}` })
+  await sleep(5500)
 
   report.otherForm = JSON.parse(
     await evaluate(`
@@ -154,14 +187,15 @@ try {
         blockedMessage: document.body.innerText.includes('Anda tidak berhak mengubah penerimaan ini.'),
         hasSubmit: [...document.querySelectorAll('button[type="submit"]')]
           .some((button) => button.textContent.includes('Simpan')),
-        backLink: document.body.innerText.includes('Kembali ke daftar'),
+        viewDetailButton: [...document.querySelectorAll('button')]
+          .some((button) => button.textContent.trim() === 'Lihat detail'),
       })
     `)
   )
 
-  // Form edit milik sendiri: form lengkap tersedia.
-  await client.send("Page.navigate", { url: `${APP}/receptions/${ownId}/edit` })
-  await sleep(5000)
+  // Sheet ubah milik sendiri: form lengkap tersedia.
+  await client.send("Page.navigate", { url: `${APP}/receptions?edit=${ownId}` })
+  await sleep(5500)
 
   report.ownForm = JSON.parse(
     await evaluate(`
@@ -179,17 +213,24 @@ try {
   chrome.kill()
 }
 
-// Petugas hanya berhak atas penerimaan buatannya sendiri: tidak boleh ada
-// tombol "Ubah" yang menunjuk ke dokumen milik orang lain, dan baris itu
-// tampil tanpa aksi apa pun (tanpa badge "tidak berhak").
+// Petugas hanya berhak mengubah penerimaan buatannya sendiri: baris miliknya
+// punya tombol Ubah, baris orang lain tanpa aksi apa pun, detail orang lain
+// tetap bisa dilihat (tanpa tombol Ubah di dalam sheet), dan sheet ubahnya
+// diblokir dengan jalan pintas ke mode lihat.
 report.pass =
-  report.list.ubahButtons.includes(`/receptions/${ownId}/edit`) &&
-  !report.list.ubahButtons.includes(`/receptions/${otherId}/edit`) &&
-  report.list.ownActionCell === 'Ubah' &&
-  report.list.otherActionCell === '' &&
+  report.list.ownRowUbah === true &&
+  report.list.otherRowUbah === false &&
+  report.list.addButton &&
+  report.list.viewLinks.includes(`/receptions?view=${ownId}`) &&
+  report.list.viewLinks.includes(`/receptions?view=${otherId}`) &&
   !report.list.notAllowedText &&
+  report.otherView.sheetOpen &&
+  report.otherView.onlyReadNote &&
+  report.otherView.ubahButtonInSheet === false &&
+  !report.otherView.auditVisible &&
   report.otherForm.blockedMessage &&
   !report.otherForm.hasSubmit &&
+  report.otherForm.viewDetailButton &&
   report.ownForm.hasSubmit &&
   report.ownForm.itemRows >= 1
 

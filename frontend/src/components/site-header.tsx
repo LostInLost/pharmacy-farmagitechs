@@ -10,32 +10,29 @@ import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 
 /**
- * Judul halaman per rute. Rute anak memakai segmen induknya sebagai remah
- * pertama, jadi `/receptions/new` tampil "Penerimaan / Penerimaan Baru".
+ * Judul halaman per rute. Form tambah/ubah penerimaan kini berupa sheet di
+ * `/receptions`, jadi tidak ada lagi remah untuk rute form terpisah.
  */
 const ROUTE_TITLES: Record<string, string> = {
   "/dashboard": "Dashboard",
   "/receptions": "Penerimaan",
-  "/receptions/new": "Penerimaan Baru",
   "/stocks": "Laporan Stok",
   "/medicines": "Master Obat",
 }
 
 function crumbsFor(pathname: string, title: string) {
-  // Halaman ubah punya segmen dinamis (`/receptions/1/edit`) → pakai judul
-  // halaman apa adanya, didahului remah induknya.
-  if (/^\/receptions\/\d+\/edit$/.test(pathname)) {
-    return { parent: { label: "Penerimaan", href: "/receptions" }, current: title }
-  }
-
   const exact = ROUTE_TITLES[pathname]
 
   if (exact !== undefined) {
-    const parent = pathname.startsWith("/receptions/")
-      ? { label: ROUTE_TITLES["/receptions"], href: "/receptions" }
-      : null
+    return { parent: null, current: title }
+  }
 
-    return { parent, current: title }
+  // Rute anak apa pun di bawah /receptions memakai remah induknya.
+  if (pathname.startsWith("/receptions/")) {
+    return {
+      parent: { label: ROUTE_TITLES["/receptions"], href: "/receptions" },
+      current: title,
+    }
   }
 
   return { parent: null, current: title }
