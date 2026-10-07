@@ -14,6 +14,7 @@ class ReceptionService
         private readonly ReceptionRepository $receptions = new ReceptionRepository(),
         private readonly ReceptionValidator $validator = new ReceptionValidator(),
         private readonly ReceptionPolicy $policy = new ReceptionPolicy(),
+        private readonly AuditService $audit = new AuditService(),
     ) {
     }
 
@@ -31,7 +32,7 @@ class ReceptionService
         }
 
         $reception['items'] = $this->receptions->itemsOf($id);
-        $reception['logs']  = $this->receptions->logsOf($id);
+        $reception['logs']  = $this->audit->forEntity(AuditService::ENTITY_RECEPTION, $id);
 
         return $reception;
     }
@@ -65,11 +66,10 @@ class ReceptionService
 
             $this->receptions->replaceItems($receptionId, $items);
             $this->receptions->replaceStockMovements($receptionId, $items, $receivedAt);
-            $this->receptions->log(
+            $this->audit->logCreated(
+                AuditService::ENTITY_RECEPTION,
                 $receptionId,
                 $actorId,
-                'CREATE',
-                null,
                 $this->snapshot($referenceNo, $supplierId, $receivedAt, $items),
             );
 
@@ -135,10 +135,10 @@ class ReceptionService
 
             $this->receptions->replaceItems($id, $items);
             $this->receptions->replaceStockMovements($id, $items, $receivedAt);
-            $this->receptions->log(
+            $this->audit->logUpdated(
+                AuditService::ENTITY_RECEPTION,
                 $id,
                 (int) $actor['id'],
-                'UPDATE',
                 $before,
                 $this->snapshot($referenceNo, $supplierId, $receivedAt, $items),
             );

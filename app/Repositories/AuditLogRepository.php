@@ -10,8 +10,6 @@ use App\Models\AuditLogModel;
  */
 class AuditLogRepository
 {
-    public const ENTITY_RECEPTION = 'reception';
-
     public function __construct(
         private readonly AuditLogModel $logs = new AuditLogModel(),
     ) {

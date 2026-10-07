@@ -87,6 +87,8 @@ Tabel log sengaja **generik** lewat pasangan `entity_type`/`entity_id`, bukan re
 
 Kolom `action` menyimpan **token kanonik** (`CREATE`/`UPDATE`/`DELETE`), bukan kalimat siap tampil. Label berbahasa Indonesia/Inggris dirakit di lapisan render: `Reception.log.action_create` dkk. dikirim lewat boot i18n dan JS memetakannya saat menampilkan riwayat aksi (token tak dikenal tampil apa adanya). Dengan begitu data audit tetap stabil lintas bahasa dan tetap nyaman difilter (`WHERE action = 'CREATE'`).
 
+Penulisan audit terpusat di `App\Services\AuditService` (`logCreated`/`logUpdated`/`logDeleted`, plus `forEntity` untuk membaca). Service domain memanggilnya **di dalam transaksinya sendiri**, sehingga baris audit ikut batal ketika operasi gagal dan tidak ada service yang menulis log untuk transaksi milik service lain.
+
 Contoh request membuat penerimaan (setelah login, kirim cookie session):
 
 ```
@@ -112,7 +114,7 @@ GET /api/stocks?on_date=2026-10-03
 
 ## 6. Pengujian dan Verifikasi
 
-Pengujian otomatis (119 test, 381 assertion):
+Pengujian otomatis (125 test, 397 assertion):
 
 ```
 composer run test

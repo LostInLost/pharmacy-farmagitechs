@@ -1,6 +1,6 @@
 <?php
 
-use App\Repositories\AuditLogRepository;
+use App\Services\AuditService;
 use App\Services\ReceptionService;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
@@ -171,7 +171,7 @@ final class ReceptionAuditTest extends CIUnitTestCase
 
     public function testAuditLogSupportsOtherEntityTypes(): void
     {
-        (new AuditLogRepository())->record('medicine', 101, $this->petugasId, 'UPDATE', ['quantity' => 5], ['quantity' => 7]);
+        (new AuditService())->logUpdated('medicine', 101, $this->petugasId, ['quantity' => 5], ['quantity' => 7]);
 
         $rows = $this->db->table('audit_logs')->where('entity_type', 'medicine')->get()->getResultArray();
 

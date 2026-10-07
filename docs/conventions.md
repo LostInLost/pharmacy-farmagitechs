@@ -3,7 +3,8 @@
 ## Lapisan
 
 - Controller (`app/Controllers`) hanya menerjemahkan HTTP ke service. Tidak ada SQL, tidak ada keputusan hak akses di sini.
-- Service (`app/Services`) memegang satu transaksi per operasi, menerima data + id aktor, dan tidak mengenal session/request sehingga bisa dipakai API, Web, maupun CLI.
+- Service (`app/Services`) memegang satu transaksi per operasi, menerima data + id aktor, dan tidak mengenal session/request sehingga bisa dipakai API, Web, maupun CLI. Service boleh memanggil service lain; yang membuka transaksi adalah service paling luar, dan service yang dipanggil tidak membuka transaksi sendiri.
+- `AuditService` (`app/Services`) adalah satu-satunya penulis jejak audit: `logCreated`/`logUpdated`/`logDeleted` + `forEntity`. Service domain memanggilnya di dalam transaksinya sendiri, sehingga baris log ikut batal saat operasi gagal. Repository domain tidak menulis audit dan tidak menjadi perantara audit.
 - Repository (`app/Repositories`) menyembunyikan Query Builder. Service tidak tahu nama tabel.
 - Policy (`app/Policies`) memegang keputusan hak ubah. Dipanggil service sebelum write, di dalam transaksi.
 - Validator (`app/Validation`) memusatkan aturan validasi payload.

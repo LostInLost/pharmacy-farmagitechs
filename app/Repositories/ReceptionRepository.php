@@ -11,7 +11,6 @@ class ReceptionRepository
     public function __construct(
         private readonly ReceptionModel $receptions = new ReceptionModel(),
         private readonly ReceptionItemModel $items = new ReceptionItemModel(),
-        private readonly AuditLogRepository $audit = new AuditLogRepository(),
         private readonly StockMovementModel $movements = new StockMovementModel(),
     ) {
     }
@@ -61,11 +60,6 @@ class ReceptionRepository
             'expires_on'    => $row['expires_on'],
             'quantity'      => (int) $row['quantity'],
         ], $rows);
-    }
-
-    public function logsOf(int $receptionId): array
-    {
-        return $this->audit->forEntity(AuditLogRepository::ENTITY_RECEPTION, $receptionId);
     }
 
     public function insertReception(array $data): int
@@ -118,11 +112,6 @@ class ReceptionRepository
             'unit_name'     => null,
             'created_at'    => $receivedAt,
         ], array_values($items)));
-    }
-
-    public function log(int $receptionId, int $actorId, string $action, ?array $before, ?array $after): void
-    {
-        $this->audit->record(AuditLogRepository::ENTITY_RECEPTION, $receptionId, $actorId, $action, $before, $after);
     }
 
     private function normalizeReception(array $row): array
