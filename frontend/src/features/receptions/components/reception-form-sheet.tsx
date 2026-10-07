@@ -3,6 +3,7 @@ import { z } from "zod"
 import { CirclePlusIcon, Trash2Icon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { Combobox } from "@/components/ui/combobox"
 import { Feedback } from "@/components/feedback"
 import {
   Field,
@@ -10,14 +11,6 @@ import {
   FieldLabel,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import {
   Sheet,
   SheetContent,
@@ -327,27 +320,17 @@ export function ReceptionFormSheet({
 
                 <Field>
                   <FieldLabel htmlFor="supplier_id">Pemasok</FieldLabel>
-                  <Select value={supplierId} onValueChange={setSupplierId}>
-                    <SelectTrigger
-                      id="supplier_id"
-                      className="w-full"
-                      aria-invalid={fieldErrors.supplier_id !== undefined}
-                    >
-                      <SelectValue placeholder="- pilih -" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        {suppliers.map((supplier) => (
-                          <SelectItem
-                            key={supplier.id}
-                            value={String(supplier.id)}
-                          >
-                            {supplier.name}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
+                  <Combobox
+                    id="supplier_id"
+                    value={supplierId}
+                    onValueChange={setSupplierId}
+                    options={suppliers.map((supplier) => ({
+                      value: String(supplier.id),
+                      label: supplier.name,
+                    }))}
+                    searchPlaceholder="Cari pemasok..."
+                    aria-invalid={fieldErrors.supplier_id !== undefined}
+                  />
                   <FieldError>{fieldErrors.supplier_id}</FieldError>
                 </Field>
 
@@ -381,30 +364,20 @@ export function ReceptionFormSheet({
                     {rows.map((row) => (
                       <TableRow key={row.key}>
                         <TableCell>
-                          <Select
+                          <Combobox
                             value={
                               row.medicine_id > 0 ? String(row.medicine_id) : ""
                             }
                             onValueChange={(value) =>
                               updateRow(row.key, { medicine_id: Number(value) })
                             }
-                          >
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="- pilih -" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectGroup>
-                                {medicines.map((medicine) => (
-                                  <SelectItem
-                                    key={medicine.id}
-                                    value={String(medicine.id)}
-                                  >
-                                    {medicine.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectGroup>
-                            </SelectContent>
-                          </Select>
+                            options={medicines.map((medicine) => ({
+                              value: String(medicine.id),
+                              label: medicine.name,
+                              hint: medicine.unit,
+                            }))}
+                            searchPlaceholder="Cari obat..."
+                          />
                         </TableCell>
                         <TableCell>
                           <Input

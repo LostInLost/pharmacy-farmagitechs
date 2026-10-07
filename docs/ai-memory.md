@@ -13,7 +13,7 @@ Proyek ini dikembangkan bersama asisten AI yang menyimpan memorinya di dalam rep
 | [`.harness/memory/tasks/`](../.harness/memory/tasks) | Progres dan rencana per sesi kerja | Dilacak |
 | `.harness/tmp/` | Arsip sementara (mis. salinan README sebelum dipangkas) | Diabaikan `.gitignore` |
 
-Per 7 Oktober 2026 ada **47 entri** yang ikut ter-commit, sehingga riwayatnya terlihat langsung di GitHub tanpa perlu alat khusus. Katalog di bawah ikut bertambah setiap kali sesi AI mencatat temuan baru.
+Per 7 Oktober 2026 ada **49 entri** yang ikut ter-commit, sehingga riwayatnya terlihat langsung di GitHub tanpa perlu alat khusus. Katalog di bawah ikut bertambah setiap kali sesi AI mencatat temuan baru.
 
 ## Format satu entri
 
@@ -118,8 +118,9 @@ Angka-angka ini dikutip dari catatan memori pada tiap titik, jadi terlihat bagai
 - [Catatan Alat AI README: Deepseek Harness + plugin (memory/MCP); planning Muse/Mimo/Kimi, eksekutor Deepseek/GLM/Mimo/Kimi](../.harness/memory/decisions/2026-10-07T09-10-30-catatan-alat-ai-readme-deepseek-harness-plugin-mem.md) — Bagian \"Catatan Alat AI dan Referensi\" di README diperbarui sesuai info user 2026-10-07: tools = Deepseek Harness dengan plugin…
 - [Referensi README + Astro (frontend stack: Astro 7.3.5 SSR, React 19, Tailwind 4, shadcn)](../.harness/memory/decisions/2026-10-07T09-12-09-referensi-readme-astro-frontend-stack-astro-7-3-5-.md) — Bullet \"Referensi\" di README ditambah Astro sesuai permintaan user 2026-10-07: \"dokumentasi resmi CodeIgniter 4 (backend) dan Astro…
 - [Konvensi Peta Dokumentasi README: nama berkas jadi link tebal, bukan code span (biar jelas bisa diklik)](../.harness/memory/decisions/2026-10-07T09-21-22-konvensi-peta-dokumentasi-readme-nama-berkas-jadi-.md) — User 2026-10-07 bertanya apakah Peta Dokumentasi bisa diklik. Ternyata sudah link sejak awal, tapi nama berkas dibungkus backtick…
-- [Dokumentasi riwayat memori AI + ringkasan proses + katalog entri](../.harness/memory/decisions/2026-10-07T09-50-51-docs-ai-memory-md-dokumentasi-riwayat-memori-ai-ha.md) — Berkas yang sed
-- [Log operasi medicines: detail obat menyertakan riwayat audit (data.logs), label Audit.medicines, tanpa migrasi](../.harness/memory/decisions/2026-10-07T11-01-22-log-operasi-medicines-detail-obat-menyertakan-riwa.md) — Detail obat kini menyertakan `logs` via `AuditService::forEntity`; label `Audit.medicines` di id/en + mirror frontend; item Postman 4.13; 151 test/504 assertion & Newman 108 assertion hijauang Anda baca ini: isi `.harness/`, format entri, ringkasan 4 fase, dan katalog lengkap memori.
+- [Dokumentasi riwayat memori AI + ringkasan proses + katalog entri](../.harness/memory/decisions/2026-10-07T09-50-51-docs-ai-memory-md-dokumentasi-riwayat-memori-ai-ha.md) — Berkas yang sedang Anda baca ini: isi `.harness/`, format entri, ringkasan 4 fase, dan katalog lengkap memori.
+- [Log operasi medicines: detail obat menyertakan riwayat audit (data.logs), label Audit.medicines, tanpa migrasi](../.harness/memory/decisions/2026-10-07T11-01-22-log-operasi-medicines-detail-obat-menyertakan-riwa.md) — Detail obat kini menyertakan `logs` via `AuditService::forEntity`; label `Audit.medicines` di id/en + mirror frontend; item Postman 4.13; 151 test/504 assertion & Newman 108 assertion hijau.
+- [Combobox pemasok & obat di form penerimaan: dibangun dari Radix Popover, bukan registry shadcn](../.harness/memory/decisions/2026-10-07T11-21-40-combobox-pemasok-obat-di-form-penerimaan-dibangun-.md) — Select pemasok & obat diganti Combobox berbasis primitif Radix yang sudah terpasang (Popover + Input + daftar tersaring); registry shadcn ditolak karena butuh `@base-ui/react` yang tak bisa dipasang di sandbox.
 
 ### Pelajaran teknis
 
@@ -142,6 +143,7 @@ Angka-angka ini dikutip dari catatan memori pada tiap titik, jadi terlihat bagai
 - [UI tidak reaktif di Astro: island tanpa client:load dan cache Vite basi](../.harness/memory/learnings/2026-10-07T04-54-12-ui-tidak-reaktif-di-astro-island-tanpa-client-load.md) — Island mati tanpa error: AppShell tanpa client:load + cache Vite basi (504 sonner.js); cara diagnosis via CDP
 - [Commit tanpa pathspec menyapu staging sesi paralel; pecah dengan commit ber-pathspec](../.harness/memory/learnings/2026-10-07T05-34-33-commit-tanpa-pathspec-menyapu-staging-sesi-paralel.md) — Commit git tanpa pathspec menyapu file yang di-stage sesi paralel; perbaikan: pecah via reset --soft + commit ber-pathspec eksplisit;…
 - [Cara menjalankan jalur test SQLite3 saat ekstensi sqlite3 mati (php -d extension=sqlite3 + config sementara ber-<env>), lang() hanya memuat berkas bila diminta per grup, API test dari PowerShell pakai file payload + cookie jar, dan Chrome headless harus diserahkan ke user](../.harness/memory/learnings/2026-10-07T06-55-56-cara-menjalankan-jalur-test-sqlite3-saat-ekstensi-.md) — Cara menjalankan jalur test SQLite3 saat ekstensi sqlite3 mati (php -d extension=sqlite3 + config sementara ber-<env>), lang() hanya…
+- [Popover di dalam Sheet/Dialog modal: roda mouse tidak bisa menggulir konten yang di-portal ke body — perbaikannya Popover `modal`](../.harness/memory/learnings/2026-10-07T11-21-48-popover-di-dalam-sheet-dialog-modal-roda-mouse-tid.md) — `react-remove-scroll` milik Sheet memblokir wheel untuk konten Popover yang di-portal ke `body`; mode `modal` memasang scroll-lock bersarang, dibuktikan via CDP (scrollTop 0 → 400)
 - [Cara push dari sandbox: GIT_ASKPASS berisi token dari git-credential-manager, karena sh.exe diblokir](../.harness/memory/learnings/2026-10-07T09-36-26-cara-push-dari-sandbox-git-askpass-berisi-token-da.md) — 2026-10-07 push berhasil. Kendala: git spawn sh.exe (bootstrap credential helper) diblokir sandbox (Win32 error 5) -> \"could not read…
 
 ### Progres dan rencana
