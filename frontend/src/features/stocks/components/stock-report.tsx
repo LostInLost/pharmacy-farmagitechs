@@ -1,13 +1,7 @@
 import * as React from "react"
 
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible"
 import {
   Empty,
   EmptyDescription,
@@ -16,10 +10,7 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty"
 import { Feedback } from "@/components/feedback"
-import {
-  Field,
-  FieldLabel,
-} from "@/components/ui/field"
+import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -38,7 +29,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { formatDate } from "@/foundations/format"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import type { ApiResult } from "@/foundations/api/request"
 import { getStockReport } from "@/features/stocks/api"
 import type {
@@ -46,7 +41,8 @@ import type {
   StockMedicine,
   StockReport,
 } from "@/features/stocks/schemas"
-import { PackageXIcon } from "lucide-react"
+import { BoxesIcon, PackageXIcon } from "lucide-react"
+import { StockBatchSheet } from "./stock-batch-sheet"
 
 type StatusFilter = "all" | "available" | "expired"
 
@@ -55,20 +51,36 @@ type State =
   | { status: "error"; message: string }
   | { status: "ready"; medicines: StockMedicine[] }
 
-const COLUMNS = [
-  "Kode",
-  "Obat",
-  "Satuan",
-  "Fisik",
-  "Tersedia",
-  "Kedaluwarsa",
-  "Batch",
+const COLUMNS: { label: string; align?: "right" }[] = [
+  { label: "Kode" },
+  { label: "Obat" },
+  { label: "Satuan" },
+  { label: "Fisik", align: "right" },
+  { label: "Tersedia", align: "right" },
+  { label: "Kedaluwarsa", align: "right" },
+  { label: "Aksi", align: "right" },
 ]
 
-export function StockReport() {
+type Props = {
+  /** Obat yang detail batch-nya dibuka dari query string (`?view=<id>`). */
+  initialViewId?: number | null
+}
+
+/**
+ * Laporan stok sekaligus orkestrator sheet detail batch.
+ *
+ * Detail batch dulu berupa collapsible di dalam baris; kini menjadi sheet agar
+ * tabel tetap ringkas dan satu batch tidak mendorong tinggi baris. Membuka
+ * sheet menyinkronkan URL lewat `history.replaceState`, sehingga `?view=<id>`
+ * tetap bisa dibagikan dan dimuat langsung lewat SSR.
+ */
+export function StockReport({ initialViewId = null }: Props) {
   const [state, setState] = React.useState<State>({ status: "loading" })
   const [onDate, setOnDate] = React.useState("")
   const [statusFilter, setStatusFilter] = React.useState<StatusFilter>("all")
+  const [viewId, setViewId] = React.useState<number | null>(initialViewId)
+  const [sheetOpen, setSheetOpen] = React.useState(initialViewId !== null)
+  const [sheetSeq, setSheetSeq] = React.useState(0)
 
   /** Petakan hasil request ke state; dipanggil dari callback, bukan efek. */
   const applyResult = React.useCallback((result: ApiResult<StockReport>) => {
@@ -94,10 +106,35 @@ export function StockReport() {
     }
   }, [applyResult])
 
+  // Sinkronkan URL dengan sheet yang terbuka. Kuncinya `sheetOpen`, bukan
+  // `viewId`: saat menutup, `viewId` sengaja masih terisi (lihat `closeSheet`)
+  // supaya Radix sempat memainkan animasi keluar.
+  React.useEffect(() => {
+    const url = new URL(window.location.href)
+
+    url.searchParams.delete("view")
+
+    if (viewId !== null && sheetOpen) {
+      url.searchParams.set("view", String(viewId))
+    }
+
+    window.history.replaceState(null, "", url)
+  }, [viewId, sheetOpen])
+
   function onSubmit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
     setState({ status: "loading" })
     getStockReport(onDate).then(applyResult)
+  }
+
+  function openView(medicineId: number) {
+    setViewId(medicineId)
+    setSheetOpen(true)
+    setSheetSeq((seq) => seq + 1)
+  }
+
+  function closeSheet() {
+    setSheetOpen(false)
   }
 
   /**
@@ -107,14 +144,19 @@ export function StockReport() {
    * sama sekali — agar cocok dengan halaman CI4. Status lain hanya menyisakan
    * obat yang punya batch pada kelompok tersebut.
    */
-  const rows =
-    state.status === "ready"
-      ? state.medicines.filter((medicine) =>
-          statusFilter === "all"
-            ? true
-            : batchesFor(medicine, statusFilter).length > 0
-        )
-      : []
+  const medicines = state.status === "ready" ? state.medicines : []
+  const rows = medicines.filter((medicine) =>
+    statusFilter === "all"
+      ? true
+      : batchesFor(medicine, statusFilter).length > 0
+  )
+
+  // Dicari di seluruh obat, bukan hanya baris yang lolos filter: mengganti
+  // filter saat sheet terbuka tidak boleh membuat sheet kehilangan datanya.
+  const viewed =
+    viewId === null
+      ? null
+      : (medicines.find((medicine) => medicine.medicine_id === viewId) ?? null)
 
   return (
     <div className="flex flex-col gap-4 px-4 lg:px-6">
@@ -178,12 +220,9 @@ export function StockReport() {
           <Table>
             <TableHeader>
               <TableRow>
-                {COLUMNS.map((column, index) => (
-                  <TableHead
-                    key={column}
-                    className={index >= 3 && index <= 5 ? "text-right" : undefined}
-                  >
-                    {column}
+                {COLUMNS.map((column) => (
+                  <TableHead key={column.label} className={alignClass(column)}>
+                    {column.label}
                   </TableHead>
                 ))}
               </TableRow>
@@ -237,11 +276,8 @@ export function StockReport() {
                     <TableCell className="text-right">
                       {medicine.expired_quantity}
                     </TableCell>
-                    <TableCell>
-                      <BatchDetails
-                        medicine={medicine}
-                        statusFilter={statusFilter}
-                      />
+                    <TableCell className="text-right">
+                      <BatchAction medicine={medicine} onView={openView} />
                     </TableCell>
                   </TableRow>
                 ))}
@@ -249,8 +285,24 @@ export function StockReport() {
           </Table>
         </CardContent>
       </Card>
+
+      {viewed !== null && (
+        <StockBatchSheet
+          key={`batch-${viewed.medicine_id}-${sheetSeq}`}
+          medicine={viewed}
+          onDate={onDate}
+          open={sheetOpen}
+          onOpenChange={(open) => {
+            if (!open) closeSheet()
+          }}
+        />
+      )}
     </div>
   )
+}
+
+function alignClass(column: { align?: "right" }): string | undefined {
+  return column.align === "right" ? "text-right" : undefined
 }
 
 function batchesFor(
@@ -263,62 +315,40 @@ function batchesFor(
   return [...medicine.available_batches, ...medicine.expired_batches]
 }
 
-function BatchDetails({
+/**
+ * Aksi baris berupa ikon: membuka sheet detail batch. Hitungannya seluruh
+ * batch (tersedia + kedaluwarsa) karena sheet menampilkan keduanya — filter
+ * status hanya menyaring baris, bukan isi sheet. Obat tanpa batch sama sekali
+ * tidak punya apa pun untuk ditampilkan, jadi diberi tanda "-".
+ */
+function BatchAction({
   medicine,
-  statusFilter,
+  onView,
 }: {
   medicine: StockMedicine
-  statusFilter: StatusFilter
+  onView: (medicineId: number) => void
 }) {
-  const batches = batchesFor(medicine, statusFilter)
+  const total =
+    medicine.available_batches.length + medicine.expired_batches.length
 
-  if (batches.length === 0) {
-    return (
-      <span className="text-muted-foreground">
-        {statusFilter === "all" ? "belum ada batch" : "tidak ada batch"}
-      </span>
-    )
+  if (total === 0) {
+    return <span className="text-muted-foreground">-</span>
   }
 
   return (
-    <Collapsible>
-      <CollapsibleTrigger className="cursor-pointer whitespace-nowrap">
-        {batches.length} batch
-      </CollapsibleTrigger>
-      <CollapsibleContent>
-        <div className="mt-2 overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Batch</TableHead>
-                <TableHead>Kedaluwarsa</TableHead>
-                <TableHead className="text-right">Jumlah</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {batches.map((batch) => (
-                <TableRow key={batch.batch_no}>
-                  <TableCell>{batch.batch_no}</TableCell>
-                  <TableCell>
-                    {batch.expires_on ? formatDate(batch.expires_on) : "-"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {batch.quantity}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={batch.is_expired ? "destructive" : "secondary"}
-                    >
-                      {batch.is_expired ? "kedaluwarsa" : "tersedia"}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </CollapsibleContent>
-    </Collapsible>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          size="icon-sm"
+          onClick={() => onView(medicine.medicine_id)}
+          aria-label={`Lihat ${total} batch ${medicine.name}`}
+        >
+          <BoxesIcon />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side="top">Lihat {total} batch</TooltipContent>
+    </Tooltip>
   )
 }

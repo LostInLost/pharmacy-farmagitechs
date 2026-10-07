@@ -2,6 +2,10 @@
 import BaseLayout from "@/layouts/base-layout.astro"
 import { AppShell } from "@/components/app-shell"
 import { StockReport } from "@/features/stocks/components/stock-report"
+
+// Sheet detail batch dari query string: `?view=<medicine_id>`.
+const raw = Astro.url.searchParams.get("view")
+const initialViewId = raw !== null && /^\d+$/.test(raw) ? Number(raw) : null
 ---
 
 <BaseLayout title="Laporan Stok">
@@ -11,6 +15,6 @@ import { StockReport } from "@/features/stocks/components/stock-report"
     pathname={Astro.url.pathname}
     title="Laporan Stok"
   >
-    <StockReport client:load />
+    <StockReport client:load initialViewId={initialViewId} />
   </AppShell>
 </BaseLayout>
