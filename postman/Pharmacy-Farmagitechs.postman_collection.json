@@ -1,7 +1,7 @@
 {
     "info":  {
                  "name":  "Pharmacy Farmagitechs",
-                 "description":  "**Pharmacy Farmagitechs** â€” API penerimaan obat \u0026 laporan stok (CodeIgniter 4).\n\n- Base URL: `{{base_url}}` (default `http://localhost:8080`)\n- Bahasa response: Indonesia (locale `id`)\n\n## Autentikasi \u0026 CSRF\n\n- Sesi: cookie `ci_session` (terbit saat `POST /api/login`).\n- CSRF: seluruh POST/PUT wajib header `X-CSRF-TOKEN`. Cookie `csrf_cookie_name` terbit saat `GET /login` (item 0.1) atau `GET /api/csrf`.\n- Script tingkat koleksi: prerequest mengisi `X-CSRF-TOKEN` dari cookie (fallback variabel `csrf_token`); test script menyimpan token terbaru dari **setiap response** ke `csrf_token` â€” token berotasi setiap mutasi sukses, jangan hardcode.\n\n## Bentuk response sukses\n\n| Bentuk | Dipakai oleh |\n|---|---|\n| `{\"data\": ...}` | GET receipts (daftar/detail), references |\n| `{\"on_date\": ..., \"medicines\": [...]}` | GET /api/stocks |\n| `{\"user\": ...}` | GET /api/me; POST /api/login memakai `message` + `user` |\n| `{\"message\": ..., \"data\": ...}` | POST/PUT /api/receipts |\n| `{\"message\": ...}` | POST /api/logout |\n| `{\"token\": ...}` | GET /api/csrf |\n\n## Bentuk error\n\nUmum: `{\"message\": \"Pesan kesalahan.\"}`. Validasi (422) dan gagal simpan (500) pada receipts menambah `errors: [...]`:\n\n- **Create (POST)**: `message` = `\"Validasi gagal.\"`, `errors` = daftar pesan.\n- **Update (PUT)**: `message` = `errors[0]`, `errors` tetap daftar lengkap.\n\nUrutan filter global: `cors` â†’ `csrf` â†’ `guest`/`auth`.\n\n| Kondisi | Status | Body |\n|---|---|---|\n| Sesi tidak ada (AuthFilter) | 401 | `{\"message\":\"Belum masuk.\"}` â€” **tanpa** header `X-CSRF-TOKEN` |\n| Token CSRF hilang/salah/kedaluwarsa (CsrfFilter) | 403 | `{\"message\":\"Sesi formulir sudah kedaluwarsa. Muat ulang halaman lalu coba lagi.\",\"error\":\"csrf\"}` + header `X-CSRF-TOKEN` berisi token **baru** |\n| `POST /api/login` saat sesi aktif (GuestFilter) | 403 | `{\"message\":\"Sudah masuk.\"}` â€” logout dulu sebelum ganti akun |\n| Hak ubah reception ditolak (ReceptionPolicy) | 403 | `{\"message\":\"Anda tidak berhak mengubah penerimaan ini.\",\"errors\":[...]}` (PUT) |\n\n## Data contoh (seeder dev)\n\n- User: `supervisor`/`supervisor123` (role `supervisor`, ubah semua), `petugas`/`petugas123` (role `reception`, ubah milik sendiri)\n- Pemasok: `1` Farma Nusantara, `2` Medika Sentosa, `3` Pemasok Arsip (nonaktif)\n- Obat: `101`â€“`123` aktif; `105`, `124`, `125` nonaktif\n\n## Catatan operasional\n\n- Jalankan folder berurutan mengikuti nomor; folder `4. Unauthenticated` **paling akhir** (merusak sesi/token untuk request berikutnya).\n- Ganti akun: selalu `POST /api/logout` dulu, jika tidak `POST /api/login` kedua kena 403 GuestFilter.",
+                 "description":  "**Pharmacy Farmagitechs** — API penerimaan obat \u0026 laporan stok (CodeIgniter 4).\n\n- Base URL: `{{base_url}}` (default `http://localhost:8080`)\n- Bahasa response: Indonesia (locale `id`)\n\n## Autentikasi \u0026 CSRF\n\n- Sesi: cookie `ci_session` (terbit saat `POST /api/login`).\n- CSRF: seluruh POST/PUT wajib header `X-CSRF-TOKEN`. Cookie `csrf_cookie_name` terbit saat `GET /login` (item 0.1) atau `GET /api/csrf`.\n- Script tingkat koleksi: prerequest mengisi `X-CSRF-TOKEN` dari cookie (fallback variabel `csrf_token`); test script menyimpan token terbaru dari **setiap response** ke `csrf_token` — token berotasi setiap mutasi sukses, jangan hardcode.\n\n## Bentuk response sukses\n\n| Bentuk | Dipakai oleh |\n|---|---|\n| `{\"data\": ...}` | GET receipts (daftar/detail), references |\n| `{\"on_date\": ..., \"medicines\": [...]}` | GET /api/stocks |\n| `{\"user\": ...}` | GET /api/me; POST /api/login memakai `message` + `user` |\n| `{\"message\": ..., \"data\": ...}` | POST/PUT /api/receipts |\n| `{\"message\": ...}` | POST /api/logout |\n| `{\"token\": ...}` | GET /api/csrf |\n\n## Bentuk error\n\nUmum: `{\"message\": \"Pesan kesalahan.\"}`. Validasi (422) dan gagal simpan (500) pada receipts menambah `errors: [...]`:\n\n- **Create (POST)**: `message` = `\"Validasi gagal.\"`, `errors` = daftar pesan.\n- **Update (PUT)**: `message` = `errors[0]`, `errors` tetap daftar lengkap.\n\nUrutan filter global: `cors` → `csrf` → `guest`/`auth`.\n\n| Kondisi | Status | Body |\n|---|---|---|\n| Sesi tidak ada (AuthFilter) | 401 | `{\"message\":\"Belum masuk.\"}` — **tanpa** header `X-CSRF-TOKEN` |\n| Token CSRF hilang/salah/kedaluwarsa (CsrfFilter) | 403 | `{\"message\":\"Sesi formulir sudah kedaluwarsa. Muat ulang halaman lalu coba lagi.\",\"error\":\"csrf\"}` + header `X-CSRF-TOKEN` berisi token **baru** |\n| `POST /api/login` saat sesi aktif (GuestFilter) | 403 | `{\"message\":\"Sudah masuk.\"}` — logout dulu sebelum ganti akun |\n| Hak ubah reception ditolak (ReceptionPolicy) | 403 | `{\"message\":\"Anda tidak berhak mengubah penerimaan ini.\",\"errors\":[...]}` (PUT) |\n\n## Data contoh (seeder dev)\n\n- User: `supervisor`/`supervisor123` (role `supervisor`, ubah semua), `petugas`/`petugas123` (role `reception`, ubah milik sendiri)\n- Pemasok: `1` Farma Nusantara, `2` Medika Sentosa, `3` Pemasok Arsip (nonaktif)\n- Obat: `101`–`123` aktif; `105`, `124`, `125` nonaktif\n\n## Catatan operasional\n\n- Jalankan folder berurutan mengikuti nomor; folder `5. Unauthenticated` **paling akhir** (merusak sesi/token untuk request berikutnya).\n- Ganti akun: selalu `POST /api/logout` dulu, jika tidak `POST /api/login` kedua kena 403 GuestFilter.\n\nDokumentasi versi markdown (lebih enak dibaca di GitHub): `docs/postman.md`.",
                  "schema":  "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
              },
     "event":  [
@@ -98,7 +98,7 @@
                                                               },
                                                       "description":  "Halaman login adalah titik masuk token CSRF: GET ini menerbitkan cookie csrf_cookie_name yang dipakai seluruh request berikutnya. Wajib dijalankan paling awal (mis. lewat newman --folder atau run berurutan)."
                                                   },
-                                      "description":  "`GET /login` â€” tujuan **hanya** menerbitkan cookie `csrf_cookie_name` (halaman login, bukan endpoint API).\n\n- **200 OK**: HTML halaman login.\n- **403**: sesi sudah aktif â†’ halaman \"Sudah Masuk\" (GuestFilter jalur web).\n\nAlternatif JSON: `GET /api/csrf` â†’ **200** `{\"token\":\"...\"}` + cookie yang sama."
+                                      "description":  "`GET /login` — tujuan **hanya** menerbitkan cookie `csrf_cookie_name` (halaman login, bukan endpoint API).\n\n- **200 OK**: HTML halaman login.\n- **403**: sesi sudah aktif → halaman \"Sudah Masuk\" (GuestFilter jalur web).\n\nAlternatif JSON: `GET /api/csrf` → **200** `{\"token\":\"...\"}` + cookie yang sama."
                                   }
                               ],
                      "description":  "Folder penerbitan token CSRF **sebelum** request pertama yang membutuhkannya.\n\nCookie `csrf_cookie_name` (HttpOnly) terbit di sini; script prerequest koleksi membacanya lalu mengisi header `X-CSRF-TOKEN` untuk semua request berikutnya. Bila cookie belum ada, jalankan item 0.1 dulu."
@@ -142,7 +142,7 @@
                                                                            ]
                                                               }
                                                   },
-                                      "description":  "`POST /api/login` dengan kredensial salah.\n\n**Body**\n\n```json\n{\"username\": \"salah\", \"password\": \"salah\"}\n```\n\n**401 Unauthorized**\n\n```json\n{\"message\": \"Kredensial tidak valid.\"}\n```\n\nKondisi lain pada endpoint yang sama:\n\n- **422** `{\"message\":\"Username dan kata sandi wajib diisi.\"}` â€” field kosong.\n- **403** `{\"message\":\"Sudah masuk.\"}` â€” sesi masih aktif (logout dulu).\n- **403** `{\"message\":\"Sesi formulir sudah kedaluwarsa. ...\",\"error\":\"csrf\"}` â€” token CSRF hilang/salah."
+                                      "description":  "`POST /api/login` dengan kredensial salah.\n\n**Body**\n\n```json\n{\"username\": \"salah\", \"password\": \"salah\"}\n```\n\n**401 Unauthorized**\n\n```json\n{\"message\": \"Kredensial tidak valid.\"}\n```\n\nKondisi lain pada endpoint yang sama:\n\n- **422** `{\"message\":\"Username dan kata sandi wajib diisi.\"}` — field kosong.\n- **403** `{\"message\":\"Sudah masuk.\"}` — sesi masih aktif (logout dulu).\n- **403** `{\"message\":\"Sesi formulir sudah kedaluwarsa. ...\",\"error\":\"csrf\"}` — token CSRF hilang/salah."
                                   },
                                   {
                                       "name":  "1.2 Login supervisor",
@@ -183,7 +183,7 @@
                                                                            ]
                                                               }
                                                   },
-                                      "description":  "`POST /api/login` â€” akun supervisor (punya hak `receipt.update-any`).\n\n**Body**\n\n```json\n{\"username\": \"supervisor\", \"password\": \"supervisor123\"}\n```\n\n**200 OK**\n\n```json\n{\n  \"message\": \"Login berhasil.\",\n  \"user\": {\n    \"id\": 1,\n    \"name\": \"Rina Supervisor\",\n    \"username\": \"supervisor\",\n    \"email\": \"supervisor@farmagitechs.test\",\n    \"role\": \"supervisor\",\n    \"is_active\": 1\n  }\n}\n```\n\n`user` = baris tabel `users` tanpa `password_hash` (tabel tidak punya `created_at`/`updated_at`). Cookie `ci_session` terbit dari response ini."
+                                      "description":  "`POST /api/login` — akun supervisor (punya hak `receipt.update-any`).\n\n**Body**\n\n```json\n{\"username\": \"supervisor\", \"password\": \"supervisor123\"}\n```\n\n**200 OK**\n\n```json\n{\n  \"message\": \"Login berhasil.\",\n  \"user\": {\n    \"id\": 1,\n    \"name\": \"Rina Supervisor\",\n    \"username\": \"supervisor\",\n    \"email\": \"supervisor@farmagitechs.test\",\n    \"role\": \"supervisor\",\n    \"is_active\": 1\n  }\n}\n```\n\n`user` = baris tabel `users` tanpa `password_hash` (tabel tidak punya `created_at`/`updated_at`). Cookie `ci_session` terbit dari response ini."
                                   },
                                   {
                                       "name":  "1.3 Logout",
@@ -211,7 +211,7 @@
                                                                            ]
                                                               }
                                                   },
-                                      "description":  "`POST /api/logout` â€” memusnahkan sesi.\n\n**200 OK**\n\n```json\n{\"message\": \"Logout berhasil.\"}\n```\n\n**401 Unauthorized** (sesi sudah habis)\n\n```json\n{\"message\": \"Belum masuk.\"}\n```"
+                                      "description":  "`POST /api/logout` — memusnahkan sesi.\n\n**200 OK**\n\n```json\n{\"message\": \"Logout berhasil.\"}\n```\n\n**401 Unauthorized** (sesi sudah habis)\n\n```json\n{\"message\": \"Belum masuk.\"}\n```"
                                   },
                                   {
                                       "name":  "1.4 Login petugas (sesi untuk folder berikutnya)",
@@ -252,7 +252,7 @@
                                                               },
                                                       "description":  "Wajib dijalankan sebelum folder Stocks dan Receipts."
                                                   },
-                                      "description":  "`POST /api/login` â€” akun petugas (role `reception`: buat penerimaan sendiri, ubah hanya milik sendiri; `can_update` untuk reception lain = `false`).\n\n**Body**\n\n```json\n{\"username\": \"petugas\", \"password\": \"petugas123\"}\n```\n\n**200 OK** â€” bentuk sama dengan login supervisor, `role` = `\"reception\"`. Sesi ini dipakai seluruh folder `3. Receipts`."
+                                      "description":  "`POST /api/login` — akun petugas (role `reception`: buat penerimaan sendiri, ubah hanya milik sendiri; `can_update` untuk reception lain = `false`).\n\n**Body**\n\n```json\n{\"username\": \"petugas\", \"password\": \"petugas123\"}\n```\n\n**200 OK** — bentuk sama dengan login supervisor, `role` = `\"reception\"`. Sesi ini dipakai seluruh folder `3. Receipts`."
                                   },
                                   {
                                       "name":  "1.5 Cek sesi sendiri (GET /api/me)",
@@ -285,7 +285,7 @@
                                       "description":  "`GET /api/me` - sesi yang sama dengan 1.4, endpoint yang dipakai middleware SSR frontend Astro.\n\n**200 OK**\n\n```json\n{\"user\": {\"id\": 2, \"name\": \"Dewi Petugas\", \"username\": \"petugas\", \"role\": \"reception\", \"permissions\": [\"receipt.create\", \"receipt.view\", \"receipt.update-own\", \"medicine.view\"]}}\n```\n\n**401 Unauthorized** (tanpa sesi)\n\n```json\n{\"message\": \"Belum masuk.\"}\n```\n\n`permissions` dihitung dari `Config\\Permissions` pada setiap request (tidak disimpan di session), jadi perubahan konfigurasi langsung berlaku tanpa login ulang. Nilainya hanya affordance UI; penegakan tetap di policy server."
                                   }
                               ],
-                     "description":  "Autentikasi berbasis sesi cookie `ci_session` + CSRF header `X-CSRF-TOKEN`.\n\nEndpoint: `POST /api/login` (filter `guest`), `POST /api/logout`, `GET /api/me` (filter `auth`).\n\nKondisi login:\n\n| Status | Kapan |\n|---|---|\n| 200 | Kredensial benar â†’ sesi dibuat |\n| 422 | `username`/`password` kosong |\n| 401 | Kredensial salah atau user nonaktif |\n| 403 | Sudah sesi aktif (GuestFilter) / CSRF gagal |"
+                     "description":  "Autentikasi berbasis sesi cookie `ci_session` + CSRF header `X-CSRF-TOKEN`.\n\nEndpoint: `POST /api/login` (filter `guest`), `POST /api/logout`, `GET /api/me` (filter `auth`).\n\nKondisi login:\n\n| Status | Kapan |\n|---|---|\n| 200 | Kredensial benar → sesi dibuat |\n| 422 | `username`/`password` kosong |\n| 401 | Kredensial salah atau user nonaktif |\n| 403 | Sudah sesi aktif (GuestFilter) / CSRF gagal |"
                  },
                  {
                      "name":  "2. Stocks",
@@ -369,7 +369,7 @@
                                                                            ]
                                                               }
                                                   },
-                                      "description":  "`GET /api/stocks` â€” tanpa query param, `on_date` = hari ini.\n\n**200 OK**: bentuk identik dengan item 2.1, field `on_date` berisi tanggal hari ini."
+                                      "description":  "`GET /api/stocks` — tanpa query param, `on_date` = hari ini.\n\n**200 OK**: bentuk identik dengan item 2.1, field `on_date` berisi tanggal hari ini."
                                   },
                                   {
                                       "name":  "2.3 Laporan stok format tanggal salah (422)",
@@ -468,7 +468,7 @@
                                       "description":  "`GET /api/references/medicines`\n\n**200 OK**\n\n```json\n{\n  \"data\": [\n    {\"id\": 101, \"name\": \"Paracetamol 500 mg tablet\", \"unit\": \"tablet\"},\n    {\"id\": 102, \"name\": \"Amoxicillin 500 mg kapsul\", \"unit\": \"kapsul\"}\n  ]\n}\n```\n\nObat `is_active = 0` (105, 124, 125) tidak ikut. **401** tanpa sesi."
                                   }
                               ],
-                     "description":  "Laporan stok dari ledger `stock_movements` + endpoint reference untuk dropdown.\n\n- `GET /api/stocks[?on_date=YYYY-MM-DD]` â€” `on_date` (default hari ini) **hanya** menentukan klasifikasi kedaluwarsa per batch (`is_expired`: `MAX(expires_on) \u003c on_date`; tepat pada tanggal kedaluwarsa masih tersedia), bukan filter gerakan. Semua obat aktif selalu muncul meski stok 0.\n- `GET /api/references/suppliers` / `GET /api/references/medicines` â€” hanya baris `is_active = 1`.\n\nSemua endpoint di folder ini butuh sesi (401 bila tanpa login)."
+                     "description":  "Laporan stok dari ledger `stock_movements` + endpoint reference untuk dropdown.\n\n- `GET /api/stocks[?on_date=YYYY-MM-DD]` — `on_date` (default hari ini) **hanya** menentukan klasifikasi kedaluwarsa per batch (`is_expired`: `MAX(expires_on) \u003c on_date`; tepat pada tanggal kedaluwarsa masih tersedia), bukan filter gerakan. Semua obat aktif selalu muncul meski stok 0.\n- `GET /api/references/suppliers` / `GET /api/references/medicines` — hanya baris `is_active = 1`.\n\nSemua endpoint di folder ini butuh sesi (401 bila tanpa login)."
                  },
                  {
                      "name":  "3. Receipts",
@@ -522,7 +522,7 @@
                                                                            ]
                                                               }
                                                   },
-                                      "description":  "`POST /api/receipts`\n\n**Body**\n\n```json\n{\n  \"reference_no\": \"PB-001\",\n  \"supplier_id\": 1,\n  \"received_at\": \"2026-10-03T10:00:00+07:00\",\n  \"items\": [\n    {\"medicine_id\": 101, \"batch_no\": \"PCT-2601\", \"expires_on\": \"2027-12-31\", \"quantity\": 10},\n    {\"medicine_id\": 104, \"batch_no\": \"IBU-2602\", \"expires_on\": \"2028-06-30\", \"quantity\": 5}\n  ]\n}\n```\n\n**201 Created**\n\n```json\n{\n  \"message\": \"Penerimaan dibuat.\",\n  \"data\": {\n    \"id\": 1,\n    \"reference_no\": \"PB-001\",\n    \"supplier_id\": 1,\n    \"supplier_name\": \"Farma Nusantara\",\n    \"received_at\": \"2026-10-03 10:00:00\",\n    \"created_by\": 2,\n    \"created_by_name\": \"Dewi Petugas\",\n    \"created_at\": \"...\",\n    \"updated_by\": null,\n    \"updated_by_name\": null,\n    \"updated_at\": null,\n    \"items\": [\n      {\"id\": 1, \"medicine_id\": 101, \"medicine_code\": \"OBT-001\", \"medicine_name\": \"Paracetamol 500 mg tablet\", \"unit\": \"tablet\", \"batch_no\": \"PCT-2601\", \"expires_on\": \"2027-12-31\", \"quantity\": 10}\n    ],\n    \"logs\": [\n      {\"id\": 1, \"actor_id\": 2, \"actor_name\": \"Dewi Petugas\", \"action\": \"Audit.receptions.action.create\", \"data_before\": null, \"data_after\": {\"reference_no\": \"PB-001\", \"supplier_id\": 1, \"received_at\": \"2026-10-03 10:00:00\", \"items\": [\"...\"]}, \"created_at\": \"...\"}\n    ],\n    \"can_update\": true\n  }\n}\n```\n\nCreate juga menulis ledger `stock_movements` (`direction = \"in\"`, `moved_at` = `received_at`) dan log audit `Audit.receptions.action.create` dalam satu transaksi. Gagal â†’ **500** + rollback.\n\n**422** `{\"message\":\"Validasi gagal.\",\"errors\":[...]}` â€” katalog lengkap di deskripsi folder `3. Receipts`."
+                                      "description":  "`POST /api/receipts`\n\n**Body**\n\n```json\n{\n  \"reference_no\": \"PB-001\",\n  \"supplier_id\": 1,\n  \"received_at\": \"2026-10-03T10:00:00+07:00\",\n  \"items\": [\n    {\"medicine_id\": 101, \"batch_no\": \"PCT-2601\", \"expires_on\": \"2027-12-31\", \"quantity\": 10},\n    {\"medicine_id\": 104, \"batch_no\": \"IBU-2602\", \"expires_on\": \"2028-06-30\", \"quantity\": 5}\n  ]\n}\n```\n\n**201 Created**\n\n```json\n{\n  \"message\": \"Penerimaan dibuat.\",\n  \"data\": {\n    \"id\": 1,\n    \"reference_no\": \"PB-001\",\n    \"supplier_id\": 1,\n    \"supplier_name\": \"Farma Nusantara\",\n    \"received_at\": \"2026-10-03 10:00:00\",\n    \"created_by\": 2,\n    \"created_by_name\": \"Dewi Petugas\",\n    \"created_at\": \"...\",\n    \"updated_by\": null,\n    \"updated_by_name\": null,\n    \"updated_at\": null,\n    \"items\": [\n      {\"id\": 1, \"medicine_id\": 101, \"medicine_code\": \"OBT-001\", \"medicine_name\": \"Paracetamol 500 mg tablet\", \"unit\": \"tablet\", \"batch_no\": \"PCT-2601\", \"expires_on\": \"2027-12-31\", \"quantity\": 10}\n    ],\n    \"logs\": [\n      {\"id\": 1, \"actor_id\": 2, \"actor_name\": \"Dewi Petugas\", \"action\": \"Audit.receptions.action.create\", \"data_before\": null, \"data_after\": {\"reference_no\": \"PB-001\", \"supplier_id\": 1, \"received_at\": \"2026-10-03 10:00:00\", \"items\": [\"...\"]}, \"created_at\": \"...\"}\n    ],\n    \"can_update\": true\n  }\n}\n```\n\nCreate juga menulis ledger `stock_movements` (`direction = \"in\"`, `moved_at` = `received_at`) dan log audit `Audit.receptions.action.create` dalam satu transaksi. Gagal → **500** + rollback.\n\n**422** `{\"message\":\"Validasi gagal.\",\"errors\":[...]}` — katalog lengkap di deskripsi folder `3. Receipts`."
                                   },
                                   {
                                       "name":  "3.2 Cek stok setelah penerimaan",
@@ -560,7 +560,7 @@
                                                                             ]
                                                               }
                                                   },
-                                      "description":  "`GET /api/stocks?on_date=2026-10-03` â€” verifikasi ledger bertambah mengikuti item 3.1.\n\n**200 OK**: bentuk sama dengan item 2.1; `quantity` batch penerimaan dan `physical_quantity` obat terkait naik sesuai payload."
+                                      "description":  "`GET /api/stocks?on_date=2026-10-03` — verifikasi ledger bertambah mengikuti item 3.1.\n\n**200 OK**: bentuk sama dengan item 2.1; `quantity` batch penerimaan dan `physical_quantity` obat terkait naik sesuai payload."
                                   },
                                   {
                                       "name":  "3.3 Buat penerimaan - reference_no duplikat (422)",
@@ -636,7 +636,7 @@
                                                                            ]
                                                               }
                                                   },
-                                      "description":  "`POST /api/receipts` dengan `expires_on` = tanggal `received_at` (batch kedaluwarsa tepat di hari penerimaan â€” aturan: harus **lebih akhir**).\n\n**422 Unprocessable Entity**\n\n```json\n{\n  \"message\": \"Validasi gagal.\",\n  \"errors\": [\"Baris 1: expires_on harus lebih akhir daripada tanggal penerimaan.\"]\n}\n```"
+                                      "description":  "`POST /api/receipts` dengan `expires_on` = tanggal `received_at` (batch kedaluwarsa tepat di hari penerimaan — aturan: harus **lebih akhir**).\n\n**422 Unprocessable Entity**\n\n```json\n{\n  \"message\": \"Validasi gagal.\",\n  \"errors\": [\"Baris 1: expires_on harus lebih akhir daripada tanggal penerimaan.\"]\n}\n```"
                                   },
                                   {
                                       "name":  "3.5 Buat penerimaan - kedaluwarsa tidak konsisten (422)",
@@ -703,7 +703,7 @@
                                                                            ]
                                                               }
                                                   },
-                                      "description":  "`GET /api/receipts`\n\n**200 OK**\n\n```json\n{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"reference_no\": \"PB-001\",\n      \"supplier_id\": 1,\n      \"supplier_name\": \"Farma Nusantara\",\n      \"received_at\": \"2026-10-03 10:00:00\",\n      \"created_by\": 2,\n      \"created_by_name\": \"Dewi Petugas\",\n      \"created_at\": \"...\",\n      \"updated_by\": null,\n      \"updated_by_name\": null,\n      \"updated_at\": null,\n      \"can_update\": true\n    }\n  ]\n}\n```\n\nUrutan: `received_at DESC`, lalu `id DESC`. `can_update` = hak aktor saat ini: `supervisor` â†’ selalu `true`; `reception` â†’ hanya milik sendiri. **401** tanpa sesi."
+                                      "description":  "`GET /api/receipts`\n\n**200 OK**\n\n```json\n{\n  \"data\": [\n    {\n      \"id\": 1,\n      \"reference_no\": \"PB-001\",\n      \"supplier_id\": 1,\n      \"supplier_name\": \"Farma Nusantara\",\n      \"received_at\": \"2026-10-03 10:00:00\",\n      \"created_by\": 2,\n      \"created_by_name\": \"Dewi Petugas\",\n      \"created_at\": \"...\",\n      \"updated_by\": null,\n      \"updated_by_name\": null,\n      \"updated_at\": null,\n      \"can_update\": true\n    }\n  ]\n}\n```\n\nUrutan: `received_at DESC`, lalu `id DESC`. `can_update` = hak aktor saat ini: `supervisor` → selalu `true`; `reception` → hanya milik sendiri. **401** tanpa sesi."
                                   },
                                   {
                                       "name":  "3.7 Detail penerimaan",
@@ -737,7 +737,7 @@
                                                                            ]
                                                               }
                                                   },
-                                      "description":  "`GET /api/receipts/{id}`\n\n**200 OK** â€” sama seperti `data` di item 3.1 (field penuh + `items` diurut id ASC + `logs` diurut `created_at` ASC dengan token aksi `CREATE`/`UPDATE`/`DELETE` + `can_update`).\n\n**404 Not Found** (tanpa `errors`)\n\n```json\n{\"message\": \"Penerimaan tidak ditemukan.\"}\n```"
+                                      "description":  "`GET /api/receipts/{id}`\n\n**200 OK** — sama seperti `data` di item 3.1 (field penuh + `items` diurut id ASC + `logs` diurut `created_at` ASC dengan token aksi `CREATE`/`UPDATE`/`DELETE` + `can_update`).\n\n**404 Not Found** (tanpa `errors`)\n\n```json\n{\"message\": \"Penerimaan tidak ditemukan.\"}\n```"
                                   },
                                   {
                                       "name":  "3.8 Ubah penerimaan (skenario 2 soal)",
@@ -787,7 +787,7 @@
                                                                            ]
                                                               }
                                                   },
-                                      "description":  "`PUT /api/receipts/{id}` â€” payload identik create (aturan yang sama; `reference_no` unik kecuali milik reception ini sendiri).\n\n**Body**\n\n```json\n{\n  \"reference_no\": \"PB-001\",\n  \"supplier_id\": 1,\n  \"received_at\": \"2026-10-03T10:00:00+07:00\",\n  \"items\": [\n    {\"medicine_id\": 101, \"batch_no\": \"PCT-2601\", \"expires_on\": \"2027-12-31\", \"quantity\": 7},\n    {\"medicine_id\": 103, \"batch_no\": \"SAL-2601\", \"expires_on\": \"2027-11-30\", \"quantity\": 3}\n  ]\n}\n```\n\n**200 OK**\n\n```json\n{\"message\": \"Penerimaan diperbarui.\", \"data\": {\"...detail lengkap seperti GET /api/receipts/{id}...\"}}\n```\n\nItem \u0026 ledger reception ini **ditulis ulang** (replace) mengikuti payload. Status error:\n\n- **404** `{\"message\":\"Penerimaan tidak ditemukan.\",\"errors\":[...]}` (dicek sebelum validasi)\n- **403** `{\"message\":\"Anda tidak berhak mengubah penerimaan ini.\",\"errors\":[...]}` (hak ubah, dicek sebelum validasi)\n- **422** `{\"message\":\"\u003cerrors[0]\u003e\",\"errors\":[...]}` (katalog sama dengan create)\n- **500** `{\"message\":\"Gagal memperbarui penerimaan: ...\",\"errors\":[...]}` â†’ rollback"
+                                      "description":  "`PUT /api/receipts/{id}` — payload identik create (aturan yang sama; `reference_no` unik kecuali milik reception ini sendiri).\n\n**Body**\n\n```json\n{\n  \"reference_no\": \"PB-001\",\n  \"supplier_id\": 1,\n  \"received_at\": \"2026-10-03T10:00:00+07:00\",\n  \"items\": [\n    {\"medicine_id\": 101, \"batch_no\": \"PCT-2601\", \"expires_on\": \"2027-12-31\", \"quantity\": 7},\n    {\"medicine_id\": 103, \"batch_no\": \"SAL-2601\", \"expires_on\": \"2027-11-30\", \"quantity\": 3}\n  ]\n}\n```\n\n**200 OK**\n\n```json\n{\"message\": \"Penerimaan diperbarui.\", \"data\": {\"...detail lengkap seperti GET /api/receipts/{id}...\"}}\n```\n\nItem \u0026 ledger reception ini **ditulis ulang** (replace) mengikuti payload. Status error:\n\n- **404** `{\"message\":\"Penerimaan tidak ditemukan.\",\"errors\":[...]}` (dicek sebelum validasi)\n- **403** `{\"message\":\"Anda tidak berhak mengubah penerimaan ini.\",\"errors\":[...]}` (hak ubah, dicek sebelum validasi)\n- **422** `{\"message\":\"\u003cerrors[0]\u003e\",\"errors\":[...]}` (katalog sama dengan create)\n- **500** `{\"message\":\"Gagal memperbarui penerimaan: ...\",\"errors\":[...]}` → rollback"
                                   },
                                   {
                                       "name":  "3.9 Cek stok setelah perubahan",
@@ -825,7 +825,7 @@
                                                                             ]
                                                               }
                                                   },
-                                      "description":  "`GET /api/stocks?on_date=2026-10-03` â€” ledger reception ikut berubah mengikuti item 3.8: batch yang dihapus dari payload stoknya turun, batch baru bertambah.\n\n**200 OK**: bentuk sama dengan item 2.1."
+                                      "description":  "`GET /api/stocks?on_date=2026-10-03` — ledger reception ikut berubah mengikuti item 3.8: batch yang dihapus dari payload stoknya turun, batch baru bertambah.\n\n**200 OK**: bentuk sama dengan item 2.1."
                                   },
                                   {
                                       "name":  "3.10 Ubah penerimaan - kirim ulang identik (idempoten)",
@@ -869,7 +869,7 @@
                                                               },
                                                       "description":  "Jalankan berulang; stok tidak boleh berubah."
                                                   },
-                                      "description":  "`PUT /api/receipts/{id}` dengan payload persis item 3.8.\n\n**200 OK** â€” bentuk sama dengan 3.8; hasil DB identik (item replace deterministik). Log audit tetap mencatat `UPDATE` dengan before/after sama (dianggap perubahan tanpa perbedaan snapshot â†’ `data_before` = `data_after`)."
+                                      "description":  "`PUT /api/receipts/{id}` dengan payload persis item 3.8.\n\n**200 OK** — bentuk sama dengan 3.8; hasil DB identik (item replace deterministik). Log audit tetap mencatat `UPDATE` dengan before/after sama (dianggap perubahan tanpa perbedaan snapshot → `data_before` = `data_after`)."
                                   },
                                   {
                                       "name":  "3.11 Logout petugas (bersihkan sesi sebelum ganti akun)",
@@ -898,7 +898,7 @@
                                                               },
                                                       "description":  "Filter guest menolak login saat sesi masih aktif, jadi sesi petugas diakhiri dulu sebelum login sebagai supervisor."
                                                   },
-                                      "description":  "`POST /api/logout` â€” wajib sebelum login akun lain; jika tidak, `POST /api/login` berikutnya kena **403** `{\"message\":\"Sudah masuk.\"}` (GuestFilter).\n\n**200 OK** `{\"message\":\"Logout berhasil.\"}`"
+                                      "description":  "`POST /api/logout` — wajib sebelum login akun lain; jika tidak, `POST /api/login` berikutnya kena **403** `{\"message\":\"Sudah masuk.\"}` (GuestFilter).\n\n**200 OK** `{\"message\":\"Logout berhasil.\"}`"
                                   },
                                   {
                                       "name":  "3.12 Login supervisor (persiapan uji hak akses)",
@@ -938,7 +938,7 @@
                                                               },
                                                       "description":  "Menyiapkan sesi supervisor untuk membuat penerimaan milik orang lain."
                                                   },
-                                      "description":  "`POST /api/login` supervisor (`supervisor`/`supervisor123`) â€” persiapan membuat penerimaan milik supervisor di item 3.13.\n\n**200 OK** â€” bentuk sama dengan item 1.2."
+                                      "description":  "`POST /api/login` supervisor (`supervisor`/`supervisor123`) — persiapan membuat penerimaan milik supervisor di item 3.13.\n\n**200 OK** — bentuk sama dengan item 1.2."
                                   },
                                   {
                                       "name":  "3.13 Supervisor membuat penerimaan orang lain (persiapan)",
@@ -981,7 +981,7 @@
                                                               },
                                                       "description":  "Membuat penerimaan atas nama supervisor; id-nya dipakai item berikutnya. Nomor referensi memakai timestamp agar aman dijalankan berulang."
                                                   },
-                                      "description":  "`POST /api/receipts` â€” supervisor membuat penerimaan (mis. `PB-002`); `created_by` = id supervisor. Penerimaan ini jadi `foreign_receipt_id` untuk uji 403 di item 3.16.\n\n**201 Created** â€” bentuk sama dengan item 3.1."
+                                      "description":  "`POST /api/receipts` — supervisor membuat penerimaan (mis. `PB-002`); `created_by` = id supervisor. Penerimaan ini jadi `foreign_receipt_id` untuk uji 403 di item 3.16.\n\n**201 Created** — bentuk sama dengan item 3.1."
                                   },
                                   {
                                       "name":  "3.14 Logout supervisor (bersihkan sesi sebelum kembali ke petugas)",
@@ -1010,7 +1010,7 @@
                                                               },
                                                       "description":  "Menutup sesi supervisor agar login petugas berikutnya tidak ditolak filter guest."
                                                   },
-                                      "description":  "`POST /api/logout` â€” bersihkan sesi supervisor sebelum login petugas lagi.\n\n**200 OK** `{\"message\":\"Logout berhasil.\"}`"
+                                      "description":  "`POST /api/logout` — bersihkan sesi supervisor sebelum login petugas lagi.\n\n**200 OK** `{\"message\":\"Logout berhasil.\"}`"
                                   },
                                   {
                                       "name":  "3.15 Login petugas kembali",
@@ -1050,7 +1050,7 @@
                                                               },
                                                       "description":  "Memulihkan sesi petugas sebelum uji penolakan hak akses."
                                                   },
-                                      "description":  "`POST /api/login` petugas (`petugas`/`petugas123`) untuk uji hak ubah di item 3.16.\n\n**200 OK** â€” bentuk sama dengan item 1.4."
+                                      "description":  "`POST /api/login` petugas (`petugas`/`petugas123`) untuk uji hak ubah di item 3.16.\n\n**200 OK** — bentuk sama dengan item 1.4."
                                   },
                                   {
                                       "name":  "3.16 Ubah penerimaan orang lain sebagai petugas (403)",
@@ -1094,10 +1094,10 @@
                                                               },
                                                       "description":  "Petugas mengubah penerimaan milik supervisor; harus ditolak 403 oleh policy, bukan oleh CSRF."
                                                   },
-                                      "description":  "`PUT /api/receipts/{foreign_receipt_id}` â€” petugas mengubah penerimaan milik supervisor. Role `reception` hanya punya `receipt.update-own`.\n\n**403 Forbidden**\n\n```json\n{\n  \"message\": \"Anda tidak berhak mengubah penerimaan ini.\",\n  \"errors\": [\"Anda tidak berhak mengubah penerimaan ini.\"]\n}\n```\n\nDicek **sebelum** validasi payload, di dalam transaksi â†’ rollback (data tidak berubah). `can_update` pada GET untuk kasus ini = `false`."
+                                      "description":  "`PUT /api/receipts/{foreign_receipt_id}` — petugas mengubah penerimaan milik supervisor. Role `reception` hanya punya `receipt.update-own`.\n\n**403 Forbidden**\n\n```json\n{\n  \"message\": \"Anda tidak berhak mengubah penerimaan ini.\",\n  \"errors\": [\"Anda tidak berhak mengubah penerimaan ini.\"]\n}\n```\n\nDicek **sebelum** validasi payload, di dalam transaksi → rollback (data tidak berubah). `can_update` pada GET untuk kasus ini = `false`."
                                   }
                               ],
-                     "description":  "CRUD penerimaan obat. Semua request butuh sesi + header `X-CSRF-TOKEN` (mutasi).\n\n## Aturan payload (POST \u0026 PUT)\n\n| Field | Aturan |\n|---|---|\n| `reference_no` | wajib, unik di seluruh tabel |\n| `supplier_id` | harus ada dan `is_active = 1` |\n| `received_at` | tanggal-waktu valid (timezone ditafsirkan Asia/Jakarta) |\n| `items` | minimal 1 baris |\n| `items[].medicine_id` | harus ada dan `is_active = 1` |\n| `items[].batch_no` | wajib; (medicine_id, batch_no) unik dalam payload |\n| `items[].quantity` | integer (atau string digit) \u003e 0 |\n| `items[].expires_on` | `YYYY-MM-DD`; **lebih akhir** dari tanggal `received_at`; konsisten dengan kedaluwarsa batch sama yang tercatat di DB |\n\n## Katalog pesan 422 `errors[]`\n\n- `reference_no wajib diisi.` / `reference_no {no} sudah dipakai penerimaan lain.`\n- `Pemasok tidak ditemukan.` / `Pemasok tidak aktif.`\n- `received_at harus berupa tanggal-waktu yang valid.`\n- `items harus berisi setidaknya satu baris.` (bila kosong, hanya ini yang dilaporkan)\n- `Baris {n}: obat tidak ditemukan.` (baris di-skip, baris lain tetap divalidasi) / `Baris {n}: obat tidak aktif.`\n- `Baris {n}: batch_no wajib diisi.` / `Baris {n}: quantity harus bilangan bulat positif.` / `Baris {n}: expires_on harus berupa tanggal YYYY-MM-DD.`\n- `Baris {n}: kombinasi obat dan batch_no {b} muncul lebih dari sekali.`\n- `Baris {n}: expires_on harus lebih akhir daripada tanggal penerimaan.`\n- `Batch {b} obat {id} sudah tercatat dengan kedaluwarsa {lama}, bukan {baru}.`\n\n## Status\n\n| Status | Kondisi |\n|---|---|\n| 201 / 200 | create / update sukses â†’ `message` + `data` detail |\n| 404 | id tidak ada (GET: tanpa `errors`; PUT: dengan `errors`) |\n| 403 | CSRF gagal, sesi hilangâ†’401, atau hak ubah ditolak |\n| 422 | validasi payload |\n| 500 | kegagalan transaksi â†’ rollback, tidak ada data parsial |\n\n`can_update` (hanya di response GET) = affordance tampilan; penegakan tetap di server saat PUT."
+                     "description":  "CRUD penerimaan obat. Semua request butuh sesi + header `X-CSRF-TOKEN` (mutasi).\n\n## Aturan payload (POST \u0026 PUT)\n\n| Field | Aturan |\n|---|---|\n| `reference_no` | wajib, unik di seluruh tabel |\n| `supplier_id` | harus ada dan `is_active = 1` |\n| `received_at` | tanggal-waktu valid (timezone ditafsirkan Asia/Jakarta) |\n| `items` | minimal 1 baris |\n| `items[].medicine_id` | harus ada dan `is_active = 1` |\n| `items[].batch_no` | wajib; (medicine_id, batch_no) unik dalam payload |\n| `items[].quantity` | integer (atau string digit) \u003e 0 |\n| `items[].expires_on` | `YYYY-MM-DD`; **lebih akhir** dari tanggal `received_at`; konsisten dengan kedaluwarsa batch sama yang tercatat di DB |\n\n## Katalog pesan 422 `errors[]`\n\n- `reference_no wajib diisi.` / `reference_no {no} sudah dipakai penerimaan lain.`\n- `Pemasok tidak ditemukan.` / `Pemasok tidak aktif.`\n- `received_at harus berupa tanggal-waktu yang valid.`\n- `items harus berisi setidaknya satu baris.` (bila kosong, hanya ini yang dilaporkan)\n- `Baris {n}: obat tidak ditemukan.` (baris di-skip, baris lain tetap divalidasi) / `Baris {n}: obat tidak aktif.`\n- `Baris {n}: batch_no wajib diisi.` / `Baris {n}: quantity harus bilangan bulat positif.` / `Baris {n}: expires_on harus berupa tanggal YYYY-MM-DD.`\n- `Baris {n}: kombinasi obat dan batch_no {b} muncul lebih dari sekali.`\n- `Baris {n}: expires_on harus lebih akhir daripada tanggal penerimaan.`\n- `Batch {b} obat {id} sudah tercatat dengan kedaluwarsa {lama}, bukan {baru}.`\n\n## Status\n\n| Status | Kondisi |\n|---|---|\n| 201 / 200 | create / update sukses → `message` + `data` detail |\n| 404 | id tidak ada (GET: tanpa `errors`; PUT: dengan `errors`) |\n| 403 | CSRF gagal, sesi hilang→401, atau hak ubah ditolak |\n| 422 | validasi payload |\n| 500 | kegagalan transaksi → rollback, tidak ada data parsial |\n\n`can_update` (hanya di response GET) = affordance tampilan; penegakan tetap di server saat PUT."
                  },
                  {
                      "name":  "4. Medicines (master obat)",
@@ -1138,7 +1138,7 @@
                                                               },
                                                       "description":  "Berbeda dari dropdown referensi, master menampilkan seluruh katalog termasuk obat nonaktif."
                                                   },
-                                      "description":  "`GET /api/medicines` â€” petugas punya `medicine.view`, jadi 200.\n\n**200 OK**\n\n```json\n{\n  \"data\": [\n    {\"id\": 101, \"code\": \"OBT-001\", \"name\": \"Paracetamol 500 mg tablet\", \"unit\": \"tablet\", \"is_active\": true},\n    {\"id\": 105, \"code\": \"OBT-005\", \"name\": \"Obat nonaktif contoh\", \"unit\": \"tablet\", \"is_active\": false}\n  ],\n  \"can_write\": false\n}\n```\n\nQuery opsional: `?q=` (LIKE pada `code`/`name`, wildcard `%`/`_` pengguna di-escape jadi literal), `?status=all|active|inactive` (default `all`). Urutan: `name ASC`, `id ASC`. `can_write` = hak aktor saat ini (untuk menyembunyikan tombol tulis di UI; penegakan tetap di server).\n\n**422** bila `status` di luar nilai yang diizinkan:\n\n```json\n{\"message\": \"status harus salah satu dari all, active, inactive.\"}\n```"
+                                      "description":  "`GET /api/medicines` — petugas punya `medicine.view`, jadi 200.\n\n**200 OK**\n\n```json\n{\n  \"data\": [\n    {\"id\": 101, \"code\": \"OBT-001\", \"name\": \"Paracetamol 500 mg tablet\", \"unit\": \"tablet\", \"is_active\": true},\n    {\"id\": 105, \"code\": \"OBT-005\", \"name\": \"Obat nonaktif contoh\", \"unit\": \"tablet\", \"is_active\": false}\n  ],\n  \"can_write\": false\n}\n```\n\nQuery opsional: `?q=` (LIKE pada `code`/`name`, wildcard `%`/`_` pengguna di-escape jadi literal), `?status=all|active|inactive` (default `all`). Urutan: `name ASC`, `id ASC`. `can_write` = hak aktor saat ini (untuk menyembunyikan tombol tulis di UI; penegakan tetap di server).\n\n**422** bila `status` di luar nilai yang diizinkan:\n\n```json\n{\"message\": \"status harus salah satu dari all, active, inactive.\"}\n```"
                                   },
                                   {
                                       "name":  "4.2 Cari obat berdasarkan nama (200)",
@@ -1178,7 +1178,7 @@
                                                               },
                                                       "description":  "Pencarian mencocokkan kode maupun nama; wildcard LIKE pada input pengguna diperlakukan sebagai karakter biasa."
                                                   },
-                                      "description":  "`GET /api/medicines?q=paraceta`\n\n**200 OK** â€” bentuk sama dengan 4.1, `data` hanya berisi baris yang `code` atau `name`-nya mengandung `paraceta` (LIKE `%paraceta%`, pencocokan case mengikuti collation DB).\n\nKarakter LIKE (`%`, `_`) dalam `q` di-escape via `escapeLikeString` sehingga dicari sebagai karakter biasa, bukan wildcard."
+                                      "description":  "`GET /api/medicines?q=paraceta`\n\n**200 OK** — bentuk sama dengan 4.1, `data` hanya berisi baris yang `code` atau `name`-nya mengandung `paraceta` (LIKE `%paraceta%`, pencocokan case mengikuti collation DB).\n\nKarakter LIKE (`%`, `_`) dalam `q` di-escape via `escapeLikeString` sehingga dicari sebagai karakter biasa, bukan wildcard."
                                   },
                                   {
                                       "name":  "4.3 Tambah obat sebagai petugas (403)",
@@ -1223,7 +1223,7 @@
                                                               },
                                                       "description":  "Token CSRF sah (script koleksi menyisipkannya), jadi penolakan murni dari policy: petugas penerimaan hanya boleh membaca master obat."
                                                   },
-                                      "description":  "`POST /api/medicines` â€” petugas role `reception` tidak punya `medicine.write`.\n\n**Body**\n\n```json\n{\"code\": \"OBT-DITOLAK\", \"name\": \"Obat yang tidak boleh dibuat\", \"unit\": \"tablet\", \"is_active\": true}\n```\n\n**403 Forbidden** (dicek **sebelum** validasi payload)\n\n```json\n{\n  \"message\": \"Anda tidak berhak mengubah master obat.\",\n  \"errors\": [\"Anda tidak berhak mengubah master obat.\"]\n}\n```"
+                                      "description":  "`POST /api/medicines` — petugas role `reception` tidak punya `medicine.write`.\n\n**Body**\n\n```json\n{\"code\": \"OBT-DITOLAK\", \"name\": \"Obat yang tidak boleh dibuat\", \"unit\": \"tablet\", \"is_active\": true}\n```\n\n**403 Forbidden** (dicek **sebelum** validasi payload)\n\n```json\n{\n  \"message\": \"Anda tidak berhak mengubah master obat.\",\n  \"errors\": [\"Anda tidak berhak mengubah master obat.\"]\n}\n```"
                                   },
                                   {
                                       "name":  "4.4 Logout petugas (sebelum uji hak tulis)",
@@ -1252,7 +1252,7 @@
                                                               },
                                                       "description":  "Filter guest menolak login saat sesi masih aktif."
                                                   },
-                                      "description":  "`POST /api/logout` â€” bersihkan sesi petugas sebelum login supervisor.\n\n**200 OK** `{\"message\": \"Logout berhasil.\"}`"
+                                      "description":  "`POST /api/logout` — bersihkan sesi petugas sebelum login supervisor.\n\n**200 OK** `{\"message\": \"Logout berhasil.\"}`"
                                   },
                                   {
                                       "name":  "4.5 Login supervisor (persiapan uji tulis)",
@@ -1293,7 +1293,7 @@
                                                                            ]
                                                               }
                                                   },
-                                      "description":  "`POST /api/login` supervisor (`supervisor`/`supervisor123`) â€” role ini punya `medicine.write`.\n\n**200 OK** â€” bentuk sama dengan login supervisor di folder Auth (`message` + `user`)."
+                                      "description":  "`POST /api/login` supervisor (`supervisor`/`supervisor123`) — role ini punya `medicine.write`.\n\n**200 OK** — bentuk sama dengan login supervisor di folder Auth (`message` + `user`)."
                                   },
                                   {
                                       "name":  "4.6 Tambah obat sebagai supervisor (201)",
@@ -1349,7 +1349,7 @@
                                                               },
                                                       "description":  "Kode memakai timestamp agar aman dijalankan berulang. Nilai kode disimpan ke variabel koleksi medicine_code untuk uji duplikat."
                                                   },
-                                      "description":  "`POST /api/medicines` â€” supervisor membuat obat uji; `{{medicine_code}}` diisi otomatis oleh test script (unik per run).\n\n**Body**\n\n```json\n{\"code\": \"{{medicine_code}}\", \"name\": \"Obat uji master\", \"unit\": \"tablet\", \"is_active\": true}\n```\n\n**201 Created**\n\n```json\n{\n  \"message\": \"Obat dibuat.\",\n  \"data\": {\"id\": 126, \"code\": \"OBT-RAND-XXXX\", \"name\": \"Obat uji master\", \"unit\": \"tablet\", \"is_active\": true}\n}\n```\n\nPembuatan menulis log audit `CREATE` (`entity_type = \"medicine\"`) dalam transaksi. **422** bila `code` sudah dipakai; **500** bila gagal simpan (rollback)."
+                                      "description":  "`POST /api/medicines` — supervisor membuat obat uji; `{{medicine_code}}` diisi otomatis oleh test script (unik per run).\n\n**Body**\n\n```json\n{\"code\": \"{{medicine_code}}\", \"name\": \"Obat uji master\", \"unit\": \"tablet\", \"is_active\": true}\n```\n\n**201 Created**\n\n```json\n{\n  \"message\": \"Obat dibuat.\",\n  \"data\": {\"id\": 126, \"code\": \"OBT-RAND-XXXX\", \"name\": \"Obat uji master\", \"unit\": \"tablet\", \"is_active\": true}\n}\n```\n\nPembuatan menulis log audit `CREATE` (`entity_type = \"medicine\"`) dalam transaksi. **422** bila `code` sudah dipakai; **500** bila gagal simpan (rollback)."
                                   },
                                   {
                                       "name":  "4.7 Nonaktifkan obat (200)",
@@ -1392,7 +1392,7 @@
                                                               },
                                                       "description":  "Master obat tidak punya endpoint DELETE: obat yang tidak dipakai lagi dinonaktifkan agar jejak stok dan riwayat penerimaannya tetap utuh."
                                                   },
-                                      "description":  "`PUT /api/medicines/{{medicine_id}}` â€” menonaktifkan obat uji dari item 4.6.\n\n**Body**\n\n```json\n{\"code\": \"{{medicine_code}}\", \"name\": \"Obat uji master\", \"unit\": \"tablet\", \"is_active\": false}\n```\n\n**200 OK**\n\n```json\n{\n  \"message\": \"Obat diperbarui.\",\n  \"data\": {\"id\": 126, \"code\": \"OBT-RAND-XXXX\", \"name\": \"Obat uji master\", \"unit\": \"tablet\", \"is_active\": false}\n}\n```\n\n`is_active` sengaja **wajib dikirim bernilai** di sini; kalau field-nya tidak dikirim sama sekali, status lama dipertahankan. Log audit `UPDATE` dengan `data_before`/`data_after`.\n\nStatus error: **404** `{\"message\":\"Obat tidak ditemukan.\",\"errors\":[...]}`, **403** hak tulis, **422** validasi (duplikat `code` kecuali milik sendiri dll.), **500** rollback."
+                                      "description":  "`PUT /api/medicines/{{medicine_id}}` — menonaktifkan obat uji dari item 4.6.\n\n**Body**\n\n```json\n{\"code\": \"{{medicine_code}}\", \"name\": \"Obat uji master\", \"unit\": \"tablet\", \"is_active\": false}\n```\n\n**200 OK**\n\n```json\n{\n  \"message\": \"Obat diperbarui.\",\n  \"data\": {\"id\": 126, \"code\": \"OBT-RAND-XXXX\", \"name\": \"Obat uji master\", \"unit\": \"tablet\", \"is_active\": false}\n}\n```\n\n`is_active` sengaja **wajib dikirim bernilai** di sini; kalau field-nya tidak dikirim sama sekali, status lama dipertahankan. Log audit `UPDATE` dengan `data_before`/`data_after`.\n\nStatus error: **404** `{\"message\":\"Obat tidak ditemukan.\",\"errors\":[...]}`, **403** hak tulis, **422** validasi (duplikat `code` kecuali milik sendiri dll.), **500** rollback."
                                   },
                                   {
                                       "name":  "4.8 Obat nonaktif hilang dari dropdown penerimaan (200)",
@@ -1426,7 +1426,7 @@
                                                               },
                                                       "description":  "Efek nyata menonaktifkan obat: pilihan pada form penerimaan menyusut tanpa perlu menghapus barisnya."
                                                   },
-                                      "description":  "`GET /api/references/medicines` â€” dampak `is_active = false` terhadap form penerimaan.\n\n**200 OK** â€” bentuk sama seperti item dropdown di folder Stocks, tetapi obat yang baru dinonaktifkan (id 126) **tidak ikut** â€” reference selalu memfilter `is_active = 1`."
+                                      "description":  "`GET /api/references/medicines` — dampak `is_active = false` terhadap form penerimaan.\n\n**200 OK** — bentuk sama seperti item dropdown di folder Stocks, tetapi obat yang baru dinonaktifkan (id 126) **tidak ikut** — reference selalu memfilter `is_active = 1`."
                                   },
                                   {
                                       "name":  "4.9 Obat nonaktif tetap tampil di master (200)",
@@ -1466,7 +1466,7 @@
                                                               },
                                                       "description":  "Nonaktif bukan terhapus: barisnya tetap terbaca pada filter status nonaktif."
                                                   },
-                                      "description":  "`GET /api/medicines?status=inactive`\n\n**200 OK** â€” bentuk sama dengan 4.1; `data` hanya baris `is_active = false` (termasuk obat uji + contoh 105/124/125). Membuktikan nonaktif â‰  terhapus: riwayat tetap terbaca."
+                                      "description":  "`GET /api/medicines?status=inactive`\n\n**200 OK** — bentuk sama dengan 4.1; `data` hanya baris `is_active = false` (termasuk obat uji + contoh 105/124/125). Membuktikan nonaktif ≠ terhapus: riwayat tetap terbaca."
                                   },
                                   {
                                       "name":  "4.10 Kode obat duplikat ditolak (422)",
@@ -1538,7 +1538,7 @@
                                                               },
                                                       "description":  "Folder 5 (Unauthenticated) memakai cookie tidak valid, tetapi sesi dikembalikan ke petugas lebih dulu agar koleksi berakhir pada keadaan semula."
                                                   },
-                                      "description":  "`POST /api/logout` â€” bersihkan sesi supervisor.\n\n**200 OK** `{\"message\": \"Logout berhasil.\"}`"
+                                      "description":  "`POST /api/logout` — bersihkan sesi supervisor.\n\n**200 OK** `{\"message\": \"Logout berhasil.\"}`"
                                   },
                                   {
                                       "name":  "4.12 Login petugas kembali",
@@ -1579,10 +1579,10 @@
                                                                            ]
                                                               }
                                                   },
-                                      "description":  "`POST /api/login` petugas (`petugas`/`petugas123`) â€” mengembalikan sesi untuk folder berikutnya.\n\n**200 OK** â€” bentuk sama dengan login petugas di folder Auth."
+                                      "description":  "`POST /api/login` petugas (`petugas`/`petugas123`) — mengembalikan sesi untuk folder berikutnya.\n\n**200 OK** — bentuk sama dengan login petugas di folder Auth."
                                   }
                               ],
-                     "description":  "CRUD master obat (`/api/medicines`). Hak murni per peran (tanpa kepemilikan per baris):\n\n| Peran | medicine.view | medicine.write |\n|---|---|---|\n| `reception` (petugas) | ya | tidak |\n| `supervisor` | ya | ya |\n\nTidak ada hapus permanen: `medicines.id` dirujuk `reception_items`/`stock_movements` (FK RESTRICT). Obat dipensiunkan via `is_active = false` â€” hilang dari dropdown penerimaan, tetap tampil di master.\n\n## Aturan payload (POST \u0026 PUT)\n\n| Field | Aturan |\n|---|---|\n| `code` | wajib, maks 50 karakter, unik **case-insensitive** |\n| `name` | wajib, maks 200 karakter |\n| `unit` | wajib, maks 50 karakter |\n| `is_active` | opsional; `bool`. Jika tidak dikirim saat update, status tersimpan dipertahankan |\n\n## Status\n\n| Status | Kondisi |\n|---|---|\n| 200 / 201 | OK â€” `data` (GET/PUT) atau `message` + `data` (POST) |\n| 403 | role tanpa `medicine.write` (tulis) / `medicine.view` (baca) |\n| 404 | id tidak ada (GET/PUT) |\n| 422 | validasi payload (`errors[]`, `message` = `errors[0]`) |\n| 500 | kegagalan transaksi â†’ rollback |\n\nHak baca (`medicine.view`) juga dimiliki petugas, jadi `GET /api/medicines` tetap 200 untuk keduanya."
+                     "description":  "CRUD master obat (`/api/medicines`). Hak murni per peran (tanpa kepemilikan per baris):\n\n| Peran | medicine.view | medicine.write |\n|---|---|---|\n| `reception` (petugas) | ya | tidak |\n| `supervisor` | ya | ya |\n\nTidak ada hapus permanen: `medicines.id` dirujuk `reception_items`/`stock_movements` (FK RESTRICT). Obat dipensiunkan via `is_active = false` — hilang dari dropdown penerimaan, tetap tampil di master.\n\n## Aturan payload (POST \u0026 PUT)\n\n| Field | Aturan |\n|---|---|\n| `code` | wajib, maks 50 karakter, unik **case-insensitive** |\n| `name` | wajib, maks 200 karakter |\n| `unit` | wajib, maks 50 karakter |\n| `is_active` | opsional; `bool`. Jika tidak dikirim saat update, status tersimpan dipertahankan |\n\n## Status\n\n| Status | Kondisi |\n|---|---|\n| 200 / 201 | OK — `data` (GET/PUT) atau `message` + `data` (POST) |\n| 403 | role tanpa `medicine.write` (tulis) / `medicine.view` (baca) |\n| 404 | id tidak ada (GET/PUT) |\n| 422 | validasi payload (`errors[]`, `message` = `errors[0]`) |\n| 500 | kegagalan transaksi → rollback |\n\nHak baca (`medicine.view`) juga dimiliki petugas, jadi `GET /api/medicines` tetap 200 untuk keduanya."
                  },
                  {
                      "name":  "5. Unauthenticated (jalankan paling akhir)",
@@ -1640,7 +1640,7 @@
                                                               },
                                                       "description":  "Token CSRF sah tetapi sesi tidak valid: filter autentikasi menolak dengan 401."
                                                   },
-                                      "description":  "`POST /api/receipts` tanpa sesi valid (cookie di-set ke nilai tidak valid), payload valid + header CSRF ikut terkirim.\n\n**401 Unauthorized** (AuthFilter â€” tidak membawa header `X-CSRF-TOKEN`)\n\n```json\n{\"message\": \"Belum masuk.\"}\n```"
+                                      "description":  "`POST /api/receipts` tanpa sesi valid (cookie di-set ke nilai tidak valid), payload valid + header CSRF ikut terkirim.\n\n**401 Unauthorized** (AuthFilter — tidak membawa header `X-CSRF-TOKEN`)\n\n```json\n{\"message\": \"Belum masuk.\"}\n```"
                                   },
                                   {
                                       "name":  "5.2 Laporan stok tanpa login (401)",
@@ -1729,7 +1729,7 @@
                                                               },
                                                       "description":  "Tanpa token CSRF, endpoint mutasi dijawab JSON 403 sebelum filter autentikasi berjalan."
                                                   },
-                                      "description":  "`POST /api/receipts` tanpa header `X-CSRF-TOKEN` (header dihapus di level request).\n\n**403 Forbidden** (CsrfFilter â€” dicek sebelum AuthFilter, jadi tetap 403 walau sesi juga tidak ada)\n\n```json\n{\n  \"message\": \"Sesi formulir sudah kedaluwarsa. Muat ulang halaman lalu coba lagi.\",\n  \"error\": \"csrf\"\n}\n```\n\nResponse menyertakan header `X-CSRF-TOKEN` berisi token **baru** â€” retry dengan nilai itu."
+                                      "description":  "`POST /api/receipts` tanpa header `X-CSRF-TOKEN` (header dihapus di level request).\n\n**403 Forbidden** (CsrfFilter — dicek sebelum AuthFilter, jadi tetap 403 walau sesi juga tidak ada)\n\n```json\n{\n  \"message\": \"Sesi formulir sudah kedaluwarsa. Muat ulang halaman lalu coba lagi.\",\n  \"error\": \"csrf\"\n}\n```\n\nResponse menyertakan header `X-CSRF-TOKEN` berisi token **baru** — retry dengan nilai itu."
                                   },
                                   {
                                       "name":  "5.4 POST dengan token CSRF tidak cocok (403)",
@@ -1779,10 +1779,10 @@
                                                               },
                                                       "description":  "Token harus sama dengan nilai cookie csrf_cookie_name; token palsu ditolak 403."
                                                   },
-                                      "description":  "`POST /api/receipts` dengan header `X-CSRF-TOKEN` berisi nilai salah (bukan hash sesi).\n\n**403 Forbidden** â€” bentuk identik dengan item 5.3:\n\n```json\n{\n  \"message\": \"Sesi formulir sudah kedaluwarsa. Muat ulang halaman lalu coba lagi.\",\n  \"error\": \"csrf\"\n}\n```"
+                                      "description":  "`POST /api/receipts` dengan header `X-CSRF-TOKEN` berisi nilai salah (bukan hash sesi).\n\n**403 Forbidden** — bentuk identik dengan item 5.3:\n\n```json\n{\n  \"message\": \"Sesi formulir sudah kedaluwarsa. Muat ulang halaman lalu coba lagi.\",\n  \"error\": \"csrf\"\n}\n```"
                                   }
                               ],
-                     "description":  "Uji perilaku tanpa sesi/token. **Jalankan paling akhir** â€” folder ini memakai cookie/token rusak yang bisa merusak request berikutnya bila diulang di tengah koleksi.\n\nUrutan filter: `cors` â†’ `csrf` â†’ `auth`. Tanpa token CSRF yang benar, respons 403 CSRF muncul lebih dulu; dengan token valid tapi sesi mati, responsnya 401 AuthFilter."
+                     "description":  "Uji perilaku tanpa sesi/token. **Jalankan paling akhir** — folder ini memakai cookie/token rusak yang bisa merusak request berikutnya bila diulang di tengah koleksi.\n\nUrutan filter: `cors` → `csrf` → `auth`. Tanpa token CSRF yang benar, respons 403 CSRF muncul lebih dulu; dengan token valid tapi sesi mati, responsnya 401 AuthFilter."
                  }
              ]
 }
