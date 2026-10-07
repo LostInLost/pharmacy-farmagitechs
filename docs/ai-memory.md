@@ -13,7 +13,7 @@ Proyek ini dikembangkan bersama asisten AI yang menyimpan memorinya di dalam rep
 | [`.harness/memory/tasks/`](../.harness/memory/tasks) | Progres dan rencana per sesi kerja | Dilacak |
 | `.harness/tmp/` | Arsip sementara (mis. salinan README sebelum dipangkas) | Diabaikan `.gitignore` |
 
-Per 7 Oktober 2026 ada **62 entri** yang ikut ter-commit, sehingga riwayatnya terlihat langsung di GitHub tanpa perlu alat khusus. Katalog di bawah ikut bertambah setiap kali sesi AI mencatat temuan baru.
+Per 7 Oktober 2026 ada **63 entri** yang ikut ter-commit, sehingga riwayatnya terlihat langsung di GitHub tanpa perlu alat khusus. Katalog di bawah ikut bertambah setiap kali sesi AI mencatat temuan baru.
 
 ## Format satu entri
 
@@ -59,7 +59,7 @@ Di sisi antarmuka, halaman Receptions dan Laporan Stok dibuat di Astro, sidebar 
 
 ### Fase 4 — Dokumentasi (7 Oktober 2026)
 
-README dipangkas dari 18.826 menjadi ~7.600 karakter dan diubah menjadi hub dengan [Peta Dokumentasi](../README.md#peta-dokumentasi) yang menaut langsung ke bagian relevan tiap berkas. Konten pengujian dipindah ke [`docs/testing.md`](testing.md), struktur proyek ke [`docs/conventions.md`](conventions.md#struktur-proyek), dan dokumentasi Postman dicerminkan ke [`docs/postman.md`](postman.md).
+README dipangkas dari 18.826 menjadi ~7.600 karakter dan diubah menjadi hub dengan [Peta Dokumentasi](../README.md#peta-dokumentasi) yang menaut langsung ke bagian relevan tiap berkas. Konten pengujian dipindah ke [`docs/testing.md`](testing.md), struktur proyek ke [`docs/conventions.md`](conventions.md#struktur-proyek), dan dokumentasi Postman dicerminkan ke [`docs/postman.md`](postman.md). Pada akhir fase ini dua butir "wajib memuat" (pengujian/verifikasi dan Postman) dikembalikan ke README sebagai §6 dan §7 ringkas — detailnya tetap di `docs/`.
 
 ## Metrik perjalanan
 
@@ -79,6 +79,7 @@ Angka-angka ini dikutip dari catatan memori pada tiap titik, jadi terlihat bagai
 | 2026-10-07 | 139 | 449 | 43 | Master obat |
 | 2026-10-07 | 142 | 459 | 43 | `audit_logs.action` jadi kunci i18n |
 | 2026-10-07 | **147** | **477** | **43** | Dokumentasi README hub + `docs/postman.md` |
+| 2026-10-07 | **161** | **561** | **45** | Optimasi query laporan/validator, script composer DB, README §6 & §7 |
 
 ## Katalog memori
 
@@ -129,6 +130,7 @@ Angka-angka ini dikutip dari catatan memori pada tiap titik, jadi terlihat bagai
 - [Laporan stok: satu daftar `batches` ber-flag; `INNER JOIN medicines`, filter `moved_at`, dan `net <= 0` ditolak](../.harness/memory/decisions/2026-10-07T14-51-11-laporan-stok-satu-daftar-batches-ber-flag-is-expir.md) — Bentuk respons jadi satu `batches[]` ber-flag `is_expired`; `INNER JOIN` terbukti menghilangkan obat tanpa gerakan (23→8), Bagian A dibatalkan karena hanya -5,9%
 - [Optimasi loop service: laporan stok 1 query, validator bebas N+1](../.harness/memory/decisions/2026-10-07T13-50-18-optimasi-loop-service-laporan-stok-1-query-validat.md) — Sesuai permintaan user (optimasi `foreach`, tanpa paginasi): `StockRepository::reportRows()` menggantikan `batches()`+`summaries()`+`activeMedicines()` dengan satu SELECT (LEFT JOIN derived table batch ke `medicines`), `StockService::report()` menjumlah dalam satu lintasan, `MedicineRepository::activeFlags()` + `StockRepository::knownExpiries()` menggantikan query per baris di `ReceptionValidator`; laporan 3→1 query dan pencarian kedaluwarsa 216→2 query pada 113 pasangan; bentuk respons API tidak berubah; 160 test/560 assertion hijau.
 - [Script composer database (`db:bootstrap`/`db:refresh`) lewat scripts/db-bootstrap.php](../.harness/memory/decisions/2026-10-07T15-20-44-script-composer-database-db-bootstrap-db-refresh-l.md) — Setup DB dirangkai jadi script `composer` (analog `pnpm run`): `db:migrate`, `db:seed`, `db:bootstrap` (migrate + dua seeder), `db:refresh` (kembalikan baseline setelah Newman); semua lewat `scripts/db-bootstrap.php` yang berhenti di kegagalan pertama, karena rantai `composer run` biasa akan melanjutkan seeder di atas DB yang belum siap.
+- [README memuat §6 Pengujian + §7 Postman (ringkas) untuk memenuhi daftar "wajib memuat"](../.harness/memory/decisions/2026-10-07T15-31-44-readme-memuat-6-pengujian-7-postman-ringkas-untuk-.md) — README kembali memuat dua butir yang sebelumnya hanya berupa tautan: §6 (perintah test, angka 161 test/561 assertion dari `build/logs/logfile.xml`, 7 langkah verifikasi manual, angka baseline, 5 asumsi/batasan) dan §7 (berkas Postman, perintah Newman, urutan folder, autentikasi, `db:refresh` pasca-run); detail tetap di `docs/`.
 
 ### Pelajaran teknis
 

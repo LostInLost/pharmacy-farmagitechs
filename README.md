@@ -141,10 +141,52 @@ Contoh request laporan stok:
 GET /api/stocks?on_date=2026-10-03
 ```
 
+## 6. Pengujian dan Verifikasi
+
+Pengujian otomatis: `composer run test` (PHPUnit 10 lewat `scripts/run-tests.php`; memakai database `pharmacy_farmagitechs_test` sehingga data development tidak tersentuh, dan jatuh ke SQLite3 `:memory:` bila `.env` tidak ada). Hasil run terakhir: **161 test, 561 assertion, hijau** (2026-10-07). Cakupan per fitur: [docs/testing.md](docs/testing.md#cakupan); cara membuat test baru: [tests/README.md](tests/README.md#running-the-tests).
+
+Verifikasi manual skenario inti:
+
+1. Dari database kosong: `composer db:bootstrap`.
+2. Jalankan `composer run test` — semua test harus lulus.
+3. `php spark migrate:rollback` lalu `php spark migrate` — migrasi turun dan naik bersih.
+4. Tanpa login: `/receptions` dialihkan ke `/login`; `GET /api/stocks` dijawab `401` JSON.
+5. `POST /api/receipts` tanpa header `X-CSRF-TOKEN` dijawab `403` JSON `"error": "csrf"` walau sudah login; ulangi dengan token dari cookie `csrf_cookie_name` → lolos ke validasi.
+6. Login lalu buka `/login` → `403` halaman "Sudah Masuk"; `POST /api/login` saat sesi aktif → `403` JSON.
+7. `php spark routes` — pastikan filter `auth`/`guest` terpasang pada seluruh path.
+
+Angka baseline seed (`on_date=2026-10-03`) dapat diperiksa langsung lewat `GET /api/stocks?on_date=2026-10-03`: obat 101 tersedia 134 (fisik 142, kedaluwarsa 8), 102 = 16, 103 = 15, 104 = 3, 106 = 0, dan 107 tersedia 0 dari fisik 6.
+
+Asumsi dan batasan solusi:
+
+- Batch dengan jumlah fisik nol tetap ditampilkan agar jejak batch tidak hilang; total tetap benar. Alasan: [docs/database.md](docs/database.md#sumber-tulis).
+- Penghapusan penerimaan (DELETE) tidak disediakan; perubahan lewat `PUT` dengan daftar item sebagai keadaan akhir lengkap — mengirim `PUT` identik dua kali tidak menggandakan stok.
+- `created_by` tidak pernah berubah; `updated_by` bernilai `NULL` selama penerimaan belum pernah diubah. Alasan: [docs/database.md](docs/database.md#konvensi).
+- Stok adalah agregasi data tersimpan, bukan laporan historis: `on_date` hanya menentukan status kedaluwarsa.
+- Daftar penerimaan dan laporan stok mengembalikan seluruh baris tanpa paginasi — untuk jumlah data besar, penambahan paginasi belum dilakukan.
+
+Catatan lengkap (database test, cakupan, batasan lain): [docs/testing.md](docs/testing.md).
+
+## 7. Postman Collection
+
+Berkas: [`postman/Pharmacy-Farmagitechs.postman_collection.json`](postman/Pharmacy-Farmagitechs.postman_collection.json) (45 request, 111 assertion, 6 folder) dan [`postman/Local.postman_environment.json`](postman/Local.postman_environment.json) (environment `Pharmacy Farmagitechs - Local`, berisi `base_url` — default `http://localhost:8080`).
+
+Menjalankan lewat CLI (Newman 6.2.2 sudah tersedia di `node_modules/`):
+
+```
+node node_modules/newman/bin/newman.js run postman/Pharmacy-Farmagitechs.postman_collection.json -e postman/Local.postman_environment.json
+```
+
+Lewat aplikasi Postman: import kedua berkas, pilih environment `Pharmacy Farmagitechs - Local`, lalu jalankan folder **berurutan**: `0. Bootstrap CSRF` → `1. Auth` → `2. Stocks` → `3. Receipts` → `4. Medicines` → `5. Unauthenticated`. Item `0.1` wajib jalan lebih dulu karena menerbitkan cookie CSRF.
+
+Autentikasi: sesi cookie `ci_session` dari `POST /api/login` (dua akun demo di [§4](#4-akun-demo-dan-autentikasi)). Seluruh `POST`/`PUT` wajib header `X-CSRF-TOKEN`; token berotasi setiap mutasi sukses dan script level collection mengurusnya otomatis — jangan di-hardcode. Run penuh mengubah data development (membuat `PB-001`, menambah obat uji); kembalikan baseline dengan `composer db:refresh` sebelum run berikutnya.
+
+Peta folder, variabel, skenario uji end-to-end, dan bentuk respons: [docs/postman.md](docs/postman.md).
+
 ## Catatan Alat AI dan Referensi
 
 - **Tools**: Deepseek Harness dengan beberapa plugin (persistent memory, MCP) untuk membantu AI mengenal konteks proyek.
-- **Riwayat memori**: 45 catatan keputusan, pelajaran, dan progres tersimpan di [`.harness/memory/`](.harness/memory) — diringkas di [`docs/ai-memory.md`](docs/ai-memory.md).
+- **Riwayat memori**: 63 catatan keputusan, pelajaran, dan progres tersimpan di [`.harness/memory/`](.harness/memory) — diringkas di [`docs/ai-memory.md`](docs/ai-memory.md).
 - **Model planning**: Muse 1.3 Spark, Mimo V2.6 Pro, Kimi K3.
 - **Model eksekutor**: Deepseek V4.1 Flash, GLM 5.3 Flash, Mimo V2.6 Flash, Kimi 2.7 Code.
 - **Referensi**: dokumentasi resmi CodeIgniter 4 (backend) dan Astro (frontend, lihat [`frontend/README.md`](frontend/README.md)). Keputusan desain diverifikasi manual; detail tercatat di riwayat commit dan berkas pada `docs/`.
