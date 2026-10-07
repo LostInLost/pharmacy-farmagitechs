@@ -8,7 +8,7 @@
 composer run test
 ```
 
-- 161 test, 561 assertion (hasil run terakhir 2026-10-07).
+- 179 test, 640 assertion (hasil run terakhir 2026-10-07).
 - `composer run test` memakai `scripts/run-tests.php`: interpreter PHP pemanggil Composer, argumen diteruskan ke PHPUnit (mis. `composer run test -- --filter HashTest`), binary PHPUnit dicari mengikuti aturan Composer.
 - Skrip menjalankan PHPUnit persis seperti `vendor/bin/phpunit` (konfigurasi dan fallback SQLite3 `:memory:` tetap berlaku); bila `mysqli` tidak aktif, test diulang dengan `-d extension=mysqli`. Alternatif langsung: `vendor/bin/phpunit`.
 - Quick-start PHPUnit (konfigurasi, cara membuat test baru): [`tests/README.md`](../tests/README.md#running-the-tests).
@@ -20,6 +20,7 @@ composer run test
 - Autentikasi, proteksi CSRF (token wajib, rotasi, tolak pakai ulang), dan filter `guest`.
 - Audit trail (snapshot before/after, kunci i18n); endpoint references; `can_update` di daftar penerimaan.
 - Master obat: hak baca petugas vs tulis supervisor, `can_write` pada respons baca, kode unik case-insensitive, pencarian/filter status, wildcard `%` aman, efek nonaktif ke dropdown; riwayat aksi audit di detail (`data.logs`, urut kronologis, before/after) sementara daftar tetap tanpa log, dan tulis yang ditolak (`403`/`404`/`422`) tidak meninggalkan baris audit; serta helper hash.
+- Master pemasok: cermin master obat — hak baca petugas vs tulis supervisor (`supplier.view`/`supplier.write`), `can_write` pada respons baca, nama unik case-insensitive, pencarian/filter status, wildcard `%` aman, efek nonaktif ke dropdown penerimaan, riwayat audit di detail, dan tulis yang ditolak tidak meninggalkan baris audit.
 
 ## Database test
 

@@ -13,7 +13,7 @@ Proyek ini dikembangkan bersama asisten AI yang menyimpan memorinya di dalam rep
 | [`.harness/memory/tasks/`](../.harness/memory/tasks) | Progres dan rencana per sesi kerja | Dilacak |
 | `.harness/tmp/` | Arsip sementara (mis. salinan README sebelum dipangkas) | Diabaikan `.gitignore` |
 
-Per 7 Oktober 2026 ada **63 entri** yang ikut ter-commit, sehingga riwayatnya terlihat langsung di GitHub tanpa perlu alat khusus. Katalog di bawah ikut bertambah setiap kali sesi AI mencatat temuan baru.
+Per 7 Oktober 2026 ada **64 entri** yang ikut ter-commit, sehingga riwayatnya terlihat langsung di GitHub tanpa perlu alat khusus. Katalog di bawah ikut bertambah setiap kali sesi AI mencatat temuan baru.
 
 ## Format satu entri
 
@@ -80,6 +80,7 @@ Angka-angka ini dikutip dari catatan memori pada tiap titik, jadi terlihat bagai
 | 2026-10-07 | 142 | 459 | 43 | `audit_logs.action` jadi kunci i18n |
 | 2026-10-07 | **147** | **477** | **43** | Dokumentasi README hub + `docs/postman.md` |
 | 2026-10-07 | **161** | **561** | **45** | Optimasi query laporan/validator, script composer DB, README §6 & §7 |
+| 2026-10-07 | **179** | **640** | **57** | Master pemasok + grup menu Master Data di Astro |
 
 ## Katalog memori
 
@@ -131,6 +132,7 @@ Angka-angka ini dikutip dari catatan memori pada tiap titik, jadi terlihat bagai
 - [Optimasi loop service: laporan stok 1 query, validator bebas N+1](../.harness/memory/decisions/2026-10-07T13-50-18-optimasi-loop-service-laporan-stok-1-query-validat.md) — Sesuai permintaan user (optimasi `foreach`, tanpa paginasi): `StockRepository::reportRows()` menggantikan `batches()`+`summaries()`+`activeMedicines()` dengan satu SELECT (LEFT JOIN derived table batch ke `medicines`), `StockService::report()` menjumlah dalam satu lintasan, `MedicineRepository::activeFlags()` + `StockRepository::knownExpiries()` menggantikan query per baris di `ReceptionValidator`; laporan 3→1 query dan pencarian kedaluwarsa 216→2 query pada 113 pasangan; bentuk respons API tidak berubah; 160 test/560 assertion hijau.
 - [Script composer database (`db:bootstrap`/`db:refresh`) lewat scripts/db-bootstrap.php](../.harness/memory/decisions/2026-10-07T15-20-44-script-composer-database-db-bootstrap-db-refresh-l.md) — Setup DB dirangkai jadi script `composer` (analog `pnpm run`): `db:migrate`, `db:seed`, `db:bootstrap` (migrate + dua seeder), `db:refresh` (kembalikan baseline setelah Newman); semua lewat `scripts/db-bootstrap.php` yang berhenti di kegagalan pertama, karena rantai `composer run` biasa akan melanjutkan seeder di atas DB yang belum siap.
 - [README memuat §6 Pengujian + §7 Postman (ringkas) untuk memenuhi daftar "wajib memuat"](../.harness/memory/decisions/2026-10-07T15-31-44-readme-memuat-6-pengujian-7-postman-ringkas-untuk-.md) — README kembali memuat dua butir yang sebelumnya hanya berupa tautan: §6 (perintah test, angka 161 test/561 assertion dari `build/logs/logfile.xml`, 7 langkah verifikasi manual, angka baseline, 5 asumsi/batasan) dan §7 (berkas Postman, perintah Newman, urutan folder, autentikasi, `db:refresh` pasca-run); detail tetap di `docs/`.
+- [Master pemasok: cermin master obat + grup menu "Master Data" di sidebar Astro](../.harness/memory/decisions/2026-10-07T15-58-14-master-pemasok-cermin-master-obat-grup-menu-master.md) — Master pemasok (`/api/suppliers` + `/suppliers`) dibangun sebagai cermin master obat: field `name`+`is_active` (unique index baru), permission `supplier.view`/`supplier.write`, tanpa DELETE, grup sidebar "Master Data" (Pemasok + Obat) dengan remah induk tanpa tautan; 179 test/640 assertion dan Newman 57 request/135 assertion hijau.
 
 ### Pelajaran teknis
 

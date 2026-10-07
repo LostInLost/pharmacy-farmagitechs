@@ -110,6 +110,10 @@ Dua akun dibuat oleh `DemoUsersSeeder`:
 | POST | `/api/medicines` | Menambah obat | Session + supervisor |
 | GET | `/api/medicines/{id}` | Detail satu obat beserta riwayat aksinya (`logs`) | Session |
 | PUT | `/api/medicines/{id}` | Mengubah obat, termasuk status aktif/nonaktif | Session + supervisor |
+| GET | `/api/suppliers?q=&status=` | Master pemasok: seluruh katalog (`status` = `all`/`active`/`inactive`) | Session |
+| POST | `/api/suppliers` | Menambah pemasok | Session + supervisor |
+| GET | `/api/suppliers/{id}` | Detail satu pemasok beserta riwayat aksinya (`logs`) | Session |
+| PUT | `/api/suppliers/{id}` | Mengubah pemasok, termasuk status aktif/nonaktif | Session + supervisor |
 | GET | `/api/references/suppliers` | Dropdown pemasok aktif (`id`, `name`) | Session |
 | GET | `/api/references/medicines` | Dropdown obat aktif (`id`, `name`, `unit`) | Session |
 | GET | `/api/references/batches` | Dropdown batch dari ledger (`medicine_id`, `batch_no`, `expires_on`) | Session |
@@ -143,7 +147,7 @@ GET /api/stocks?on_date=2026-10-03
 
 ## 6. Pengujian dan Verifikasi
 
-Pengujian otomatis: `composer run test` (PHPUnit 10 lewat `scripts/run-tests.php`; memakai database `pharmacy_farmagitechs_test` sehingga data development tidak tersentuh, dan jatuh ke SQLite3 `:memory:` bila `.env` tidak ada). Hasil run terakhir: **161 test, 561 assertion, hijau** (2026-10-07). Cakupan per fitur: [docs/testing.md](docs/testing.md#cakupan); cara membuat test baru: [tests/README.md](tests/README.md#running-the-tests).
+Pengujian otomatis: `composer run test` (PHPUnit 10 lewat `scripts/run-tests.php`; memakai database `pharmacy_farmagitechs_test` sehingga data development tidak tersentuh, dan jatuh ke SQLite3 `:memory:` bila `.env` tidak ada). Hasil run terakhir: **179 test, 640 assertion, hijau** (2026-10-07). Cakupan per fitur: [docs/testing.md](docs/testing.md#cakupan); cara membuat test baru: [tests/README.md](tests/README.md#running-the-tests).
 
 Verifikasi manual skenario inti:
 
@@ -169,7 +173,7 @@ Catatan lengkap (database test, cakupan, batasan lain): [docs/testing.md](docs/t
 
 ## 7. Postman Collection
 
-Berkas: [`postman/Pharmacy-Farmagitechs.postman_collection.json`](postman/Pharmacy-Farmagitechs.postman_collection.json) (45 request, 111 assertion, 6 folder) dan [`postman/Local.postman_environment.json`](postman/Local.postman_environment.json) (environment `Pharmacy Farmagitechs - Local`, berisi `base_url` — default `http://localhost:8080`).
+Berkas: [`postman/Pharmacy-Farmagitechs.postman_collection.json`](postman/Pharmacy-Farmagitechs.postman_collection.json) (57 request, 135 assertion, 7 folder) dan [`postman/Local.postman_environment.json`](postman/Local.postman_environment.json) (environment `Pharmacy Farmagitechs - Local`, berisi `base_url` — default `http://localhost:8080`).
 
 Menjalankan lewat CLI (Newman 6.2.2 sudah tersedia di `node_modules/`):
 
@@ -177,7 +181,7 @@ Menjalankan lewat CLI (Newman 6.2.2 sudah tersedia di `node_modules/`):
 node node_modules/newman/bin/newman.js run postman/Pharmacy-Farmagitechs.postman_collection.json -e postman/Local.postman_environment.json
 ```
 
-Lewat aplikasi Postman: import kedua berkas, pilih environment `Pharmacy Farmagitechs - Local`, lalu jalankan folder **berurutan**: `0. Bootstrap CSRF` → `1. Auth` → `2. Stocks` → `3. Receipts` → `4. Medicines` → `5. Unauthenticated`. Item `0.1` wajib jalan lebih dulu karena menerbitkan cookie CSRF.
+Lewat aplikasi Postman: import kedua berkas, pilih environment `Pharmacy Farmagitechs - Local`, lalu jalankan folder **berurutan**: `0. Bootstrap CSRF` → `1. Auth` → `2. Stocks` → `3. Receipts` → `4. Medicines` → `4b. Suppliers` → `5. Unauthenticated`. Item `0.1` wajib jalan lebih dulu karena menerbitkan cookie CSRF.
 
 Autentikasi: sesi cookie `ci_session` dari `POST /api/login` (dua akun demo di [§4](#4-akun-demo-dan-autentikasi)). Seluruh `POST`/`PUT` wajib header `X-CSRF-TOKEN`; token berotasi setiap mutasi sukses dan script level collection mengurusnya otomatis — jangan di-hardcode. Run penuh mengubah data development (membuat `PB-001`, menambah obat uji); kembalikan baseline dengan `composer db:refresh` sebelum run berikutnya.
 

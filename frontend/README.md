@@ -55,7 +55,7 @@ Salin `.env.example` menjadi `.env` lalu sesuaikan bila perlu:
 src/
   components/
     app-shell.tsx     # chrome bersama: sidebar + header + toaster
-    app-sidebar.tsx   # menu bergrup (Utama / Operasional)
+    app-sidebar.tsx   # menu bergrup (Utama / Operasional / Master Data)
     nav-main.tsx      # grup menu + aksi cepat "Tambah Penerimaan"
     nav-user.tsx      # blok profil + tema + keluar
     feedback.tsx      # alert inline khusus pesan error (sukses = toast)
@@ -66,7 +66,8 @@ src/
     dashboard/        # ringkasan
     receptions/       # daftar + sheet tambah/detail/ubah
     stocks/           # laporan stok
-    medicines/        # master obat (daftar + dialog tambah/ubah)
+    medicines/        # master obat (daftar + sheet tambah/detail/ubah)
+    suppliers/        # master pemasok (daftar + sheet tambah/detail/ubah)
   foundations/
     api/              # client, requestJson ber-CSRF, skema error
     format.ts         # format tanggal/waktu tanpa new Date()
@@ -81,6 +82,7 @@ src/
     receptions/       # index (daftar + sheet); new & [id]/edit hanya redirect
     stocks.astro
     medicines.astro
+    suppliers.astro
 ```
 
 Aturan lapisan: `foundations/` adalah infra generik dan **tidak boleh**
@@ -97,6 +99,10 @@ mengimpor `features/` (ditegakkan ESLint `no-restricted-imports`);
 | `/receptions/new`, `/receptions/{id}/edit` | Rute lama; hanya mengalihkan ke sheet di atas |
 | `/stocks` | Laporan stok per obat dan batch |
 | `/medicines` | Master obat: cari/filter, tambah, ubah, dan aktif/nonaktif |
+| `/suppliers` | Master pemasok: cari/filter, tambah, ubah, dan aktif/nonaktif |
+
+Halaman master (Obat dan Pemasok) berada di grup menu **Master Data**, dan
+remah halaman menampilkan nama grup itu sebagai induk.
 
 ### Sheet penerimaan
 
@@ -115,19 +121,20 @@ Membuka/menutup sheet menyinkronkan URL lewat `history.replaceState`
 lewat SSR. Konsekuensinya tombol Back browser keluar dari halaman, bukan
 menutup sheet.
 
-Halaman **Master Obat** mengikuti pola `can_update` pada penerimaan:
-`GET /api/medicines` mengembalikan `can_write` dari `MedicinePolicy`, jadi
-petugas penerimaan melihat katalognya tanpa tombol tambah/ubah, sedangkan
-supervisor mendapat keduanya. Tampilan itu hanya affordance — penegakan
-tetap di server, dan permintaan tulis dari petugas dijawab `403`.
-Obat **tidak dihapus** dari halaman ini: yang tersedia adalah menandainya
-nonaktif, sehingga riwayat stok dan penerimaannya tetap utuh.
+Halaman **Master Obat** dan **Master Pemasok** mengikuti pola `can_update` pada
+penerimaan: `GET /api/medicines` dan `GET /api/suppliers` mengembalikan
+`can_write` dari policy masing-masing, jadi petugas penerimaan melihat
+katalognya tanpa tombol tambah/ubah, sedangkan supervisor mendapat keduanya.
+Tampilan itu hanya affordance — penegakan tetap di server, dan permintaan tulis
+dari petugas dijawab `403`.
+Obat maupun pemasok **tidak dihapus** dari halaman ini: yang tersedia adalah
+menandainya nonaktif, sehingga riwayat stok dan penerimaannya tetap utuh.
 
 ## Permission di UI
 
 `GET /api/me` (dan `POST /api/login`) mengembalikan `user.permissions` —
 array datar permission milik role, mis.
-`["receipt.create", "receipt.view", "receipt.update-own", "medicine.view"]`
+`["receipt.create", "receipt.view", "receipt.update-own", "medicine.view", "supplier.view"]`
 — hasil `Config\Permissions::forRole()`. Backend menghitungnya per request
 (tidak disimpan di session), jadi mengubah konfigurasi langsung berlaku
 tanpa login ulang. Bentuk array datar sengaja dipilih agar nanti mudah
@@ -211,6 +218,7 @@ untuk memeriksa DOM yang benar-benar tampil, bukan hanya membaca kode:
 | `verify-permission.mjs` | Petugas: baris orang lain tanpa Ubah, detail tetap bisa dibuka, sheet ubah diblokir |
 | `verify-write.mjs`, `verify-update.mjs`, `verify-csrf-validation.mjs` | Alur simpan/ubah lewat sheet, dan kegagalan CSRF/validasi |
 | `verify-medicines.mjs` | Master obat: petugas tanpa tombol tulis, supervisor bisa menyimpan, filter status lewat server |
+| `verify-suppliers.mjs` | Master pemasok: cermin `verify-medicines.mjs` untuk `/suppliers` |
 
 Pemakaian umum (cookie sesi HttpOnly hanya bisa dipasang dari CDP, jadi harus
 diberikan sebagai argumen):

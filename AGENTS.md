@@ -15,7 +15,7 @@
 | Test | PHPUnit 10 via `composer run test` (MySQL, bukan SQLite); Postman/Newman di `postman/` |
 | CI | GitHub Actions `.github/workflows/phpunit.yml` |
 
-Status terakhir: **161 test / 561 assertion** hijau dan **45 request Postman** — pertahankan tetap hijau setiap mengubah kode.
+Status terakhir: **179 test / 640 assertion** hijau dan **57 request Postman** — pertahankan tetap hijau setiap mengubah kode.
 
 ## 2. Struktur Proyek
 
@@ -49,7 +49,7 @@ Detail: [docs/conventions.md](docs/conventions.md).
 - **Web controller** hanya render cangkang + `window.FARMASI_BOOT`; data via `/api/*`.
 - **Auth**: session CI4 manual (bukan Shield), permission di-hardcode per role di `Config`. Identitas pembuat/pengubah SELALU dari session, bukan body request. Kata sandi hash Argon2id.
 - **CSRF global** termasuk `/api/*` via filter kustom `CsrfFilter` (403 JSON + header `X-CSRF-TOKEN` segar); `GuestFilter` menolak dengan 403 (bukan redirect). CORS hanya untuk `http://localhost:4321`.
-- **Tanpa DELETE** untuk master obat — nonaktifkan lewat `is_active = 0`. Hak tulis master obat khusus supervisor (`medicine.write`).
+- **Tanpa DELETE** untuk master obat — nonaktifkan lewat `is_active = 0`. Hak tulis master obat khusus supervisor (`medicine.write`). Pola yang sama dipakai master pemasok (`supplier.write`, unique `name`).
 - Gaya kode: minimalkan komentar; nama ekspresif dulu; komentar hanya untuk algoritma non-obvious.
 
 ## 4. Frontend Astro (`frontend/`)
@@ -57,7 +57,7 @@ Detail: [docs/conventions.md](docs/conventions.md).
 - **pnpm only** (Node ≥ 22.12). Perintah: `pnpm dev` (port 4321), `pnpm build`, `pnpm typecheck`, `pnpm lint`, `pnpm format`.
 - Login memakai session CI4: `POST /api/login` → cookie `ci_session` + CSRF dari `GET /api/csrf`; identitas + `permissions` role dari `GET /api/me`.
 - Guard rute: middleware chaining `sequence(session → guest → authenticated)` (deny-by-default, SSR aktif via `@astrojs/node`).
-- Struktur: `src/features` (fitur, validasi Zod v4), `src/components` (shell: app-sidebar gaya sidebar-07 grup Utama/Operasional), fondasi di `src` terpisah dari fitur — foundations TIDAK boleh mengimpor features.
+- Struktur: `src/features` (fitur, validasi Zod v4), `src/components` (shell: app-sidebar gaya sidebar-07 grup Utama/Operasional/Master Data), fondasi di `src` terpisah dari fitur — foundations TIDAK boleh mengimpor features.
 - Pola halaman: **sheet** untuk tambah/detail/ubah (`?new=1` / `?view=` / `?edit=`), bukan rute terpisah.
 - Komponen shadcn yang sudah dikustomisasi (auth/tema) di-port manual — jangan asal `shadcn add` yang bisa menimpa.
 - Verifikasi wajib: `pnpm typecheck` + `pnpm lint` + `pnpm build`.

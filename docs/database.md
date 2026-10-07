@@ -30,7 +30,7 @@ erDiagram
     }
     suppliers {
         int id PK
-        varchar name
+        varchar name UK
         tinyint is_active
     }
     medicines {
@@ -118,7 +118,7 @@ erDiagram
 
 - Primary key: `id` surrogate auto-increment untuk `users`, `receptions`, `reception_items`, `audit_logs`, `stock_movements`, dan tabel seed yang membutuhkannya. Surrogate dipilih agar join stabil dan tidak bergantung pada data bisnis yang bisa berubah.
 - Foreign key: `receptions.supplier_id` ke `suppliers.id`, `receptions.created_by`/`updated_by` ke `users.id`, `reception_items.reception_id` ke `receptions.id` dengan `ON DELETE CASCADE` supaya menghapus penerimaan tidak meninggalkan item yatim, `stock_movements.medicine_id` ke `medicines.id` dan `stock_movements.reception_id` ke `receptions.id` (keduanya `ON DELETE CASCADE`), dan `audit_logs.actor_id` ke `users.id` dengan `ON DELETE RESTRICT`. Satu-satunya kolom FK yang sengaja kosong adalah `audit_logs.entity_id`: nilainya polimorfik (menunjuk ke tabel sesuai `entity_type`), dan kolom FK memang tidak dapat menunjuk ke banyak tabel sekaligus. Konsekuensinya menghapus entitas yang diaudit tidak lagi ditolak oleh log — justru diinginkan, karena jejak audit harus tetap hidup ketika datanya sudah hilang.
-- Unique: `users.username`, `users.email`, `medicines.code`, `receptions.reference_no`, `seed_batch_stock(medicine_id, batch_no)` mencegah stok awal batch ganda, dan `reception_items(reception_id, medicine_id, batch_no)` mencegah kombinasi obat-batch muncul dua kali dalam satu penerimaan.
+- Unique: `users.username`, `users.email`, `medicines.code`, `suppliers.name`, `receptions.reference_no`, `seed_batch_stock(medicine_id, batch_no)` mencegah stok awal batch ganda, dan `reception_items(reception_id, medicine_id, batch_no)` mencegah kombinasi obat-batch muncul dua kali dalam satu penerimaan.
 - Indeks: `reception_items(medicine_id, batch_no)` untuk agregasi item per batch, `stock_movements(medicine_id, batch_no)` untuk agregasi ledger per batch, `stock_movements(direction, moved_at)` dan `stock_movements(movement_type, moved_at)` untuk penelusuran riwayat, `receptions(supplier_id, received_at)` untuk daftar dan filter penerimaan, `audit_logs(entity_type, entity_id, created_at)` untuk riwayat aksi per entitas (menggantikan `(reception_id, created_at)`).
 
 ## Model Stok
