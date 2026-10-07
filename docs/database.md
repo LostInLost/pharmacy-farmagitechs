@@ -11,7 +11,9 @@ erDiagram
     medicines ||--o{ seed_batch_stock : "has_initial"
     medicines ||--o{ stock_usage : "consumed"
     medicines ||--o{ reception_items : "received"
+    medicines ||--o{ stock_movements : "moves"
     receptions ||--o{ reception_items : "contains"
+    receptions ||--o{ stock_movements : "receipt moves"
     receptions ||--o{ audit_logs : "audited (entity_type='reception')"
 
     users {
@@ -78,6 +80,19 @@ erDiagram
         json data_after "snapshot keadaan akhir"
         datetime created_at
     }
+    stock_movements {
+        int id PK
+        int medicine_id FK
+        varchar batch_no
+        date expires_on "NULL = tanpa kedaluwarsa"
+        varchar movement_type "seed|receipt|usage"
+        varchar direction "in|out"
+        int quantity "selalu positif"
+        int reception_id FK "NULL kecuali receipt"
+        datetime moved_at
+        varchar unit_name "NULL kecuali usage"
+        datetime created_at
+    }
 ```
 
 ## Tabel
@@ -89,39 +104,40 @@ erDiagram
 | `medicines` | Katalog obat, satuan (`unit`), dan status aktifnya. |
 | `seed_batch_stock` | Stok awal per batch pada 2026-10-01, sebelum pemakaian seed. |
 | `stock_usage` | Pemakaian final oleh unit pelayanan yang mengurangi stok, beserta waktu pakai dan unit pelayanannya. |
+| `stock_movements` | Ledger mutasi stok: satu baris per penambahan/pengurangan per batch. Sumber tunggal angka laporan. |
 | `receptions` | Header satu transaksi kedatangan dari satu pemasok. |
 | `reception_items` | Rincian obat, batch, kedaluwarsa, dan jumlah per penerimaan. |
 | `audit_logs` | Jejak aksi tulis semua entitas (kini `reception`) beserta snapshot sebelum/sesudah; polimorfik lewat pasangan `entity_type`/`entity_id`. |
 
-`suppliers`, `medicines`, `seed_batch_stock`, dan `stock_usage` berasal dari lampiran `app/Database/seed_farmasi.sql`. Isinya dipindahkan apa adanya ke `StockSeeder` (3 pemasok, 25 obat, 10 batch awal, 3 baris pemakaian) supaya angka laporan stok sama dengan contoh soal tanpa impor SQL manual. Seeder mencocokkan baris per `id`: `suppliers` dan `medicines` diperbarui di tempat karena dirujuk foreign key, sedangkan `seed_batch_stock` dan `stock_usage` dimuat ulang seluruhnya agar stok penerimaan lama tidak menumpuk. Kolom `used_at` dan `unit_name` hanya dibaca lampiran; perhitungan stok tetap memakai `quantity`.
+`suppliers`, `medicines`, `seed_batch_stock`, dan `stock_usage` berasal dari lampiran `app/Database/seed_farmasi.sql`. Isinya dipindahkan apa adanya ke `StockSeeder` (3 pemasok, 25 obat, 10 batch awal, 3 baris pemakaian) supaya angka laporan stok sama dengan contoh soal tanpa impor SQL manual. Seeder mencocokkan baris per `id`: `suppliers` dan `medicines` diperbarui di tempat karena dirujuk foreign key, sedangkan `seed_batch_stock` dan `stock_usage` dimuat ulang seluruhnya agar stok penerimaan lama tidak menumpuk. Kolom `used_at` dan `unit_name` hanya dibaca lampiran; perhitungan stok tetap memakai `quantity`. Ledger `stock_movements` ikut disinkronkan untuk tipe `seed` dan `usage`, sedangkan baris `receipt` milik penerimaan nyata dibiarkan utuh.
 
 ## Kunci dan Indeks
 
-- Primary key: `id` surrogate auto-increment untuk `users`, `receptions`, `reception_items`, `audit_logs`, dan tabel seed yang membutuhkannya. Surrogate dipilih agar join stabil dan tidak bergantung pada data bisnis yang bisa berubah.
-- Foreign key: `receptions.supplier_id` ke `suppliers.id`, `receptions.created_by`/`updated_by` ke `users.id`, `reception_items.reception_id` ke `receptions.id` dengan `ON DELETE CASCADE` supaya menghapus penerimaan tidak meninggalkan item yatim, dan `audit_logs.actor_id` ke `users.id` dengan `ON DELETE RESTRICT`. Satu-satunya kolom FK yang sengaja kosong adalah `audit_logs.entity_id`: nilainya polimorfik (menunjuk ke tabel sesuai `entity_type`), dan kolom FK memang tidak dapat menunjuk ke banyak tabel sekaligus. Konsekuensinya menghapus entitas yang diaudit tidak lagi ditolak oleh log — justru diinginkan, karena jejak audit harus tetap hidup ketika datanya sudah hilang.
+- Primary key: `id` surrogate auto-increment untuk `users`, `receptions`, `reception_items`, `audit_logs`, `stock_movements`, dan tabel seed yang membutuhkannya. Surrogate dipilih agar join stabil dan tidak bergantung pada data bisnis yang bisa berubah.
+- Foreign key: `receptions.supplier_id` ke `suppliers.id`, `receptions.created_by`/`updated_by` ke `users.id`, `reception_items.reception_id` ke `receptions.id` dengan `ON DELETE CASCADE` supaya menghapus penerimaan tidak meninggalkan item yatim, `stock_movements.medicine_id` ke `medicines.id` dan `stock_movements.reception_id` ke `receptions.id` (keduanya `ON DELETE CASCADE`), dan `audit_logs.actor_id` ke `users.id` dengan `ON DELETE RESTRICT`. Satu-satunya kolom FK yang sengaja kosong adalah `audit_logs.entity_id`: nilainya polimorfik (menunjuk ke tabel sesuai `entity_type`), dan kolom FK memang tidak dapat menunjuk ke banyak tabel sekaligus. Konsekuensinya menghapus entitas yang diaudit tidak lagi ditolak oleh log — justru diinginkan, karena jejak audit harus tetap hidup ketika datanya sudah hilang.
 - Unique: `users.username`, `users.email`, `medicines.code`, `receptions.reference_no`, `seed_batch_stock(medicine_id, batch_no)` mencegah stok awal batch ganda, dan `reception_items(reception_id, medicine_id, batch_no)` mencegah kombinasi obat-batch muncul dua kali dalam satu penerimaan.
-- Indeks: `reception_items(medicine_id, batch_no)` untuk agregasi stok per batch, `receptions(supplier_id, received_at)` untuk daftar dan filter penerimaan, `audit_logs(entity_type, entity_id, created_at)` untuk riwayat aksi per entitas (menggantikan `(reception_id, created_at)`).
+- Indeks: `reception_items(medicine_id, batch_no)` untuk agregasi item per batch, `stock_movements(medicine_id, batch_no)` untuk agregasi ledger per batch, `stock_movements(direction, moved_at)` dan `stock_movements(movement_type, moved_at)` untuk penelusuran riwayat, `receptions(supplier_id, received_at)` untuk daftar dan filter penerimaan, `audit_logs(entity_type, entity_id, created_at)` untuk riwayat aksi per entitas (menggantikan `(reception_id, created_at)`).
 
 ## Model Stok
 
-Stok dihitung sebagai agregasi ledger, bukan kolom stok yang dimutasi:
+Stok dihitung dari ledger `stock_movements`, bukan kolom stok yang dimutasi. Setiap baris menyimpan satu gerak: `quantity` selalu positif, arah dibawa `direction` (`in`/`out`), dan alasan gerak dibawa `movement_type` (`seed`/`receipt`/`usage`). Memisahkan arah dari tanda membuat tipe gerak dan arah bisa diperiksa silang di aplikasi (seed/receipt selalu `in`, usage selalu `out`).
 
 ```
-stok fisik batch = seed_batch_stock.quantity
-                 + SUM(reception_items.quantity)
-                 - SUM(stock_usage.quantity)
+stok fisik batch = SUM(CASE WHEN direction = 'in' THEN quantity ELSE -quantity END)
 ```
 
-Kunci agregasi adalah pasangan `(medicine_id, batch_no)` sesuai identitas batch pada soal. Batch dikelompokkan menjadi tersedia bila `expires_on >= on_date` dan kedaluwarsa bila `expires_on < on_date`. Stok kedaluwarsa tetap dihitung sebagai stok fisik.
+Kunci agregasi adalah pasangan `(medicine_id, batch_no)` sesuai identitas batch pada soal. Batch dikelompokkan menjadi tersedia bila `expires_on >= on_date` dan kedaluwarsa bila `expires_on < on_date`; batch tepat pada tanggal kedaluwarsa masih tersedia, dan `expires_on` NULL berarti tanpa kedaluwarsa. Stok kedaluwarsa tetap dihitung sebagai stok fisik. Penanda `is_expired` dihitung saat SELECT (tidak disimpan) agar satu query tetap konsisten dengan `on_date` yang diminta.
 
-Alasan model ini: pembaruan penerimaan memakai keadaan akhir lengkap (`PUT` mengganti seluruh item), sehingga menghapus item cukup menghapus barisnya dan stok otomatis menyesuaikan tanpa rekonsiliasi manual. Pengiriman `PUT` identik dua kali tidak menggandakan stok karena tidak ada penambahan kumulatif di luar baris item. Batch nol tetap ditampilkan agar jejak batch tidak hilang dan urutan `expires_on` mendukung pemilihan FEFO manual.
+Tabel domain (`seed_batch_stock`, `reception_items`, `stock_usage`) tetap menjadi sumber tulis dan menyimpan rincian asalnya — batch awal, item penerimaan, dan pemakaian per unit. Baris ledger ditulis bersamaan (write-through) dalam transaksi yang sama, lalu seluruh laporan membaca ledger saja. Migrasi `CreateStockMovements` membackfill ledger dari ketiga tabel itu secara idempoten, sehingga database yang sudah berisi data tidak kehilangan angka.
+
+Alasan model ini: pembaruan penerimaan memakai keadaan akhir lengkap (`PUT` mengganti seluruh item), sehingga menghapus item cukup menghapus barisnya — dan baris ledger ikut diganti pada transaksi yang sama — tanpa rekonsiliasi manual. Pengiriman `PUT` identik dua kali tidak menggandakan stok karena tidak ada penambahan kumulatif di luar baris item. Batch nol tetap ditampilkan agar jejak batch tidak hilang dan urutan `expires_on` mendukung pemilihan FEFO manual.
 
 ## Konsistensi Transaksi
 
 Setiap operasi buat/ubah penerimaan dijalankan dalam satu transaksi database:
 
 1. Validasi payload dan hak akses dijalankan sebelum write. Kegagalan mengembalikan HTTP 4xx tanpa mengubah data.
-2. Header penerimaan, seluruh item, dan log aksi ditulis dalam transaksi yang sama.
+2. Header penerimaan, seluruh item, log aksi, dan baris ledger `stock_movements` ditulis dalam transaksi yang sama.
 3. Jika satu baris item gagal, transaksi di-rollback sehingga penerimaan, stok, dan log tidak berubah sebagian.
 
 Karena stok adalah hasil agregasi atas data tersimpan, rollback otomatis mengembalikan angka stok tanpa perhitungan kompensasi tambahan.

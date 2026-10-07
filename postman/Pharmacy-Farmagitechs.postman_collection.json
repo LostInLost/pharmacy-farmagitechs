@@ -264,6 +264,11 @@
                                     "    pm.expect(find(107).physical_quantity).to.eql(6);",
                                     "    pm.expect(find(107).available_quantity).to.eql(0);",
                                     "});"
+,
+                                    "pm.test('obat 101 flag is_expired per batch', function () {",
+                                    "    pm.expect(find(101).available_batches.every((b) => b.is_expired === false)).to.eql(true);",
+                                    "    pm.expect(find(101).expired_batches.every((b) => b.is_expired === true)).to.eql(true);",
+                                    "});"
                                 ]
                             }
                         }

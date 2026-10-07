@@ -24,7 +24,7 @@ Urutan pembuatan skema dari database kosong:
 3. Muat data awal lampiran: `php spark db:seed StockSeeder`
 4. Buat dua akun demo: `php spark db:seed DemoUsersSeeder`
 
-Catatan: isi lampiran `app/Database/seed_farmasi.sql` (3 pemasok, 25 obat, 10 batch stok awal, 3 baris pemakaian) sudah dipindahkan ke `StockSeeder`, sehingga tidak perlu impor SQL manual. Seeder mencocokkan `suppliers` dan `medicines` per `id`, lalu memuat ulang `seed_batch_stock` dan `stock_usage` agar aman dijalankan berulang.
+Catatan: isi lampiran `app/Database/seed_farmasi.sql` (3 pemasok, 25 obat, 10 batch stok awal, 3 baris pemakaian) sudah dipindahkan ke `StockSeeder`, sehingga tidak perlu impor SQL manual. Seeder mencocokkan `suppliers` dan `medicines` per `id`, lalu memuat ulang `seed_batch_stock` dan `stock_usage` agar aman dijalankan berulang. Ledger `stock_movements` ikut disinkronkan untuk baris seed/usage, sedangkan baris receipt milik penerimaan nyata dibiarkan utuh.
 
 ## 3. Cara Menjalankan Aplikasi
 
@@ -110,7 +110,7 @@ GET /api/stocks?on_date=2026-10-03
 
 ## 6. Pengujian dan Verifikasi
 
-Pengujian otomatis (102 test, 296 assertion):
+Pengujian otomatis (115 test, 368 assertion):
 
 ```
 composer run test
@@ -124,7 +124,7 @@ Secara default skrip menjalankan PHPUnit persis seperti `vendor/bin/phpunit`, ja
 vendor/bin/phpunit
 ```
 
-Mencakup: skenario 1-5 soal, angka laporan stok contoh soal, batas `expires_on` sama dengan `on_date`, isolasi rollback, stamping timestamp, autentikasi, proteksi CSRF (token wajib, rotasi, tolak pakai ulang), audit trail (snapshot before/after), endpoint references (hanya aktif, field minimal, butuh login), `can_update` di daftar, dan helper hash. Test berjalan pada database `pharmacy_farmagitechs_test` (lihat `database.tests.*` di `.env`), sehingga tidak menyentuh data development. Tanpa `.env` (mis. di CI), test otomatis memakai fallback SQLite3 `:memory:`; seluruh migrasi dan query aplikasi dijaga tetap portabel agar kedua driver sama-sama lulus. Laporan coverage tidak diaktifkan di `phpunit.dist.xml` agar mesin tanpa driver coverage tidak gagal; jalankan `vendor/bin/phpunit --coverage-text` bila driver Xdebug/PCOV tersedia.
+Mencakup: skenario 1-5 soal, angka laporan stok contoh soal, batas `expires_on` sama dengan `on_date`, ledger `stock_movements` (write-through penerimaan, backfill seeder, flag `is_expired`), isolasi rollback, stamping timestamp, autentikasi, proteksi CSRF (token wajib, rotasi, tolak pakai ulang), audit trail (snapshot before/after), endpoint references (hanya aktif, field minimal, butuh login), `can_update` di daftar, dan helper hash. Test berjalan pada database `pharmacy_farmagitechs_test` (lihat `database.tests.*` di `.env`), sehingga tidak menyentuh data development. Tanpa `.env` (mis. di CI), test otomatis memakai fallback SQLite3 `:memory:`; seluruh migrasi dan query aplikasi dijaga tetap portabel agar kedua driver sama-sama lulus. Laporan coverage tidak diaktifkan di `phpunit.dist.xml` agar mesin tanpa driver coverage tidak gagal; jalankan `vendor/bin/phpunit --coverage-text` bila driver Xdebug/PCOV tersedia.
 
 Verifikasi manual:
 
@@ -139,7 +139,7 @@ Verifikasi manual:
 Asumsi dan batasan saat ini:
 
 - Data awal berasal dari lampiran `app/Database/seed_farmasi.sql`, dipindahkan ke `StockSeeder`. Jalankan seeder itu sebelum memakai angka contoh soal (obat 101, 102, 103, 104, 106, 107); menjalankannya ulang aman dan tidak menggandakan data.
-- UI menyediakan 4 tampilan wajib (login, daftar/detail penerimaan, form penerimaan, daftar stok). Filter tanggal `on_date` di UI tersedia di halaman stok; angka contoh soal paling akurat diverifikasi lewat API.
+- UI menyediakan 4 tampilan wajib (login, daftar/detail penerimaan, form penerimaan, daftar stok). Filter tanggal `on_date` dan filter status batch (semua/tersedia/kedaluwarsa) tersedia di halaman stok; angka contoh soal paling akurat diverifikasi lewat API.
 
 ## 7. Postman Collection
 
