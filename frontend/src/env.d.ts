@@ -1,6 +1,6 @@
 /// <reference types="astro/client" />
 
-import type { AuthUser } from "./lib/auth"
+import type { AuthUser } from "./features/auth/schemas"
 
 declare global {
   namespace App {

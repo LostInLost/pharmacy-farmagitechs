@@ -1,7 +1,7 @@
 import { defineMiddleware, sequence } from "astro:middleware"
 
-import { POST_LOGIN_PATH } from "./lib/auth"
-import { getSessionUser } from "./lib/server-auth"
+import { POST_LOGIN_PATH } from "./foundations/api/config"
+import { getSessionUser } from "./features/auth/server"
 
 /**
  * Auth guard berantai ala docs Astro

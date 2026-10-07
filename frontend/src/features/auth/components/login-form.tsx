@@ -1,4 +1,5 @@
 import * as React from "react"
+import { z } from "zod"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -10,11 +11,18 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { POST_LOGIN_PATH, login, type LoginErrorKind } from "@/lib/auth"
-import { setUserSession } from "@/lib/session"
+import { POST_LOGIN_PATH } from "@/foundations/api/config"
+import { login, type LoginErrorKind } from "@/features/auth/api"
+import { loginFormSchema } from "@/features/auth/schemas"
+import { setUserSession } from "@/features/auth/session"
 
 type Props = {
   appName: string
+}
+
+type FieldErrors = {
+  username?: string
+  password?: string
 }
 
 const MESSAGES: Record<LoginErrorKind, string> = {
@@ -31,21 +39,34 @@ export function LoginForm({ appName }: Props) {
   const [password, setPassword] = React.useState("")
   const [pending, setPending] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = React.useState<FieldErrors>({})
 
   async function onSubmit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
 
     if (pending) return
 
-    if (!username.trim() || !password) {
-      setError(MESSAGES.validation)
+    // Satu sumber kebenaran pesan validasi: skema. Form hanya merender
+    // pesan per-field dari hasil parse; `login()` tetap menjaga kontrak 422.
+    const parsed = loginFormSchema.safeParse({
+      username: username.trim(),
+      password,
+    })
+
+    if (!parsed.success) {
+      const fields = z.flattenError(parsed.error).fieldErrors
+      setFieldErrors({
+        username: fields.username?.[0],
+        password: fields.password?.[0],
+      })
       return
     }
 
+    setFieldErrors({})
     setPending(true)
     setError(null)
 
-    const result = await login(username.trim(), password)
+    const result = await login(parsed.data.username, parsed.data.password)
 
     if (result.ok) {
       setUserSession(result.user)
@@ -77,8 +98,13 @@ export function LoginForm({ appName }: Props) {
               required
               value={username}
               onChange={(event) => setUsername(event.target.value)}
-              aria-invalid={error !== null}
+              aria-invalid={fieldErrors.username !== undefined}
             />
+            {fieldErrors.username !== undefined && (
+              <p role="alert" className="text-sm text-destructive">
+                {fieldErrors.username}
+              </p>
+            )}
           </div>
           <div className="grid gap-2">
             <Label htmlFor="password">Kata sandi</Label>
@@ -90,8 +116,13 @@ export function LoginForm({ appName }: Props) {
               required
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              aria-invalid={error !== null}
+              aria-invalid={fieldErrors.password !== undefined}
             />
+            {fieldErrors.password !== undefined && (
+              <p role="alert" className="text-sm text-destructive">
+                {fieldErrors.password}
+              </p>
+            )}
           </div>
           {error !== null && (
             <p role="alert" className="text-sm text-destructive">

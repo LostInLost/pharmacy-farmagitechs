@@ -8,11 +8,30 @@ import { SiteHeader } from "@/components/site-header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { Toaster } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
-import { logout } from "@/lib/auth"
-import { clearUserSession, ensureSession, type SessionUser } from "@/lib/session"
+import { logout } from "@/features/auth/api"
+import {
+  clearUserSession,
+  ensureSession,
+  type SessionUser,
+} from "@/features/auth/session"
+import { dashboardDataSchema } from "@/features/dashboard/schemas"
 import dashboardData from "@/data/dashboard.json"
 
 type Status = "loading" | "ready" | "anonymous"
+
+/**
+ * Pengaman runtime saja: JSON statis sudah dicek tipe oleh `resolveJsonModule`
+ * saat build. Bila data tak sesuai skema, tabel dirender kosong alih-alih
+ * membuat komponen crash. `console.warn` bisa muncul dua kali (SSR + hidrasi
+ * client) dan itu expected.
+ */
+const parsedDashboard = dashboardDataSchema.safeParse(dashboardData)
+
+if (!parsedDashboard.success) {
+  console.warn("dashboard.json tidak sesuai skema:", parsedDashboard.error.issues)
+}
+
+const rows = parsedDashboard.success ? parsedDashboard.data : []
 
 export function DashboardShell() {
   const [status, setStatus] = React.useState<Status>("loading")
@@ -80,7 +99,7 @@ export function DashboardShell() {
                 <div className="px-4 lg:px-6">
                   <ChartAreaInteractive />
                 </div>
-                <DataTable data={dashboardData} />
+                <DataTable data={rows} />
               </div>
             </div>
           </div>

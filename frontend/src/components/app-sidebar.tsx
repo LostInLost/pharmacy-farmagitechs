@@ -1,4 +1,4 @@
-﻿import * as React from "react"
+import * as React from "react"
 
 import { NavDocuments } from "@/components/nav-documents"
 import { NavMain } from "@/components/nav-main"
@@ -25,11 +25,9 @@ import {
   CommandIcon,
 } from "lucide-react"
 
-type SessionUser = {
-  name: string
-  username: string
-  role: string
-}
+import type { AuthUser } from "@/features/auth/schemas"
+
+type SessionUser = AuthUser
 
 const data = {
   navMain: [
