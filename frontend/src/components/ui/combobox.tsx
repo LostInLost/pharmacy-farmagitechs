@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { cn } from "cn"
-import { CheckIcon, ChevronDownIcon } from "lucide-react"
+import { CheckIcon, ChevronDownIcon, PlusIcon } from "lucide-react"
 
 import {
   Popover,
@@ -31,6 +31,14 @@ type Props = {
   emptyText?: string
   disabled?: boolean
   className?: string
+  /**
+   * Mode ketik-bebas (creatable): daftar hanya saran, dan ketikan yang tidak
+   * cocok dengan opsi mana pun tetap bisa dipakai sebagai nilai baru — baris
+   * "pakai ..." muncul di puncak daftar. Default `false` = pilih-satu ketat.
+   */
+  freeText?: boolean
+  /** Label baris pembuat nilai baru; `%s` diganti teks ketikan. */
+  createLabel?: string
   "aria-invalid"?: boolean
 }
 
@@ -42,6 +50,18 @@ type Props = {
  * `@base-ui/react`, sedangkan proyek ini berbasis `radix-ui`. Pencarian
  * disaring di klien karena daftar referensi memang dikirim utuh oleh
  * `GET /api/references/*`.
+ *
+ * Dengan `freeText` kotak pencarian menjadi pembuat nilai: ketikan yang tidak
+ * cocok opsi mana pun bisa langsung dipakai (baris pembuat di puncak daftar),
+ * sehingga nomor batch baru bisa diketik alih-alih memaksa memilih yang ada.
+ *
+ * Kotaknya sengaja SELALU di-portal ke body dan modal. Konten non-portal
+ * tidak bisa dipakai di dalam Sheet pada tabel: pembungkus `Table` memakai
+ * `relative overflow-x-auto`, sehingga elemen yang diposisikan Radix
+ * (wrapper `position: fixed`) terpotong oleh overflow-x dan teks panjang
+ * meluber keluar kotak. Mode modal juga yang membuat roda mouse bisa
+ * menggulir daftar di dalam Sheet (scroll-lock bersarang, lihat catatan di
+ * `Sheet`).
  */
 export function Combobox({
   id,
@@ -53,6 +73,8 @@ export function Combobox({
   emptyText = "Tidak ada pilihan yang cocok.",
   disabled = false,
   className,
+  freeText = false,
+  createLabel = "Pakai \"%s\"",
   "aria-invalid": ariaInvalid,
 }: Props) {
   const [open, setOpen] = React.useState(false)
@@ -68,20 +90,34 @@ export function Combobox({
       ? options
       : options.filter((option) => option.label.toLowerCase().includes(needle))
 
-  // Sorotan dijepit ke daftar hasil: daftar menyusut saat pengguna mengetik.
-  const lastIndex = filtered.length - 1
+  // Baris pembuat nilai baru: hanya bila ketikan belum menjadi opsi (persis).
+  const typed = query.trim()
+  const canCreate =
+    freeText &&
+    typed !== "" &&
+    !options.some((option) => option.label.toLowerCase() === typed.toLowerCase())
+  const createLabelText = createLabel.replace("%s", typed)
+
+  // Baris pembuat di puncak daftar; indeks sorotan digeser satu.
+  const lastIndex = filtered.length - 1 + (canCreate ? 1 : 0)
   const highlightedIndex = Math.max(0, Math.min(activeIndex, lastIndex))
-  const highlighted = filtered[highlightedIndex]
+  const highlighted = canCreate
+    ? highlightedIndex === 0
+      ? { value: typed, label: createLabelText, create: true as const }
+      : { ...filtered[highlightedIndex - 1], create: false as const }
+    : filtered[highlightedIndex] === undefined
+      ? undefined
+      : { ...filtered[highlightedIndex], create: false as const }
 
   // Sorotan keyboard (aria-activedescendant) harus selalu terlihat.
-  const highlightedValue = highlighted?.value
+  const highlightedKey = highlighted?.value
   React.useEffect(() => {
-    if (!open || highlightedValue === undefined) return
+    if (!open || highlightedKey === undefined) return
 
     document
-      .getElementById(`${listId}-${highlightedValue}`)
+      .getElementById(`${listId}-opt-${highlightedKey}`)
       ?.scrollIntoView({ block: "nearest" })
-  }, [open, highlightedValue, listId])
+  }, [open, highlightedKey, listId])
 
   function changeOpen(next: boolean) {
     setOpen(next)
@@ -117,11 +153,6 @@ export function Combobox({
     }
   }
 
-  // `modal` bukan pilihan gaya: Sheet induk juga dialog modal, dan
-  // scroll-lock-nya (react-remove-scroll) memblokir roda mouse untuk konten
-  // di luar subtree Sheet — sedangkan konten Popover di-portal ke body. Mode
-  // modal memasang scroll-lock bersarang pada konten ini, seperti Radix
-  // Select, sehingga daftar bisa di-scroll.
   return (
     <Popover modal open={open} onOpenChange={changeOpen}>
       <PopoverTrigger asChild>
@@ -135,16 +166,16 @@ export function Combobox({
           aria-invalid={ariaInvalid}
           disabled={disabled}
           data-slot="combobox-trigger"
-          data-placeholder={selected === undefined ? "" : undefined}
+          data-placeholder={selected === undefined && value === "" ? "" : undefined}
           className={cn(
             "flex h-8 w-full items-center justify-between gap-1.5 rounded-lg border border-input bg-transparent py-2 pr-2 pl-2.5 text-sm whitespace-nowrap transition-colors outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 data-placeholder:text-muted-foreground dark:bg-input/30 dark:hover:bg-input/50 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
             className
           )}
         >
           <span data-slot="combobox-value" className="line-clamp-1">
-            {selected?.label ?? placeholder}
+            {selected?.label ?? (value === "" ? placeholder : value)}
           </span>
-          <ChevronDownIcon className="size-4 text-muted-foreground" />
+          <ChevronDownIcon className="size-4 shrink-0 text-muted-foreground" />
         </button>
       </PopoverTrigger>
 
@@ -152,9 +183,9 @@ export function Combobox({
         align="start"
         sideOffset={4}
         data-slot="combobox-content"
-        className="w-(--radix-popover-trigger-width) flex-col gap-0 p-0"
+        className="w-(--radix-popover-trigger-width) min-w-64 flex-col gap-0 p-0"
         onOpenAutoFocus={(event) => {
-          // Radix default memfokuskan kontainer; pencarian yang lebih berguna.
+          // Radix memfokuskan kontainer; kotak pencarian yang lebih berguna.
           event.preventDefault()
           inputRef.current?.focus()
         }}
@@ -162,7 +193,7 @@ export function Combobox({
         <div className="border-b p-1">
           <input
             ref={inputRef}
-            data-slot="combobox-input"
+            data-slot="combobox-search"
             type="text"
             value={query}
             onChange={(event) => {
@@ -170,13 +201,13 @@ export function Combobox({
               setActiveIndex(0)
             }}
             onKeyDown={onInputKeyDown}
-            placeholder={searchPlaceholder}
+            placeholder={freeText ? "Ketik atau cari..." : searchPlaceholder}
             aria-label={searchPlaceholder}
             aria-controls={listId}
             aria-activedescendant={
               highlighted === undefined
                 ? undefined
-                : `${listId}-${highlighted.value}`
+                : `${listId}-opt-${highlighted.value}`
             }
             autoComplete="off"
             spellCheck={false}
@@ -190,16 +221,34 @@ export function Combobox({
           data-slot="combobox-list"
           className="max-h-64 overflow-y-auto overscroll-contain p-1"
         >
+          {canCreate && (
+            <li
+              id={`${listId}-opt-${typed}`}
+              role="option"
+              aria-selected={false}
+              data-slot="combobox-item-create"
+              data-highlighted={highlightedIndex === 0 ? "" : undefined}
+              onClick={() => select({ value: typed, label: typed })}
+              onMouseMove={() => setActiveIndex(0)}
+              className="flex cursor-default items-center gap-2 rounded-md py-1.5 pr-2 pl-1.5 text-sm outline-hidden select-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground"
+            >
+              <PlusIcon className="size-4 shrink-0" />
+              <span className="truncate">{createLabelText}</span>
+            </li>
+          )}
+
           {filtered.map((option, index) => (
             <li
               key={option.value}
-              id={`${listId}-${option.value}`}
+              id={`${listId}-opt-${option.value}`}
               role="option"
               aria-selected={option.value === value}
               data-slot="combobox-item"
-              data-highlighted={index === highlightedIndex ? "" : undefined}
+              data-highlighted={
+                index + (canCreate ? 1 : 0) === highlightedIndex ? "" : undefined
+              }
               onClick={() => select(option)}
-              onMouseMove={() => setActiveIndex(index)}
+              onMouseMove={() => setActiveIndex(index + (canCreate ? 1 : 0))}
               className="flex cursor-default items-center gap-2 rounded-md py-1.5 pr-2 pl-1.5 text-sm outline-hidden select-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground"
             >
               <CheckIcon
@@ -218,10 +267,10 @@ export function Combobox({
           ))}
         </ul>
 
-        {filtered.length === 0 && (
+        {filtered.length === 0 && !canCreate && (
           <p
             data-slot="combobox-empty"
-            className="px-2 py-6 text-center text-sm text-muted-foreground"
+            className="px-4 py-6 text-center text-sm text-balance text-muted-foreground"
           >
             {emptyText}
           </p>

@@ -59,5 +59,6 @@ $routes->group('api', static function (RouteCollection $routes): void {
 
         $routes->get('references/suppliers', 'Api\ReferenceController::suppliers');
         $routes->get('references/medicines', 'Api\ReferenceController::medicines');
+        $routes->get('references/batches', 'Api\ReferenceController::batches');
     });
 });

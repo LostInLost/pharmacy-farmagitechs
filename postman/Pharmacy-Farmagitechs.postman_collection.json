@@ -466,9 +466,40 @@
                                                               }
                                                   },
                                       "description":  "`GET /api/references/medicines`\n\n**200 OK**\n\n```json\n{\n  \"data\": [\n    {\"id\": 101, \"name\": \"Paracetamol 500 mg tablet\", \"unit\": \"tablet\"},\n    {\"id\": 102, \"name\": \"Amoxicillin 500 mg kapsul\", \"unit\": \"kapsul\"}\n  ]\n}\n```\n\nObat `is_active = 0` (105, 124, 125) tidak ikut. **401** tanpa sesi."
+                                  },
+                                  {
+                                      "name":  "2.6 Dropdown batch (dari ledger)",
+                                      "event":  [
+                                                    {
+                                                        "listen":  "test",
+                                                        "script":  {
+                                                                       "type":  "text/javascript",
+                                                                       "exec":  [
+                                                                                    "pm.test('status 200', function () { pm.response.to.have.status(200); });",
+                                                                                    "pm.test('field medicine_id+batch_no+expires_on', function () { pm.expect(Object.keys(pm.response.json().data[0]).sort()).to.eql(['batch_no', 'expires_on', 'medicine_id']); });",
+                                                                                    "pm.test('batch terkenal ada', function () { pm.expect(pm.response.json().data.some((b) => b.medicine_id === 101 && b.batch_no === 'PCT-2601')).to.be.true; });"
+                                                                                ]
+                                                                   }
+                                                    }
+                                                ],
+                                      "request":  {
+                                                      "method":  "GET",
+                                                      "url":  {
+                                                                  "raw":  "{{base_url}}/api/references/batches",
+                                                                  "host":  [
+                                                                               "{{base_url}}"
+                                                                           ],
+                                                                  "path":  [
+                                                                               "api",
+                                                                               "references",
+                                                                               "batches"
+                                                                           ]
+                                                              }
+                                                  },
+                                      "description":  "`GET /api/references/batches`\n\n**200 OK**\n\n```json\n{\n  \"data\": [\n    {\"medicine_id\": 101, \"batch_no\": \"PCT-2501\", \"expires_on\": \"2026-09-30\"},\n    {\"medicine_id\": 101, \"batch_no\": \"PCT-2601\", \"expires_on\": \"2027-12-31\"}\n  ]\n}\n```\n\nDaftar batch unik dari ledger `stock_movements` (`MAX(expires_on)` per `medicine_id` + `batch_no`), saran kolom Batch No pada form penerimaan; batch baru tetap boleh diketik. **401** tanpa sesi."
                                   }
                               ],
-                     "description":  "Laporan stok dari ledger `stock_movements` + endpoint reference untuk dropdown.\n\n- `GET /api/stocks[?on_date=YYYY-MM-DD]` — `on_date` (default hari ini) **hanya** menentukan klasifikasi kedaluwarsa per batch (`is_expired`: `MAX(expires_on) \u003c on_date`; tepat pada tanggal kedaluwarsa masih tersedia), bukan filter gerakan. Semua obat aktif selalu muncul meski stok 0.\n- `GET /api/references/suppliers` / `GET /api/references/medicines` — hanya baris `is_active = 1`.\n\nSemua endpoint di folder ini butuh sesi (401 bila tanpa login)."
+                     "description":  "Laporan stok dari ledger `stock_movements` + endpoint reference untuk dropdown.\n\n- `GET /api/stocks[?on_date=YYYY-MM-DD]` — `on_date` (default hari ini) **hanya** menentukan klasifikasi kedaluwarsa per batch (`is_expired`: `MAX(expires_on) \u003c on_date`; tepat pada tanggal kedaluwarsa masih tersedia), bukan filter gerakan. Semua obat aktif selalu muncul meski stok 0.\n- `GET /api/references/suppliers` / `GET /api/references/medicines` — hanya baris `is_active = 1`.\n- `GET /api/references/batches` — batch unik per obat dari ledger.\n\nSemua endpoint di folder ini butuh sesi (401 bila tanpa login)."
                  },
                  {
                      "name":  "3. Receipts",

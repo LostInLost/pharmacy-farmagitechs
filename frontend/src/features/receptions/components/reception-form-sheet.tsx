@@ -3,7 +3,7 @@ import { z } from "zod"
 import { CirclePlusIcon, Trash2Icon } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { Combobox } from "@/components/ui/combobox"
+import { Combobox, type ComboboxOption } from "@/components/ui/combobox"
 import { Feedback } from "@/components/feedback"
 import {
   Field,
@@ -32,12 +32,14 @@ import { toDatetimeLocal } from "@/foundations/format"
 import {
   createReception,
   getReception,
+  listBatchReferences,
   listMedicines,
   listSuppliers,
   updateReception,
 } from "@/features/receptions/api"
 import {
   receptionFormSchema,
+  type BatchReference,
   type Medicine,
   type ReceptionFormInput,
   type ReceptionWriteDetail,
@@ -103,6 +105,9 @@ export function ReceptionFormSheet({
   const [load, setLoad] = React.useState<LoadState>({ status: "loading" })
   const [suppliers, setSuppliers] = React.useState<Supplier[]>([])
   const [medicines, setMedicines] = React.useState<Medicine[]>([])
+  const [batchReferences, setBatchReferences] = React.useState<
+    BatchReference[]
+  >([])
   const [referenceNo, setReferenceNo] = React.useState("")
   const [supplierId, setSupplierId] = React.useState("")
   const [receivedAt, setReceivedAt] = React.useState("")
@@ -111,13 +116,33 @@ export function ReceptionFormSheet({
   const [formErrors, setFormErrors] = React.useState<string[]>([])
   const [saving, setSaving] = React.useState(false)
 
+  // Saran batch per obat. Ledger sudah unik per (obat, batch), jadi tidak ada
+  // duplikat yang perlu disaring; hint hanya menampilkan tanggal kedaluwarsa.
+  const batchOptions = React.useMemo(() => {
+    const byMedicine = new Map<number, ComboboxOption[]>()
+
+    for (const batch of batchReferences) {
+      const options = byMedicine.get(batch.medicine_id) ?? []
+
+      options.push({
+        value: batch.batch_no,
+        label: batch.batch_no,
+        hint: batch.expires_on ?? undefined,
+      })
+      byMedicine.set(batch.medicine_id, options)
+    }
+
+    return byMedicine
+  }, [batchReferences])
+
   React.useEffect(() => {
     let cancelled = false
 
     async function loadData() {
-      const [supplierResult, medicineResult] = await Promise.all([
+      const [supplierResult, medicineResult, batchResult] = await Promise.all([
         listSuppliers(),
         listMedicines(),
+        listBatchReferences(),
       ])
 
       if (cancelled) return
@@ -132,8 +157,14 @@ export function ReceptionFormSheet({
         return
       }
 
+      if (!batchResult.ok) {
+        setLoad({ status: "error", message: batchResult.message })
+        return
+      }
+
       setSuppliers(supplierResult.data)
       setMedicines(medicineResult.data)
+      setBatchReferences(batchResult.data)
 
       if (receptionId === null) {
         setLoad({ status: "ready" })
@@ -354,7 +385,7 @@ export function ReceptionFormSheet({
                   <TableHeader>
                     <TableRow>
                       <TableHead className="min-w-56">Obat</TableHead>
-                      <TableHead className="min-w-32">Batch No</TableHead>
+                      <TableHead className="min-w-44">Batch No</TableHead>
                       <TableHead className="min-w-40">Kedaluwarsa</TableHead>
                       <TableHead className="w-28 text-right">Jumlah</TableHead>
                       <TableHead className="w-16" />
@@ -380,13 +411,17 @@ export function ReceptionFormSheet({
                           />
                         </TableCell>
                         <TableCell>
-                          <Input
+                          <Combobox
+                            freeText
                             value={row.batch_no}
-                            onChange={(event) =>
-                              updateRow(row.key, {
-                                batch_no: event.target.value,
-                              })
+                            onValueChange={(value) =>
+                              updateRow(row.key, { batch_no: value })
                             }
+                            options={batchOptions.get(row.medicine_id) ?? []}
+                            placeholder="Ketik batch..."
+                            searchPlaceholder="Ketik atau cari batch..."
+                            createLabel={'Pakai batch baru "%s"'}
+                            emptyText="Belum ada batch untuk obat ini. Ketik nomor baru di atas."
                           />
                         </TableCell>
                         <TableCell>

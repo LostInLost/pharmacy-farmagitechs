@@ -7,11 +7,13 @@ import {
 } from "@/foundations/api/request"
 
 import {
+  batchReferencesResponseSchema,
   medicinesResponseSchema,
   receptionDetailResponseSchema,
   receptionListResponseSchema,
   receptionWriteResponseSchema,
   suppliersResponseSchema,
+  type BatchReference,
   type Medicine,
   type ReceptionDetail,
   type ReceptionFormInput,
@@ -141,6 +143,27 @@ export async function listMedicines(): Promise<ApiResult<Medicine[]>> {
     }
 
     const parsed = medicinesResponseSchema.safeParse(result.body)
+
+    return parsed.success
+      ? { ok: true, data: parsed.data.data }
+      : unrecognizedFailure(result.status)
+  } catch {
+    return networkFailure()
+  }
+}
+
+/** `GET /api/references/batches` */
+export async function listBatchReferences(): Promise<
+  ApiResult<BatchReference[]>
+> {
+  try {
+    const result = await requestJson("GET", "/api/references/batches")
+
+    if (!result.ok) {
+      return readFailure(result.status, result.body, FALLBACK.references)
+    }
+
+    const parsed = batchReferencesResponseSchema.safeParse(result.body)
 
     return parsed.success
       ? { ok: true, data: parsed.data.data }

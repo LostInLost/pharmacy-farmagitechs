@@ -47,6 +47,30 @@ class StockRepository
     }
 
     /**
+     * Daftar batch unik per obat dari ledger — referensi dropdown form
+     * penerimaan. Tanpa jumlah dan klasifikasi kedaluwarsa; obat nonaktif
+     * tetap terbawa karena tak pernah cocok dengan obat terpilih yang aktif.
+     *
+     * @return list<array{medicine_id: int, batch_no: string, expires_on: string|null}>
+     */
+    public function batchReferences(): array
+    {
+        $rows = db_connect()
+            ->table('stock_movements')
+            ->select('medicine_id, batch_no, MAX(expires_on) AS expires_on', false)
+            ->groupBy('medicine_id, batch_no')
+            ->orderBy('medicine_id, batch_no')
+            ->get()
+            ->getResultArray();
+
+        return array_map(static fn (array $row): array => [
+            'medicine_id' => (int) $row['medicine_id'],
+            'batch_no'    => $row['batch_no'],
+            'expires_on'  => $row['expires_on'],
+        ], $rows);
+    }
+
+    /**
      * Total per obat dihitung database. Batch dinet dulu (in dikurangi out),
      * baru dijumlah per obat, sehingga angka cocok dengan `batches()`.
      *

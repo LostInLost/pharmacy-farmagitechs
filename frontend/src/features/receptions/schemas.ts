@@ -122,6 +122,22 @@ export const medicinesResponseSchema = z.looseObject({
   data: z.array(medicineSchema),
 })
 
+/**
+ * `GET /api/references/batches` — batch unik per obat dari ledger, saran
+ * isian kolom Batch No. `expires_on` null bila ledger tak mencatat tanggal.
+ */
+export const batchReferenceSchema = z.object({
+  medicine_id: z.number(),
+  batch_no: z.string(),
+  expires_on: z.string().nullable(),
+})
+
+export type BatchReference = z.infer<typeof batchReferenceSchema>
+
+export const batchReferencesResponseSchema = z.looseObject({
+  data: z.array(batchReferenceSchema),
+})
+
 /** Respons sukses `POST`/`PUT /api/receipts`. */
 export const receptionWriteResponseSchema = z.looseObject({
   data: receptionWriteDetailSchema,

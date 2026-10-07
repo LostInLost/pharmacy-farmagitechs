@@ -4,6 +4,7 @@ namespace App\Controllers\Api;
 
 use App\Models\MedicineModel;
 use App\Models\SupplierModel;
+use App\Repositories\StockRepository;
 
 class ReferenceController extends BaseApiController
 {
@@ -37,6 +38,15 @@ class ReferenceController extends BaseApiController
                 'name' => $row['name'],
                 'unit' => $row['unit'],
             ], $rows),
+        ]));
+    }
+
+    public function batches()
+    {
+        $rows = (new StockRepository())->batchReferences();
+
+        return $this->withFreshCsrf($this->response->setStatusCode(200)->setJSON([
+            'data' => $rows,
         ]));
     }
 }

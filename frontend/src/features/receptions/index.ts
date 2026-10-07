@@ -2,6 +2,7 @@ export * from "./schemas"
 export {
   createReception,
   getReception,
+  listBatchReferences,
   listMedicines,
   listReceptions,
   listSuppliers,

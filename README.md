@@ -92,6 +92,7 @@ Dua akun dibuat oleh `DemoUsersSeeder`:
 | PUT | `/api/medicines/{id}` | Mengubah obat, termasuk status aktif/nonaktif | Session + supervisor |
 | GET | `/api/references/suppliers` | Dropdown pemasok aktif (`id`, `name`) | Session |
 | GET | `/api/references/medicines` | Dropdown obat aktif (`id`, `name`, `unit`) | Session |
+| GET | `/api/references/batches` | Dropdown batch dari ledger (`medicine_id`, `batch_no`, `expires_on`) | Session |
 
 Detail perilaku API — hak akses & policy, CSRF, validasi payload, permissions, dan audit trail — ada di [`docs/security.md`](docs/security.md), [`docs/database.md`](docs/database.md), dan [`docs/postman.md`](docs/postman.md).
 
