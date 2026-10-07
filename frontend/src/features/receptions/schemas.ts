@@ -1,0 +1,152 @@
+import { z } from "zod"
+
+/**
+ * Skema domain Receptions — cerminan respons `Api\ReceptionController`.
+ *
+ * Backend mengembalikan nama relasi sebagai `null` bila barisnya tidak ada
+ * (join `left`), jadi kolom `*_name` sengaja nullable.
+ */
+
+/** Baris `GET /api/receipts`. */
+export const receptionRowSchema = z.object({
+  id: z.number(),
+  reference_no: z.string(),
+  supplier_id: z.number(),
+  supplier_name: z.string().nullable(),
+  received_at: z.string(),
+  created_by: z.number(),
+  created_by_name: z.string().nullable(),
+  created_at: z.string(),
+  updated_by: z.number().nullable(),
+  updated_by_name: z.string().nullable(),
+  updated_at: z.string().nullable(),
+  /** Dihitung `ReceptionPolicy` per baris. */
+  can_update: z.boolean(),
+})
+
+export type ReceptionRow = z.infer<typeof receptionRowSchema>
+
+export const receptionListResponseSchema = z.looseObject({
+  data: z.array(receptionRowSchema),
+})
+
+/** Item di dalam detail penerimaan (`reception_items`). */
+export const receptionItemSchema = z.object({
+  id: z.number(),
+  medicine_id: z.number(),
+  medicine_code: z.string().nullable(),
+  medicine_name: z.string().nullable(),
+  unit: z.string().nullable(),
+  batch_no: z.string(),
+  expires_on: z.string(),
+  quantity: z.number(),
+})
+
+export type ReceptionItem = z.infer<typeof receptionItemSchema>
+
+/**
+ * Jejak audit. `action` adalah token kanonik (`CREATE`/`UPDATE`/`DELETE`) —
+ * label tampilan dirakit saat render, bukan disimpan di database.
+ */
+export const auditLogSchema = z.object({
+  id: z.number(),
+  actor_id: z.number(),
+  actor_name: z.string().nullable(),
+  action: z.string(),
+  data_before: z.unknown().nullable(),
+  data_after: z.unknown().nullable(),
+  created_at: z.string(),
+})
+
+export type AuditLog = z.infer<typeof auditLogSchema>
+
+/** Detail `GET /api/receipts/:id` — header + items + logs. */
+export const receptionDetailSchema = receptionRowSchema.extend({
+  items: z.array(receptionItemSchema),
+  logs: z.array(auditLogSchema),
+})
+
+export type ReceptionDetail = z.infer<typeof receptionDetailSchema>
+
+export const receptionDetailResponseSchema = z.looseObject({
+  data: receptionDetailSchema,
+})
+
+/** `GET /api/references/suppliers`. */
+export const supplierSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+})
+
+export type Supplier = z.infer<typeof supplierSchema>
+
+export const suppliersResponseSchema = z.looseObject({
+  data: z.array(supplierSchema),
+})
+
+/** `GET /api/references/medicines`. */
+export const medicineSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  unit: z.string(),
+})
+
+export type Medicine = z.infer<typeof medicineSchema>
+
+export const medicinesResponseSchema = z.looseObject({
+  data: z.array(medicineSchema),
+})
+
+/** Respons sukses `POST`/`PUT /api/receipts` (dipakai untuk memastikan bentuknya). */
+export const receptionWriteResponseSchema = z.looseObject({
+  data: receptionDetailSchema,
+})
+
+/**
+ * Validasi form — satu sumber kebenaran pesan per-field.
+ *
+ * Hanya memeriksa bentuk dan kewajiban; aturan yang butuh data server
+ * (reference_no terpakai, pemasok/obat aktif, konflik batch, urutan tanggal)
+ * tetap milik backend dan dirender dari `errors[]`.
+ *
+ * `quantity` memakai `z.number()` karena `<input type="number">` sudah
+ * dikonversi sebelum parse.
+ */
+export const receptionItemFormSchema = z.object({
+  medicine_id: z
+    .number({ error: "Pilih obat." })
+    .int({ error: "Pilih obat." })
+    .positive({ error: "Pilih obat." }),
+  batch_no: z
+    .string({ error: "Batch wajib diisi." })
+    .trim()
+    .min(1, { error: "Batch wajib diisi." }),
+  expires_on: z
+    .string({ error: "Kedaluwarsa wajib diisi." })
+    .regex(/^\d{4}-\d{2}-\d{2}$/, { error: "Format tanggal harus YYYY-MM-DD." }),
+  quantity: z
+    .number({ error: "Jumlah wajib diisi." })
+    .int({ error: "Jumlah harus bilangan bulat." })
+    .min(1, { error: "Jumlah minimal 1." }),
+})
+
+export type ReceptionItemInput = z.infer<typeof receptionItemFormSchema>
+
+export const receptionFormSchema = z.object({
+  reference_no: z
+    .string({ error: "Reference wajib diisi." })
+    .trim()
+    .min(1, { error: "Reference wajib diisi." }),
+  supplier_id: z
+    .number({ error: "Pilih pemasok." })
+    .int({ error: "Pilih pemasok." })
+    .positive({ error: "Pilih pemasok." }),
+  received_at: z
+    .string({ error: "Waktu diterima wajib diisi." })
+    .min(1, { error: "Waktu diterima wajib diisi." }),
+  items: z
+    .array(receptionItemFormSchema, { error: "Tambahkan minimal satu item." })
+    .min(1, { error: "Tambahkan minimal satu item." }),
+})
+
+export type ReceptionFormInput = z.infer<typeof receptionFormSchema>
