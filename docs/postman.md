@@ -31,7 +31,7 @@ Menjalankan sebagian: tambahkan `--folder "2. Stocks"` (boleh diulang untuk bebe
 
 Catatan operasional:
 
-- Full run **mengubah data development**: folder 3 membuat `PB-001` dan `PB-SUP-*`, folder 4 menambah obat uji. Kembalikan baseline dengan `php spark migrate:refresh` lalu dua seeder (urutan di [README §2](../README.md#2-diagram-database-dan-urutan-setup-skema)).
+- Full run **mengubah data development**: folder 3 membuat `PB-001` dan `PB-SUP-*`, folder 4 menambah obat uji. Kembalikan baseline dengan `composer db:refresh` (`migrate:refresh` + dua seeder, urutan di [README §2](../README.md#2-diagram-database-dan-urutan-setup-skema)).
 - Folder **2. Stocks** memeriksa angka baseline, jadi harus dijalankan sebelum ada penerimaan baru.
 - Folder **5. Unauthenticated** memakai cookie/token rusak — jalankan paling akhir.
 - Pergantian akun (petugas ↔ supervisor) selalu didahului `POST /api/logout`; `POST /api/login` saat sesi aktif dijawab `403` oleh filter `guest`.

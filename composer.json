@@ -38,6 +38,10 @@
         "sort-packages": true
     },
     "scripts": {
-        "test": "@php scripts/run-tests.php"
+        "test": "@php scripts/run-tests.php",
+        "db:migrate": "@php scripts/db-bootstrap.php migrate",
+        "db:seed": "@php scripts/db-bootstrap.php seed",
+        "db:bootstrap": "@php scripts/db-bootstrap.php bootstrap",
+        "db:refresh": "@php scripts/db-bootstrap.php refresh"
     }
 }

@@ -35,7 +35,7 @@ docs/             Dokumentasi pendalaman (lihat Peta Dokumentasi di README)
 frontend/         Frontend alternatif Astro + shadcn/ui (lihat frontend/README.md)
 postman/          Postman collection dan environment
 public/assets/    CSS dan JS untuk UI (`js/app.js`, `js/lib/`, `js/pages/`)
-scripts/          Runner `composer run test` (menangani ekstensi mysqli)
+scripts/          Runner script `composer`: run-tests.php (test) dan db-bootstrap.php (migrate/seed)
 tests/            Test otomatis (Feature, database, unit)
 .github/          Workflow CI PHPUnit
 build/            Artefak test (testdox, JUnit XML, cache PHPUnit)

@@ -28,7 +28,7 @@ docs/             Dokumentasi pendalaman (database, security, conventions, testi
 frontend/         Astro SSR + shadcn/ui (src/features, src/components, src/lib)
 postman/          Collection + environment (Newman)
 public/assets/    UI klasik: js/app.js (namespace Farmasi), js/lib/{csrf,api,ui}.js, js/pages/
-scripts/          Runner test: composer run test → scripts/run-tests.php
+scripts/          Runner script composer: run-tests.php (test), db-bootstrap.php (migrate/seed)
 tests/            PHPUnit (Feature, database, unit); docs di tests/README.md
 writable/         Runtime CI4 (session, logs, cache) — JANGAN diedit manual
 build/ vendor/    Artefak test & dependensi — JANGAN diedit
@@ -69,7 +69,7 @@ Detail: [docs/conventions.md](docs/conventions.md).
 - **MySQL**: HANYA ada di Laragon (`E:\laragon\bin\mysql\mysql-8.4.3-winx64`, port 3306, root tanpa password). **Laragon harus berjalan** — `mysqld` tidak bisa distart manual (paket kehilangan folder `lib\`). Cek port: `Get-NetTCPConnection -LocalPort 3306 -State Listen`. Jika kosong, test gagal `HY000/2002 connection refused`.
 - **npm/npx rusak** di mesin ini — panggil node langsung, contoh Newman: `node node_modules/newman/bin/newman.js`.
 - **Port 8080** bisa dipegang proses PHP zombie lama (gejala "extension mysqli not loaded" palsu). Cek `Get-NetTCPConnection -LocalPort 8080 -State Listen` sebelum start server.
-- Setup dari nol: `copy .env.example .env` (sesuaikan DB) → `composer install` → `php spark migrate` → `php spark db:seed StockSeeder` → `php spark db:seed DemoUsersSeeder` → `php spark serve --port 8080`.
+- Setup dari nol: `copy .env.example .env` (sesuaikan DB) → `composer install` → `composer db:bootstrap` (migrate + `StockSeeder` + `DemoUsersSeeder`) → `php spark serve --port 8080`. Script `composer` lain: `db:migrate`, `db:seed`, `db:refresh` (kembalikan baseline setelah Newman).
 - Test backend: `composer run test` (memakai MySQL, butuh Laragon jalan). Env var OS **tidak** menimpa `.env` CI4 — untuk mengarahkan DB, edit `.env`.
 - Akun demo: `supervisor/supervisor123` (Supervisor), `petugas/petugas123` (Petugas).
 

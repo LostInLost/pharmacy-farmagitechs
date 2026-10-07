@@ -41,6 +41,26 @@ Urutan pembuatan skema dari database kosong:
 
 Catatan: isi `app/Database/seed_farmasi.sql` (3 pemasok, 25 obat, 10 batch awal, 3 pemakaian) sudah dipindah ke `StockSeeder` — tidak perlu impor SQL manual, aman dijalankan berulang, dan ledger `stock_movements` ikut disinkronkan (baris receipt penerimaan nyata dibiarkan utuh).
 
+### Script `composer` untuk database
+
+Langkah 2–4 di atas dirangkai menjadi script `composer` supaya setup cukup satu perintah (analog `pnpm run`):
+
+| Script | Isi |
+| --- | --- |
+| `composer db:migrate` | `php spark migrate` |
+| `composer db:seed` | `StockSeeder` lalu `DemoUsersSeeder` |
+| `composer db:bootstrap` | `db:migrate` + `db:seed` — **cukup ini dari database kosong** |
+| `composer db:refresh` | `migrate:refresh` + `db:seed` — kembalikan baseline setelah run Postman |
+
+Contoh dari database kosong:
+
+```
+composer install
+composer db:bootstrap
+```
+
+`db:refresh` menghapus seluruh tabel lalu membangunnya ulang, jadi tolak dijalankan saat `CI_ENVIRONMENT = production`. Semua script berhenti pada langkah pertama yang gagal — ini perlu karena `spark` sendiri selalu keluar dengan kode `0` walau command-nya gagal (exception ditangkap, trace dicetak, lalu `EXIT_SUCCESS` dikembalikan), sehingga rantai `composer run` biasa akan melanjutkan seeder di atas database yang belum siap dan melaporkan sukses palsu.
+
 ## 3. Cara Menjalankan Aplikasi
 
 1. Salin `.env.example` menjadi `.env` (`copy .env.example .env` di Windows, `cp .env.example .env` di Linux/macOS). Semua baris di berkas contoh masih dikomentari, jadi hapus tanda `#` pada baris yang dipakai, lalu sesuaikan bagian database:
@@ -55,7 +75,7 @@ Catatan: isi `app/Database/seed_farmasi.sql` (3 pemasok, 25 obat, 10 batch awal,
    ```
 
 2. Install dependensi: `composer install`
-3. Jalankan migrasi dan seeder sesuai urutan pada bagian 2.
+3. Siapkan skema dan data awal: `composer db:bootstrap` (setara migrasi + dua seeder pada bagian 2).
 4. Jalankan server lokal: `php spark serve --port 8080`
 5. Buka `http://localhost:8080`.
 

@@ -30,7 +30,7 @@ composer run test
 
 ## Verifikasi manual
 
-1. Dari database kosong: `php spark migrate`, `php spark db:seed StockSeeder`, `php spark db:seed DemoUsersSeeder`.
+1. Dari database kosong: `composer db:bootstrap` (setara `php spark migrate`, `php spark db:seed StockSeeder`, `php spark db:seed DemoUsersSeeder`).
 2. Jalankan `composer run test`; semua test harus lulus.
 3. `php spark migrate:rollback` lalu `php spark migrate` untuk memastikan migrasi turun dan naik bersih.
 4. Buka `/receptions` tanpa login → redirect ke `/login`. Akses `/api/stocks` tanpa login → `401` JSON.
