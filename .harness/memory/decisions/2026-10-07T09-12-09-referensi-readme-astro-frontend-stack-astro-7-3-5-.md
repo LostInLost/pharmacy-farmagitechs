@@ -15,7 +15,7 @@ updated_at: "2026-10-07T09:12:09Z"
 ## Perubahan
 Bullet Referensi di `## Catatan Alat AI dan Referensi`:
 - Sebelum: "dokumentasi resmi CodeIgniter 4. Keputusan desain diverifikasi manual..."
-- Sesudah: "dokumentasi resmi CodeIgniter 4 (backend) dan Astro (frontend, lihat [`frontend/README.md`](frontend/README.md)). Keputusan desain diverifikasi manual..."
+- Sesudah: "dokumentasi resmi CodeIgniter 4 (backend) dan Astro (frontend, lihat `frontend/README.md`). Keputusan desain diverifikasi manual..."
 
 README: 7.533 -> 7.614 char.
 

@@ -1,7 +1,7 @@
 ---
 title: "Konvensi Peta Dokumentasi README: nama berkas jadi link tebal, bukan code span (biar jelas bisa diklik)"
 type: decision
-summary: "User 2026-10-07 bertanya apakah Peta Dokumentasi bisa diklik. Ternyata sudah link sejak awal, tapi nama berkas dibungkus backtick sehingga di GitHub tampak abu-abu seperti kode, bukan biru seperti link. Diubah jadi link tebal: [**docs/database.md**](docs/database.md). Uji klik: 25 tautan di Peta Dokumentasi, 0 bermasalah. README 7.622 char."
+summary: "User 2026-10-07 bertanya apakah Peta Dokumentasi bisa diklik. Ternyata sudah link sejak awal, tapi nama berkas dibungkus backtick sehingga di GitHub tampak abu-abu seperti kode, bukan biru seperti link. Diubah jadi link tebal: `docs/database.md` (link tebal). Uji klik: 25 tautan di Peta Dokumentasi, 0 bermasalah. README 7.622 char."
 tags: ["readme", "dokumentasi", "markdown", "konvensi", "farmagitechs"]
 source: "dsh"
 confidence: high
@@ -14,12 +14,12 @@ updated_at: "2026-10-07T09:21:22Z"
 
 ## Masalah
 User bertanya "peta dokumentasi gak bisa by link kah? misal docs/database.md itu diklik maka akan redirect kesitu."
-Tautannya SUDAH ada (`[\`docs/database.md\`](docs/database.md)`), tapi karena nama berkas dibungkus backtick (code span), di GitHub tampil abu-abu monospace — secara visual tidak terbaca sebagai hyperlink.
+Tautannya SUDAH ada, tapi karena nama berkas dibungkus backtick (code span), di GitHub tampil abu-abu monospace — secara visual tidak terbaca sebagai hyperlink.
 
 ## Keputusan
 Format nama berkas di Peta Dokumentasi: **link tebal tanpa code span**.
-- Lama: `- [\`docs/database.md\`](docs/database.md) — ...`
-- Baru: `- [**docs/database.md**](docs/database.md) — ...`
+- Lama: nama berkas dibungkus backtick di dalam kurung siku, mis. `[nama](tujuan)`.
+- Baru: nama berkas jadi tebal di dalam kurung siku, mis. `[**nama**](tujuan)`.
 - Nama berkas di dalam kalimat (bukan item peta) tetap boleh pakai code span.
 
 ## Bukti
