@@ -313,9 +313,9 @@
                                                                                     "    pm.expect(find(107).physical_quantity).to.eql(6);",
                                                                                     "    pm.expect(find(107).available_quantity).to.eql(0);",
                                                                                     "});",
-                                                                                    "pm.test(\u0027obat 101 flag is_expired per batch\u0027, function () {",
-                                                                                    "    pm.expect(find(101).available_batches.every((b) =\u003e b.is_expired === false)).to.eql(true);",
-                                                                                    "    pm.expect(find(101).expired_batches.every((b) =\u003e b.is_expired === true)).to.eql(true);",
+                                                                                    "pm.test(\u0027obat 101 batches: satu daftar ber-flag, tidak ada batch hilang\u0027, function () {",
+                                                                                    "    const batches = find(101).batches; pm.expect(batches.length).to.eql(3); pm.expect(batches.filter((b) =\u003e !b.is_expired).map((b) =\u003e b.batch_no)).to.eql([\u0027PCT-2601\u0027, \u0027PCT-2602\u0027]);",
+                                                                                    "    pm.expect(batches.filter((b) =\u003e b.is_expired).map((b) =\u003e b.batch_no)).to.eql([\u0027PCT-2501\u0027]);",
                                                                                     "});"
                                                                                 ]
                                                                    }
@@ -341,7 +341,7 @@
                                                               },
                                                       "description":  "Harus dijalankan pada database baseline (belum ada penerimaan baru)."
                                                   },
-                                      "description":  "`GET /api/stocks?on_date=2026-10-03`\n\n**200 OK**\n\n```json\n{\n  \"on_date\": \"2026-10-03\",\n  \"medicines\": [\n    {\n      \"medicine_id\": 101,\n      \"code\": \"OBT-001\",\n      \"name\": \"Paracetamol 500 mg tablet\",\n      \"unit\": \"tablet\",\n      \"physical_quantity\": 104,\n      \"available_quantity\": 96,\n      \"expired_quantity\": 8,\n      \"available_batches\": [\n        {\"batch_no\": \"PCT-2601\", \"expires_on\": \"2027-12-31\", \"quantity\": 94, \"is_expired\": false}\n      ],\n      \"expired_batches\": [\n        {\"batch_no\": \"PCT-2501\", \"expires_on\": \"2026-09-30\", \"quantity\": 8, \"is_expired\": true}\n      ]\n    }\n  ]\n}\n```\n\n`physical_quantity` = available + expired; batch di-split ke `available_batches`/`expired_batches` mengikuti `is_expired`."
+                                      "description":  "`GET /api/stocks?on_date=2026-10-03`\n\n**200 OK**\n\n```json\n{\n  \"on_date\": \"2026-10-03\",\n  \"medicines\": [\n    {\n      \"medicine_id\": 101,\n      \"code\": \"OBT-001\",\n      \"name\": \"Paracetamol 500 mg tablet\",\n      \"unit\": \"tablet\",\n      \"physical_quantity\": 104,\n      \"available_quantity\": 96,\n      \"expired_quantity\": 8,\n      \"batches\": [\n        {\"batch_no\": \"PCT-2601\", \"expires_on\": \"2027-12-31\", \"quantity\": 94, \"is_expired\": false},\n        {\"batch_no\": \"PCT-2501\", \"expires_on\": \"2026-09-30\", \"quantity\": 8, \"is_expired\": true}\n      ]\n    }\n  ]\n}\n```\n\n`physical_quantity` = available + expired; batch dikirim sebagai satu daftar `batches` ber-flag `is_expired`; tepat pada tanggal kedaluwarsa masih tersedia."
                                   },
                                   {
                                       "name":  "2.2 Laporan stok tanpa on_date (default hari ini)",

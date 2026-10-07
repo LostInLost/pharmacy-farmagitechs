@@ -15,7 +15,7 @@
 | Test | PHPUnit 10 via `composer run test` (MySQL, bukan SQLite); Postman/Newman di `postman/` |
 | CI | GitHub Actions `.github/workflows/phpunit.yml` |
 
-Status terakhir: **151 test / 504 assertion** hijau dan **44 request Postman** — pertahankan tetap hijau setiap mengubah kode.
+Status terakhir: **161 test / 561 assertion** hijau dan **45 request Postman** — pertahankan tetap hijau setiap mengubah kode.
 
 ## 2. Struktur Proyek
 

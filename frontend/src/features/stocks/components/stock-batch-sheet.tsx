@@ -29,9 +29,9 @@ type Props = {
 /**
  * Detail batch satu obat — mode baca.
  *
- * Batch dipisah per kelompok (tersedia/kedaluwarsa) supaya status tidak perlu
- * dibaca ulang per baris. Seluruh angka tetap berasal dari server; sheet tidak
- * menghitung apa pun sendiri.
+ * Batch dikirim server sebagai satu daftar ber-flag `is_expired`; kelompok
+ * tersedia/kedaluwarsa diturunkan dari flag itu. Seluruh angka tetap berasal
+ * dari server; sheet tidak menghitung apa pun sendiri.
  */
 export function StockBatchSheet({
   medicine,
@@ -39,6 +39,9 @@ export function StockBatchSheet({
   open,
   onOpenChange,
 }: Props) {
+  const available = medicine.batches.filter((batch) => !batch.is_expired)
+  const expired = medicine.batches.filter((batch) => batch.is_expired)
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="data-[side=right]:w-full data-[side=right]:sm:max-w-lg">
@@ -58,18 +61,12 @@ export function StockBatchSheet({
               <Stat label="Kedaluwarsa" value={medicine.expired_quantity} />
             </dl>
 
-            {medicine.available_batches.length > 0 && (
-              <BatchGroup
-                title="Batch tersedia"
-                batches={medicine.available_batches}
-              />
+            {available.length > 0 && (
+              <BatchGroup title="Batch tersedia" batches={available} />
             )}
 
-            {medicine.expired_batches.length > 0 && (
-              <BatchGroup
-                title="Batch kedaluwarsa"
-                batches={medicine.expired_batches}
-              />
+            {expired.length > 0 && (
+              <BatchGroup title="Batch kedaluwarsa" batches={expired} />
             )}
           </div>
         </div>

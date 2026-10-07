@@ -6,6 +6,9 @@ import { z } from "zod"
  * Angka selalu dihitung server dari ledger `stock_movements`; klien tidak
  * pernah menjumlahkan sendiri. `on_date` adalah tanggal efektif yang dipakai
  * server (hari ini bila permintaan tidak menyertakan tanggal).
+ *
+ * Batch dikirim sebagai satu daftar `batches` ber-flag `is_expired`, bukan dua
+ * daftar terpisah; klasifikasi tersedia/kedaluwarsa disaring dari flag itu.
  */
 
 export const stockBatchSchema = z.object({
@@ -25,8 +28,7 @@ export const stockMedicineSchema = z.object({
   physical_quantity: z.number(),
   available_quantity: z.number(),
   expired_quantity: z.number(),
-  available_batches: z.array(stockBatchSchema),
-  expired_batches: z.array(stockBatchSchema),
+  batches: z.array(stockBatchSchema),
 })
 
 export type StockMedicine = z.infer<typeof stockMedicineSchema>

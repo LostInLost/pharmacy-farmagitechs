@@ -85,7 +85,7 @@ Dua akun dibuat oleh `DemoUsersSeeder`:
 | POST | `/api/receipts` | Membuat penerimaan beserta seluruh item | Session |
 | GET | `/api/receipts/{id}` | Detail satu penerimaan | Session |
 | PUT | `/api/receipts/{id}` | Memperbarui penerimaan (keadaan akhir lengkap) | Session |
-| GET | `/api/stocks?on_date=YYYY-MM-DD` | Laporan stok per obat dan batch (satu query agregat) | Session |
+| GET | `/api/stocks?on_date=YYYY-MM-DD` | Laporan stok per obat dan batch — satu daftar `batches` ber-flag `is_expired` (satu query agregat) | Session |
 | GET | `/api/medicines?q=&status=` | Master obat: seluruh katalog (`status` = `all`/`active`/`inactive`) | Session |
 | POST | `/api/medicines` | Menambah obat | Session + supervisor |
 | GET | `/api/medicines/{id}` | Detail satu obat beserta riwayat aksinya (`logs`) | Session |

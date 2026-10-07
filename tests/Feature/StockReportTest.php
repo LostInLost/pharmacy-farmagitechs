@@ -74,43 +74,77 @@ final class StockReportTest extends CIUnitTestCase
         $this->assertSame(6, $medicine['expired_quantity']);
     }
 
+    /**
+     * Satu daftar `batches` berisi semua batch; daftar tersedia/kedaluwarsa
+     * diturunkan dari flag, bukan dari urutan penyimpanan.
+     */
+    private function batches(array $medicine, ?bool $expired = null): array
+    {
+        $batches = $medicine['batches'];
+
+        return $expired === null
+            ? $batches
+            : array_values(array_filter($batches, static fn (array $batch): bool => $batch['is_expired'] === $expired));
+    }
+
     public function testBatchesAreGroupedAndOrdered(): void
     {
         $medicine = $this->medicine(101);
 
-        $this->assertSame(['PCT-2601', 'PCT-2602'], array_column($medicine['available_batches'], 'batch_no'));
-        $this->assertSame(['PCT-2501'], array_column($medicine['expired_batches'], 'batch_no'));
-        $this->assertSame(94, $medicine['available_batches'][0]['quantity']);
-        $this->assertSame(40, $medicine['available_batches'][1]['quantity']);
+        // Satu daftar, urut kedaluwarsa: yang kedaluwarsa lebih dulu.
+        $this->assertSame(['PCT-2501', 'PCT-2601', 'PCT-2602'], array_column($medicine['batches'], 'batch_no'));
+        $this->assertSame(['PCT-2601', 'PCT-2602'], array_column($this->batches($medicine, false), 'batch_no'));
+        $this->assertSame(['PCT-2501'], array_column($this->batches($medicine, true), 'batch_no'));
+        $this->assertSame(94, $this->batches($medicine, false)[0]['quantity']);
+        $this->assertSame(40, $this->batches($medicine, false)[1]['quantity']);
     }
 
     public function testExpiryFlagIsReportedPerBatch(): void
     {
         $medicine = $this->medicine(101);
 
-        $this->assertFalse($medicine['available_batches'][0]['is_expired']);
-        $this->assertFalse($medicine['available_batches'][1]['is_expired']);
-        $this->assertTrue($medicine['expired_batches'][0]['is_expired']);
+        $this->assertFalse($this->batches($medicine, false)[0]['is_expired']);
+        $this->assertFalse($this->batches($medicine, false)[1]['is_expired']);
+        $this->assertTrue($this->batches($medicine, true)[0]['is_expired']);
+    }
+
+    public function testBatchListCoversEveryBatchExactlyOnce(): void
+    {
+        $medicine = $this->medicine(101);
+
+        // Flag membagi daftar tanpa kehilangan atau duplikasi:
+        // tersedia + kedaluwarsa harus menutup seluruh baris.
+        $this->assertCount(3, $medicine['batches']);
+        $this->assertSame(
+            count($medicine['batches']),
+            count($this->batches($medicine, false)) + count($this->batches($medicine, true)),
+            'setiap batch harus masuk tepat satu klasifikasi',
+        );
+        $this->assertSame(
+            $medicine['physical_quantity'],
+            array_sum(array_column($medicine['batches'], 'quantity')),
+            'jumlah batch harus sama dengan stok fisik',
+        );
     }
 
     public function testExpiryFlagFollowsOnDate(): void
     {
         // Sehari sebelum kedaluwarsa: masih tersedia.
         $before = $this->medicine(107, '2026-09-29');
-        $this->assertSame(['LOR-2501'], array_column($before['available_batches'], 'batch_no'));
-        $this->assertSame([], $before['expired_batches']);
+        $this->assertFalse($before['batches'][0]['is_expired']);
+        $this->assertSame([], $this->batches($before, true));
 
         // Tepat pada tanggal kedaluwarsa: masih tersedia.
         $onDate = $this->medicine(107, '2026-09-30');
-        $this->assertSame(['LOR-2501'], array_column($onDate['available_batches'], 'batch_no'));
-        $this->assertFalse($onDate['available_batches'][0]['is_expired']);
-        $this->assertSame([], $onDate['expired_batches']);
+        $this->assertSame(['LOR-2501'], array_column($onDate['batches'], 'batch_no'));
+        $this->assertFalse($onDate['batches'][0]['is_expired']);
+        $this->assertSame([], $this->batches($onDate, true));
 
-        // Sehari setelah kedaluwarsa: pindah ke daftar kedaluwarsa.
+        // Sehari setelah kedaluwarsa: flag-nya berbalik, batch tetap di daftar.
         $after = $this->medicine(107, '2026-10-01');
-        $this->assertSame([], $after['available_batches']);
-        $this->assertSame(['LOR-2501'], array_column($after['expired_batches'], 'batch_no'));
-        $this->assertTrue($after['expired_batches'][0]['is_expired']);
+        $this->assertSame(['LOR-2501'], array_column($after['batches'], 'batch_no'));
+        $this->assertTrue($after['batches'][0]['is_expired']);
+        $this->assertSame([], $this->batches($after, false));
     }
 
     public function testMedicineWithoutBatchStillAppears(): void
@@ -119,8 +153,7 @@ final class StockReportTest extends CIUnitTestCase
 
         $this->assertNotSame([], $medicine);
         $this->assertSame(0, $medicine['physical_quantity']);
-        $this->assertSame([], $medicine['available_batches']);
-        $this->assertSame([], $medicine['expired_batches']);
+        $this->assertSame([], $medicine['batches']);
     }
 
     public function testInactiveMedicineIsExcluded(): void
@@ -193,6 +226,6 @@ final class StockReportTest extends CIUnitTestCase
         $medicine = $this->medicine(102);
 
         $this->assertSame(25, $medicine['available_quantity']);
-        $this->assertContains('AMX-BARU', array_column($medicine['available_batches'], 'batch_no'));
+        $this->assertContains('AMX-BARU', array_column($medicine['batches'], 'batch_no'));
     }
 }

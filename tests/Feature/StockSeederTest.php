@@ -84,15 +84,15 @@ final class StockSeederTest extends CIUnitTestCase
     public function testBatchesFromLampiranAreGrouped(): void
     {
         $medicine = $this->medicine(101);
+        $batches  = array_column($medicine['batches'], null, 'batch_no');
 
-        $this->assertSame(['PCT-2601', 'PCT-2602'], array_column($medicine['available_batches'], 'batch_no'));
-        $this->assertSame(['PCT-2501'], array_column($medicine['expired_batches'], 'batch_no'));
-        $this->assertSame(94, $medicine['available_batches'][0]['quantity']);
-        $this->assertSame(40, $medicine['available_batches'][1]['quantity']);
+        $this->assertSame(['PCT-2501', 'PCT-2601', 'PCT-2602'], array_column($medicine['batches'], 'batch_no'));
+        $this->assertSame(94, $batches['PCT-2601']['quantity']);
+        $this->assertSame(40, $batches['PCT-2602']['quantity']);
 
-        $this->assertFalse($medicine['available_batches'][0]['is_expired']);
-        $this->assertFalse($medicine['available_batches'][1]['is_expired']);
-        $this->assertTrue($medicine['expired_batches'][0]['is_expired']);
+        $this->assertFalse($batches['PCT-2601']['is_expired']);
+        $this->assertFalse($batches['PCT-2602']['is_expired']);
+        $this->assertTrue($batches['PCT-2501']['is_expired']);
     }
 
     public function testOnlyActiveMedicinesAreReported(): void
@@ -149,10 +149,10 @@ final class StockSeederTest extends CIUnitTestCase
         $this->assertSame([0, 0, 0], $quantities(106));
         $this->assertSame([6, 0, 6], $quantities(107));
 
-        $this->assertSame(['PCT-2601', 'PCT-2602'], array_column($byId[101]['available_batches'], 'batch_no'));
-        $this->assertSame(['PCT-2501'], array_column($byId[101]['expired_batches'], 'batch_no'));
-        $this->assertFalse($byId[101]['available_batches'][0]['is_expired']);
-        $this->assertTrue($byId[101]['expired_batches'][0]['is_expired']);
+        $batches = array_column($byId[101]['batches'], null, 'batch_no');
+        $this->assertSame(['PCT-2501', 'PCT-2601', 'PCT-2602'], array_column($byId[101]['batches'], 'batch_no'));
+        $this->assertFalse($batches['PCT-2601']['is_expired']);
+        $this->assertTrue($batches['PCT-2501']['is_expired']);
     }
 
     public function testApiReferencesMatchLampiran(): void

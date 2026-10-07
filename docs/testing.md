@@ -8,7 +8,7 @@
 composer run test
 ```
 
-- 151 test, 504 assertion (hasil run terakhir 2026-10-07).
+- 161 test, 561 assertion (hasil run terakhir 2026-10-07).
 - `composer run test` memakai `scripts/run-tests.php`: interpreter PHP pemanggil Composer, argumen diteruskan ke PHPUnit (mis. `composer run test -- --filter HashTest`), binary PHPUnit dicari mengikuti aturan Composer.
 - Skrip menjalankan PHPUnit persis seperti `vendor/bin/phpunit` (konfigurasi dan fallback SQLite3 `:memory:` tetap berlaku); bila `mysqli` tidak aktif, test diulang dengan `-d extension=mysqli`. Alternatif langsung: `vendor/bin/phpunit`.
 - Quick-start PHPUnit (konfigurasi, cara membuat test baru): [`tests/README.md`](../tests/README.md#running-the-tests).

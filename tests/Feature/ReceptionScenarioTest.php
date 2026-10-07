@@ -128,7 +128,7 @@ final class ReceptionScenarioTest extends CIUnitTestCase
                 continue;
             }
 
-            foreach (array_merge($medicine['available_batches'], $medicine['expired_batches']) as $batch) {
+            foreach ($medicine['batches'] as $batch) {
                 if ($batch['batch_no'] === $batchNo) {
                     return $batch['quantity'];
                 }

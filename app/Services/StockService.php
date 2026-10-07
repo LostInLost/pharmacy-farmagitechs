@@ -18,6 +18,12 @@ class StockService
      * totalnya dijumlahkan dalam satu lintasan — tanpa query tambahan dan tanpa
      * penyaringan ulang batch per obat.
      *
+     * Batch dikirim sebagai satu daftar `batches` ber-flag `is_expired`;
+     * klasifikasi tersedia/kedaluwarsa cukup disaring dari flag itu, sehingga
+     * tidak ada dua daftar yang bisa saling bertentangan. Tiga angka ringkasan
+     * (`physical_quantity`, `available_quantity`, `expired_quantity`) dihitung
+     * dari daftar yang sama, bukan query ringkasan terpisah.
+     *
      * Baris datang terurut `medicine_id, expires_on, batch_no`, jadi obat baru
      * dibuka cukup dengan membandingkan id baris sebelumnya.
      */
@@ -42,8 +48,7 @@ class StockService
                     'physical_quantity'  => 0,
                     'available_quantity' => 0,
                     'expired_quantity'   => 0,
-                    'available_batches'  => [],
-                    'expired_batches'    => [],
+                    'batches'            => [],
                 ];
 
                 $index = array_key_last($report);
@@ -56,7 +61,7 @@ class StockService
             $quantity = (int) $row['quantity'];
             $expired  = (int) $row['is_expired'] === 1;
 
-            $report[$index][$expired ? 'expired_batches' : 'available_batches'][] = [
+            $report[$index]['batches'][] = [
                 'batch_no'   => $row['batch_no'],
                 'expires_on' => $row['expires_on'],
                 'quantity'   => $quantity,

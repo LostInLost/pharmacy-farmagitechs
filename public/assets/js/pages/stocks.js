@@ -33,18 +33,17 @@
         }
 
         function batchesFor(medicine, statusFilter) {
-            var available = medicine.available_batches || [];
-            var expired = medicine.expired_batches || [];
+            var batches = medicine.batches || [];
 
             if (statusFilter === 'available') {
-                return available;
+                return batches.filter(function (batch) { return !isExpired(batch); });
             }
 
             if (statusFilter === 'expired') {
-                return expired;
+                return batches.filter(function (batch) { return isExpired(batch); });
             }
 
-            return available.concat(expired);
+            return batches;
         }
 
         function batchCell(medicine, statusFilter) {

@@ -8,7 +8,7 @@ Dokumentasi koleksi Postman untuk seluruh API Farmagitechs: cara menjalankan, va
 
 | Berkas | Isi |
 | --- | --- |
-| [`Pharmacy-Farmagitechs.postman_collection.json`](../postman/Pharmacy-Farmagitechs.postman_collection.json) | 44 request dalam 6 folder, 108 assertion (blok `pm.test`) |
+| [`Pharmacy-Farmagitechs.postman_collection.json`](../postman/Pharmacy-Farmagitechs.postman_collection.json) | 45 request dalam 6 folder, 111 assertion (blok `pm.test`) |
 | [`Local.postman_environment.json`](../postman/Local.postman_environment.json) | Environment `Pharmacy Farmagitechs - Local`, berisi `base_url` |
 
 Keduanya ikut version control; tidak ada berkas lain yang perlu di-import.
@@ -67,12 +67,12 @@ Ringkas — detail desain di [docs/security.md](security.md#proteksi-csrf):
 | --- | --- | --- | --- |
 | **0. Bootstrap CSRF** | 1 | 2 | Cookie `csrf_cookie_name` terbit dari `GET /login` |
 | **1. Auth** | 5 | 12 | Login gagal (`401`), login supervisor dan petugas beserta `permissions`, logout, `GET /api/me` |
-| **2. Stocks** | 5 | 19 | Angka baseline (101 fisik 142 / tersedia 134 / kedaluwarsa 8, 102=16, 103=15, 104=3, 106=0, 107 fisik 6 / tersedia 0), default `on_date`, format tanggal salah (`422`), dropdown hanya baris aktif |
+| **2. Stocks** | 6 | 22 | Angka baseline (101 fisik 142 / tersedia 134 / kedaluwarsa 8, 102=16, 103=15, 104=3, 106=0, 107 fisik 6 / tersedia 0), satu daftar `batches` ber-flag `is_expired` tanpa batch hilang, default `on_date`, format tanggal salah (`422`), dropdown hanya baris aktif |
 | **3. Receipts** | 16 | 39 | Create/update/list/detail, validasi (`422`), idempotensi, atribusi pembuat/pengubah, `403` hak ubah, efek ke stok |
 | **4. Medicines (master obat)** | 13 | 28 | Petugas baca tanpa tulis (`403`), supervisor tulis (`201`/`200`), nonaktif ≠ terhapus, kode duplikat (`422`), riwayat audit di detail (`data.logs`) |
 | **5. Unauthenticated** | 4 | 8 | `401` tanpa sesi; `403` tanpa/keliru token CSRF, lengkap dengan token segar untuk percobaan ulang |
 
-Total: 44 request, 108 assertion.
+Total: 45 request, 111 assertion.
 
 ## 6. Bentuk respons dan error
 

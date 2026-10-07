@@ -258,8 +258,8 @@ if (jar) {
   // Assertion: "Semua status" harus menampilkan seluruh obat yang dikirim
   // server, termasuk yang belum punya batch (perilaku halaman CI4).
   const expected = report.apiToday.medicines
-  const expiredExpected = today.medicines.filter(
-    (item) => item.expired_batches.length > 0
+  const expiredExpected = today.medicines.filter((item) =>
+    item.batches.some((batch) => batch.is_expired)
   ).length
 
   report.assertions = {

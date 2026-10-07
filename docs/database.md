@@ -129,13 +129,15 @@ Stok dihitung dari ledger `stock_movements`, bukan kolom stok yang dimutasi. Set
 stok fisik batch = SUM(CASE WHEN direction = 'in' THEN quantity ELSE -quantity END)
 ```
 
-Kunci agregasi adalah pasangan `(medicine_id, batch_no)` sesuai identitas batch. Batch dikelompokkan menjadi tersedia bila `expires_on >= on_date` dan kedaluwarsa bila `expires_on < on_date`; batch tepat pada tanggal kedaluwarsa masih tersedia, dan `expires_on` NULL berarti tanpa kedaluwarsa. Stok kedaluwarsa tetap dihitung sebagai stok fisik. Penanda `is_expired` dihitung saat SELECT (tidak disimpan) agar satu query tetap konsisten dengan `on_date` yang diminta.
+Kunci agregasi adalah pasangan `(medicine_id, batch_no)` sesuai identitas batch. Batch diklasifikasi tersedia bila `expires_on >= on_date` dan kedaluwarsa bila `expires_on < on_date`; batch tepat pada tanggal kedaluwarsa masih tersedia, dan `expires_on` NULL berarti tanpa kedaluwarsa. Stok kedaluwarsa tetap dihitung sebagai stok fisik. Penanda `is_expired` dihitung saat SELECT (tidak disimpan) agar satu query tetap konsisten dengan `on_date` yang diminta.
+
+API mengirim batch sebagai **satu daftar** `batches` ber-flag `is_expired`, bukan dua daftar terpisah. Satu daftar berarti tidak ada dua representasi yang bisa bertentangan: agen tampilan (UI klasik maupun Astro) menyaring sendiri dari flag itu, dan total per obat dihitung dari daftar yang sama.
 
 ### Satu query untuk satu laporan
 
 `StockRepository::reportRows()` membangun laporan dalam satu SELECT: subquery batch (dinetted per `(medicine_id, batch_no)`) di-join ke `medicines` dengan `LEFT JOIN`, sehingga obat aktif yang belum punya gerak tetap muncul sebagai satu baris ber-`batch_no` NULL. Subquery itu juga yang menghitung `is_expired`, jadi angka total dan penanda batch selalu berasal dari baris agregat yang sama — tidak ada dua definisi kedaluwarsa yang bisa berbeda.
 
-`StockService::report()` lalu menjumlahkan total per obat dalam satu lintasan atas baris yang sudah terurut `medicine_id, expires_on, batch_no`; tidak ada query kedua (`summaries()`) maupun penyaringan batch per obat (`array_filter`). Ongkos laporan tetap satu query berapa pun jumlah obat dan batch, dan di kunci oleh `tests/Feature/QueryCountTest.php`.
+`StockService::report()` lalu merapikan baris itu dalam satu lintasan dan **hanya** membentuk ulang respons: satu `batches[]` per obat ber-flag `is_expired`, sementara tiga angka ringkasan (`physical_quantity`, `available_quantity`, `expired_quantity`) dijumlahkan dari baris yang sama. Tidak ada query kedua (`summaries()`) maupun penyaringan batch per obat (`array_filter`), sehingga angka ringkasan tidak bisa berbeda dari rincian batch-nya. Ongkos laporan tetap satu query berapa pun jumlah obat dan batch, dan di kunci oleh `tests/Feature/QueryCountTest.php`.
 
 Metode lama `batches()`, `summaries()`, dan `activeMedicines()` dihapus bersama peralihan ini. `batchReferences()` tetap terpisah karena dropdown form penerimaan memang perlu daftar batch unik tanpa jumlah dan tanpa filter obat aktif.
 

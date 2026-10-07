@@ -320,10 +320,12 @@ function batchesFor(
   medicine: StockMedicine,
   statusFilter: StatusFilter
 ): StockBatch[] {
-  if (statusFilter === "available") return medicine.available_batches
-  if (statusFilter === "expired") return medicine.expired_batches
+  if (statusFilter === "available")
+    return medicine.batches.filter((batch) => !batch.is_expired)
+  if (statusFilter === "expired")
+    return medicine.batches.filter((batch) => batch.is_expired)
 
-  return [...medicine.available_batches, ...medicine.expired_batches]
+  return medicine.batches
 }
 
 /**
@@ -339,8 +341,7 @@ function BatchAction({
   medicine: StockMedicine
   onView: (medicineId: number) => void
 }) {
-  const total =
-    medicine.available_batches.length + medicine.expired_batches.length
+  const total = medicine.batches.length
 
   if (total === 0) {
     return <span className="text-muted-foreground">-</span>
