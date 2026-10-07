@@ -1,4 +1,17 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { formatDateTime } from "@/foundations/format"
 import type { AuditLog } from "@/features/receptions/schemas"
 
@@ -34,32 +47,30 @@ export function AuditLogTable({ logs }: { logs: AuditLog[] }) {
         <CardTitle>Riwayat Aksi</CardTitle>
       </CardHeader>
       <CardContent className="px-0">
-        <div className="overflow-x-auto">
-          <table className="w-full caption-bottom text-sm">
-            <thead className="border-b [&_th]:h-10 [&_th]:px-4 [&_th]:text-left [&_th]:align-middle [&_th]:font-medium">
-              <tr>
-                <th>Waktu</th>
-                <th>Aksi</th>
-                <th>Petugas</th>
-                <th>Perubahan</th>
-              </tr>
-            </thead>
-            <tbody>
-              {logs.map((log) => (
-                <tr key={log.id} className="border-b last:border-0">
-                  <td className="p-4 align-middle whitespace-nowrap">
-                    {formatDateTime(log.created_at)}
-                  </td>
-                  <td className="p-4 align-middle">{actionLabel(log.action)}</td>
-                  <td className="p-4 align-middle">{log.actor_name ?? "-"}</td>
-                  <td className="p-4 align-middle">
-                    <ChangeDetails log={log} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Waktu</TableHead>
+              <TableHead>Aksi</TableHead>
+              <TableHead>Petugas</TableHead>
+              <TableHead>Perubahan</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {logs.map((log) => (
+              <TableRow key={log.id}>
+                <TableCell className="whitespace-nowrap">
+                  {formatDateTime(log.created_at)}
+                </TableCell>
+                <TableCell>{actionLabel(log.action)}</TableCell>
+                <TableCell>{log.actor_name ?? "-"}</TableCell>
+                <TableCell>
+                  <ChangeDetails log={log} />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </CardContent>
     </Card>
   )
@@ -71,13 +82,17 @@ function ChangeDetails({ log }: { log: AuditLog }) {
   }
 
   return (
-    <details>
-      <summary className="cursor-pointer">{changeSummary(log)}</summary>
-      <pre className="mt-2 max-w-md overflow-x-auto rounded-md bg-muted p-2 text-xs">
-        Sebelum: {JSON.stringify(log.data_before, null, 2)}
-        {"\n\n"}
-        Sesudah: {JSON.stringify(log.data_after, null, 2)}
-      </pre>
-    </details>
+    <Collapsible>
+      <CollapsibleTrigger className="cursor-pointer text-left">
+        {changeSummary(log)}
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <pre className="mt-2 max-w-md overflow-x-auto rounded-md bg-muted p-2 text-xs">
+          Sebelum: {JSON.stringify(log.data_before, null, 2)}
+          {"\n\n"}
+          Sesudah: {JSON.stringify(log.data_after, null, 2)}
+        </pre>
+      </CollapsibleContent>
+    </Collapsible>
   )
 }

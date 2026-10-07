@@ -3,9 +3,24 @@ import * as React from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty"
 import { Feedback } from "@/components/feedback"
+import {
+  Field,
+  FieldLabel,
+} from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
@@ -31,6 +46,7 @@ import type {
   StockMedicine,
   StockReport,
 } from "@/features/stocks/schemas"
+import { PackageXIcon } from "lucide-react"
 
 type StatusFilter = "all" | "available" | "expired"
 
@@ -113,26 +129,27 @@ export function StockReport() {
       <Card>
         <CardContent>
           <form onSubmit={onSubmit} className="flex flex-wrap items-end gap-3">
-            <div className="grid gap-2">
-              <Label htmlFor="on_date">Tanggal pemeriksaan kedaluwarsa</Label>
+            <Field className="w-48">
+              <FieldLabel htmlFor="on_date">
+                Tanggal pemeriksaan kedaluwarsa
+              </FieldLabel>
               <Input
                 id="on_date"
                 type="date"
-                className="w-48"
                 value={onDate}
                 onChange={(event) => setOnDate(event.target.value)}
               />
-            </div>
+            </Field>
 
-            <div className="grid gap-2">
-              <Label htmlFor="status_filter">Status batch</Label>
+            <Field className="w-48">
+              <FieldLabel htmlFor="status_filter">Status batch</FieldLabel>
               <Select
                 value={statusFilter}
                 onValueChange={(value) =>
                   setStatusFilter(value as StatusFilter)
                 }
               >
-                <SelectTrigger id="status_filter" className="w-48">
+                <SelectTrigger id="status_filter" className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -143,7 +160,7 @@ export function StockReport() {
                   </SelectGroup>
                 </SelectContent>
               </Select>
-            </div>
+            </Field>
 
             <Button type="submit" disabled={state.status === "loading"}>
               {state.status === "loading" ? "Memuat..." : "Tampilkan"}
@@ -183,13 +200,22 @@ export function StockReport() {
 
               {state.status === "ready" && rows.length === 0 && (
                 <TableRow>
-                  <TableCell
-                    colSpan={COLUMNS.length}
-                    className="h-24 text-center text-muted-foreground"
-                  >
-                    {statusFilter === "all"
-                      ? "Belum ada data stok."
-                      : "Tidak ada obat yang cocok dengan status ini."}
+                  <TableCell colSpan={COLUMNS.length} className="p-0">
+                    <Empty className="rounded-none border-0 py-10">
+                      <EmptyHeader>
+                        <EmptyMedia variant="icon">
+                          <PackageXIcon />
+                        </EmptyMedia>
+                        <EmptyTitle>
+                          {statusFilter === "all"
+                            ? "Belum ada data stok."
+                            : "Tidak ada obat yang cocok dengan status ini."}
+                        </EmptyTitle>
+                        <EmptyDescription>
+                          Coba ubah tanggal pemeriksaan atau status batch.
+                        </EmptyDescription>
+                      </EmptyHeader>
+                    </Empty>
                   </TableCell>
                 </TableRow>
               )}
@@ -255,40 +281,44 @@ function BatchDetails({
   }
 
   return (
-    <details>
-      <summary className="cursor-pointer whitespace-nowrap">
+    <Collapsible>
+      <CollapsibleTrigger className="cursor-pointer whitespace-nowrap">
         {batches.length} batch
-      </summary>
-      <div className="mt-2 overflow-x-auto">
-        <table className="w-full caption-bottom text-xs">
-          <thead className="border-b [&_th]:h-8 [&_th]:px-2 [&_th]:text-left [&_th]:font-medium">
-            <tr>
-              <th>Batch</th>
-              <th>Kedaluwarsa</th>
-              <th className="text-right">Jumlah</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {batches.map((batch) => (
-              <tr key={batch.batch_no} className="border-b last:border-0">
-                <td className="p-2">{batch.batch_no}</td>
-                <td className="p-2">
-                  {batch.expires_on ? formatDate(batch.expires_on) : "-"}
-                </td>
-                <td className="p-2 text-right">{batch.quantity}</td>
-                <td className="p-2">
-                  <Badge
-                    variant={batch.is_expired ? "destructive" : "secondary"}
-                  >
-                    {batch.is_expired ? "kedaluwarsa" : "tersedia"}
-                  </Badge>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </details>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="mt-2 overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Batch</TableHead>
+                <TableHead>Kedaluwarsa</TableHead>
+                <TableHead className="text-right">Jumlah</TableHead>
+                <TableHead>Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {batches.map((batch) => (
+                <TableRow key={batch.batch_no}>
+                  <TableCell>{batch.batch_no}</TableCell>
+                  <TableCell>
+                    {batch.expires_on ? formatDate(batch.expires_on) : "-"}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {batch.quantity}
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={batch.is_expired ? "destructive" : "secondary"}
+                    >
+                      {batch.is_expired ? "kedaluwarsa" : "tersedia"}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
   )
 }

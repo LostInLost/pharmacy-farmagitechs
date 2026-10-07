@@ -5,8 +5,12 @@ import { CirclePlusIcon, Trash2Icon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Feedback } from "@/components/feedback"
+import {
+  Field,
+  FieldError,
+  FieldLabel,
+} from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
@@ -16,6 +20,14 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { toDatetimeLocal } from "@/foundations/format"
 import {
   createReception,
@@ -260,19 +272,19 @@ export function ReceptionForm({ receptionId }: Props) {
         <CardContent>
           <form onSubmit={onSubmit} noValidate className="flex flex-col gap-6">
             <div className="grid gap-4 md:grid-cols-3">
-              <div className="grid gap-2">
-                <Label htmlFor="reference_no">Reference No</Label>
+              <Field>
+                <FieldLabel htmlFor="reference_no">Reference No</FieldLabel>
                 <Input
                   id="reference_no"
                   value={referenceNo}
                   onChange={(event) => setReferenceNo(event.target.value)}
                   aria-invalid={fieldErrors.reference_no !== undefined}
                 />
-                <FieldError message={fieldErrors.reference_no} />
-              </div>
+                <FieldError>{fieldErrors.reference_no}</FieldError>
+              </Field>
 
-              <div className="grid gap-2">
-                <Label htmlFor="supplier_id">Pemasok</Label>
+              <Field>
+                <FieldLabel htmlFor="supplier_id">Pemasok</FieldLabel>
                 <Select value={supplierId} onValueChange={setSupplierId}>
                   <SelectTrigger
                     id="supplier_id"
@@ -284,18 +296,21 @@ export function ReceptionForm({ receptionId }: Props) {
                   <SelectContent>
                     <SelectGroup>
                       {suppliers.map((supplier) => (
-                        <SelectItem key={supplier.id} value={String(supplier.id)}>
+                        <SelectItem
+                          key={supplier.id}
+                          value={String(supplier.id)}
+                        >
                           {supplier.name}
                         </SelectItem>
                       ))}
                     </SelectGroup>
                   </SelectContent>
                 </Select>
-                <FieldError message={fieldErrors.supplier_id} />
-              </div>
+                <FieldError>{fieldErrors.supplier_id}</FieldError>
+              </Field>
 
-              <div className="grid gap-2">
-                <Label htmlFor="received_at">Diterima pada</Label>
+              <Field>
+                <FieldLabel htmlFor="received_at">Diterima pada</FieldLabel>
                 <Input
                   id="received_at"
                   type="datetime-local"
@@ -303,105 +318,105 @@ export function ReceptionForm({ receptionId }: Props) {
                   onChange={(event) => setReceivedAt(event.target.value)}
                   aria-invalid={fieldErrors.received_at !== undefined}
                 />
-                <FieldError message={fieldErrors.received_at} />
-              </div>
+                <FieldError>{fieldErrors.received_at}</FieldError>
+              </Field>
             </div>
 
             <div className="flex flex-col gap-2">
               <h3 className="font-heading text-base font-medium">Item</h3>
 
-              <div className="overflow-x-auto">
-                <table className="w-full caption-bottom text-sm">
-                  <thead className="border-b [&_th]:h-10 [&_th]:px-2 [&_th]:text-left [&_th]:align-middle [&_th]:font-medium">
-                    <tr>
-                      <th className="min-w-56">Obat</th>
-                      <th className="min-w-32">Batch No</th>
-                      <th className="min-w-40">Kedaluwarsa</th>
-                      <th className="w-28 text-right">Jumlah</th>
-                      <th className="w-16" />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rows.map((row) => (
-                      <tr key={row.key} className="border-b last:border-0">
-                        <td className="p-2 align-middle">
-                          <Select
-                            value={row.medicine_id > 0 ? String(row.medicine_id) : ""}
-                            onValueChange={(value) =>
-                              updateRow(row.key, { medicine_id: Number(value) })
-                            }
-                          >
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="- pilih -" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectGroup>
-                                {medicines.map((medicine) => (
-                                  <SelectItem
-                                    key={medicine.id}
-                                    value={String(medicine.id)}
-                                  >
-                                    {medicine.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectGroup>
-                            </SelectContent>
-                          </Select>
-                        </td>
-                        <td className="p-2 align-middle">
-                          <Input
-                            value={row.batch_no}
-                            onChange={(event) =>
-                              updateRow(row.key, { batch_no: event.target.value })
-                            }
-                          />
-                        </td>
-                        <td className="p-2 align-middle">
-                          <Input
-                            type="date"
-                            value={row.expires_on}
-                            onChange={(event) =>
-                              updateRow(row.key, { expires_on: event.target.value })
-                            }
-                          />
-                        </td>
-                        <td className="p-2 align-middle">
-                          <Input
-                            type="number"
-                            min={1}
-                            step={1}
-                            className="text-right"
-                            value={String(row.quantity)}
-                            onChange={(event) =>
-                              updateRow(row.key, {
-                                quantity: Number(event.target.value),
-                              })
-                            }
-                          />
-                        </td>
-                        <td className="p-2 align-middle text-right">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-sm"
-                            onClick={() => removeRow(row.key)}
-                            aria-label="Hapus baris"
-                            disabled={rows.length === 1}
-                          >
-                            <Trash2Icon className="text-destructive" />
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="min-w-56">Obat</TableHead>
+                    <TableHead className="min-w-32">Batch No</TableHead>
+                    <TableHead className="min-w-40">Kedaluwarsa</TableHead>
+                    <TableHead className="w-28 text-right">Jumlah</TableHead>
+                    <TableHead className="w-16" />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rows.map((row) => (
+                    <TableRow key={row.key}>
+                      <TableCell>
+                        <Select
+                          value={
+                            row.medicine_id > 0 ? String(row.medicine_id) : ""
+                          }
+                          onValueChange={(value) =>
+                            updateRow(row.key, { medicine_id: Number(value) })
+                          }
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="- pilih -" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectGroup>
+                              {medicines.map((medicine) => (
+                                <SelectItem
+                                  key={medicine.id}
+                                  value={String(medicine.id)}
+                                >
+                                  {medicine.name}
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          value={row.batch_no}
+                          onChange={(event) =>
+                            updateRow(row.key, {
+                              batch_no: event.target.value,
+                            })
+                          }
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="date"
+                          value={row.expires_on}
+                          onChange={(event) =>
+                            updateRow(row.key, {
+                              expires_on: event.target.value,
+                            })
+                          }
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="number"
+                          min={1}
+                          step={1}
+                          className="text-right"
+                          value={String(row.quantity)}
+                          onChange={(event) =>
+                            updateRow(row.key, {
+                              quantity: Number(event.target.value),
+                            })
+                          }
+                        />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => removeRow(row.key)}
+                          aria-label="Hapus baris"
+                          disabled={rows.length === 1}
+                        >
+                          <Trash2Icon className="text-destructive" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
 
-              {fieldErrors.items !== undefined && (
-                <p role="alert" className="text-sm text-destructive">
-                  {fieldErrors.items}
-                </p>
-              )}
+              <FieldError>{fieldErrors.items}</FieldError>
 
               <div>
                 <Button
@@ -430,15 +445,5 @@ export function ReceptionForm({ receptionId }: Props) {
 
       <AuditLogTable logs={load.logs} />
     </div>
-  )
-}
-
-function FieldError({ message }: { message: string | undefined }) {
-  if (message === undefined) return null
-
-  return (
-    <p role="alert" className="text-sm text-destructive">
-      {message}
-    </p>
   )
 }

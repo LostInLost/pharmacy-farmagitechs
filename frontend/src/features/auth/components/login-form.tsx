@@ -1,5 +1,6 @@
 import * as React from "react"
 import { z } from "zod"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -9,12 +10,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { POST_LOGIN_PATH } from "@/foundations/api/config"
 import { login, type LoginErrorKind } from "@/features/auth/api"
 import { loginFormSchema } from "@/features/auth/schemas"
 import { setUserSession } from "@/features/auth/session"
+import { CircleAlertIcon } from "lucide-react"
 
 type Props = {
   appName: string
@@ -88,8 +90,8 @@ export function LoginForm({ appName }: Props) {
       </CardHeader>
       <CardContent>
         <form id="login-form" onSubmit={onSubmit} noValidate className="grid gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="username">Username</Label>
+          <Field>
+            <FieldLabel htmlFor="username">Username</FieldLabel>
             <Input
               id="username"
               name="username"
@@ -100,14 +102,10 @@ export function LoginForm({ appName }: Props) {
               onChange={(event) => setUsername(event.target.value)}
               aria-invalid={fieldErrors.username !== undefined}
             />
-            {fieldErrors.username !== undefined && (
-              <p role="alert" className="text-sm text-destructive">
-                {fieldErrors.username}
-              </p>
-            )}
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="password">Kata sandi</Label>
+            <FieldError>{fieldErrors.username}</FieldError>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="password">Kata sandi</FieldLabel>
             <Input
               id="password"
               name="password"
@@ -118,16 +116,13 @@ export function LoginForm({ appName }: Props) {
               onChange={(event) => setPassword(event.target.value)}
               aria-invalid={fieldErrors.password !== undefined}
             />
-            {fieldErrors.password !== undefined && (
-              <p role="alert" className="text-sm text-destructive">
-                {fieldErrors.password}
-              </p>
-            )}
-          </div>
+            <FieldError>{fieldErrors.password}</FieldError>
+          </Field>
           {error !== null && (
-            <p role="alert" className="text-sm text-destructive">
-              {error}
-            </p>
+            <Alert variant="destructive">
+              <CircleAlertIcon />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
           )}
           <Button type="submit" disabled={pending} className="w-full">
             {pending ? "Memproses..." : "Masuk"}

@@ -12,11 +12,18 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty"
 import { Feedback } from "@/components/feedback"
 import { formatDateTime } from "@/foundations/format"
 import { listReceptions } from "@/features/receptions/api"
 import type { ReceptionRow } from "@/features/receptions/schemas"
-import { CirclePlusIcon } from "lucide-react"
+import { CirclePlusIcon, InboxIcon } from "lucide-react"
 
 type State =
   | { status: "loading" }
@@ -94,11 +101,18 @@ export function ReceptionsTable() {
 
               {state.status === "ready" && state.rows.length === 0 && (
                 <TableRow>
-                  <TableCell
-                    colSpan={COLUMNS.length}
-                    className="h-24 text-center text-muted-foreground"
-                  >
-                    Belum ada penerimaan.
+                  <TableCell colSpan={COLUMNS.length} className="p-0">
+                    <Empty className="rounded-none border-0 py-10">
+                      <EmptyHeader>
+                        <EmptyMedia variant="icon">
+                          <InboxIcon />
+                        </EmptyMedia>
+                        <EmptyTitle>Belum ada penerimaan.</EmptyTitle>
+                        <EmptyDescription>
+                          Tambahkan penerimaan pertama lewat tombol di atas.
+                        </EmptyDescription>
+                      </EmptyHeader>
+                    </Empty>
                   </TableCell>
                 </TableRow>
               )}

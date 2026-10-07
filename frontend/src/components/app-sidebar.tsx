@@ -63,14 +63,7 @@ export function AppSidebar({
         <NavMain items={items} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser
-          user={{
-            name: user.name,
-            email: user.username || user.role,
-            avatar: "",
-          }}
-          onLogout={onLogout}
-        />
+        <NavUser user={user} onLogout={onLogout} />
       </SidebarFooter>
     </Sidebar>
   )
