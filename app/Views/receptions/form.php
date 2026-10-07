@@ -94,6 +94,9 @@
             logCreated: <?= json_encode(lang('Reception.log.created'), JSON_UNESCAPED_UNICODE) ?>,
             logChanged: <?= json_encode(lang('Reception.log.changed'), JSON_UNESCAPED_UNICODE) ?>,
             logUnchanged: <?= json_encode(lang('Reception.log.unchanged'), JSON_UNESCAPED_UNICODE) ?>,
+            logActionCreate: <?= json_encode(lang('Reception.log.action_create'), JSON_UNESCAPED_UNICODE) ?>,
+            logActionUpdate: <?= json_encode(lang('Reception.log.action_update'), JSON_UNESCAPED_UNICODE) ?>,
+            logActionDelete: <?= json_encode(lang('Reception.log.action_delete'), JSON_UNESCAPED_UNICODE) ?>,
             logBefore: <?= json_encode(lang('Reception.log.before'), JSON_UNESCAPED_UNICODE) ?>,
             logAfter: <?= json_encode(lang('Reception.log.after'), JSON_UNESCAPED_UNICODE) ?>
         }

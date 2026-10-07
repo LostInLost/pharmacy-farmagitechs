@@ -37,6 +37,22 @@ final class ReceptionListRenderTest extends CIUnitTestCase
         $this->assertStringContainsString('assets/js/pages/reception-form.js', $html);
     }
 
+    public function testFormBootsActionLabelsForLogRendering(): void
+    {
+        $html = view('receptions/form', [
+            'title'       => lang('Reception.title.edit'),
+            'receptionId' => 7,
+        ]);
+
+        // Label aksi dikirim via i18n boot; token mentah tetap dari API.
+        $this->assertStringContainsString('logActionCreate', $html);
+        $this->assertStringContainsString('logActionUpdate', $html);
+        $this->assertStringContainsString('logActionDelete', $html);
+        $this->assertStringContainsString(lang('Reception.log.action_create'), $html);
+        $this->assertStringContainsString(lang('Reception.log.action_update'), $html);
+        $this->assertStringContainsString(lang('Reception.log.action_delete'), $html);
+    }
+
     public function testFormRendersShellWithoutReceptionId(): void
     {
         $html = view('receptions/form', [

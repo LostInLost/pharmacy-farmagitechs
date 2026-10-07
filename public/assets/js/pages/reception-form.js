@@ -71,6 +71,18 @@
             $('#received_at').val(toDatetimeLocal(reception.received_at));
         }
 
+        function actionLabel(action) {
+            var keys = {
+                CREATE: 'logActionCreate',
+                UPDATE: 'logActionUpdate',
+                DELETE: 'logActionDelete'
+            };
+            var key = keys[String(action).toUpperCase()];
+
+            // Token tak dikenal tetap tampil apa adanya agar log lama tak hilang.
+            return key === undefined ? action : Farmasi.text(key, action);
+        }
+
         function logSummary(log) {
             if (log.action === 'CREATE') {
                 return Farmasi.text('logCreated', '');
@@ -108,7 +120,7 @@
 
                 return '<tr>' +
                     '<td>' + esc(log.created_at) + '</td>' +
-                    '<td>' + esc(log.action) + '</td>' +
+                    '<td>' + esc(actionLabel(log.action)) + '</td>' +
                     '<td>' + esc(log.actor_name === null || log.actor_name === undefined ? '-' : log.actor_name) + '</td>' +
                     '<td>' + changes + '</td>' +
                     '</tr>';

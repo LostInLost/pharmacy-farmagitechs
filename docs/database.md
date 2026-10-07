@@ -151,7 +151,7 @@ Karena stok adalah hasil agregasi atas data tersimpan, rollback otomatis mengemb
 | `entity_type` | Jenis entitas yang diaudit; saat ini hanya `reception`. |
 | `entity_id` | ID entitas yang diaudit (untuk reception: `receptions.id`). |
 | `actor_id` | Petugas pelaku, diambil server dari sesi. |
-| `action` | `CREATE` atau `UPDATE`. |
+| `action` | Token kanonik `CREATE` atau `UPDATE` (bukan kalimat tampilan). |
 | `data_before` | Snapshot keadaan entitas **sebelum** perubahan. `NULL` untuk `CREATE`. |
 | `data_after` | Snapshot keadaan entitas **sesudah** perubahan. |
 | `created_at` | Waktu aksi. |
@@ -173,6 +173,8 @@ Kontrak snapshot (dibentuk `ReceptionService::snapshot()`):
 - Snapshot `before` pada `UPDATE` dibaca dari keadaan tersimpan (`itemsOf()`), bukan dari request, sehingga merekam kenyataan database.
 - Request yang ditolak (403/422) tidak menulis baris log sama sekali.
 - `PUT` identik tetap tercatat sebagai aksi baru dengan `data_before == data_after`, sehingga beda antara "ada aksi" dan "ada perubahan" tetap terlihat.
+
+Token vs label: `action` menyimpan token kanonik (`CREATE`/`UPDATE`/`DELETE`), bukan kalimat siap tampil seperti "Menambah data penerimaan". Terjemahannya dibuat di lapisan render: view form mengirim `Reception.log.action_create`/`action_update`/`action_delete` lewat boot i18n, lalu JS memetakan token ke label saat menampilkan riwayat (token tak dikenal tampil apa adanya). Alasannya: data audit harus stabil lintas bahasa dan tetap bisa difilter (`WHERE action = 'CREATE'`), sedangkan kalimat terjemahan yang ikut tersimpan akan mengunci bahasa saat tulis dan menyulitkan query; konteks entitas sudah dibawa `entity_type`, jadi tidak perlu key gabungan ala `receptions.insert`.
 
 Alasan tabel generik: `reception_logs` dahulu reception-scoped karena hanya penerimaan yang dapat ditulis aplikasi. Begitu log dimaksudkan dapat dipakai domain lain, bentuk generik `audit_logs` lebih tepat daripada menambah tabel log per entitas — kolom inti (`actor_id`, `action`, waktu, snapshot) identik untuk entitas apa pun, sehingga satu model dan satu repository cukup. Trade-off-nya: `entity_id` tidak dapat diberi foreign key karena satu kolom menunjuk ke banyak tabel. Itu diterima karena jejak audit justru harus tetap hidup ketika entitasnya dihapus; `actor_id` tetap ber-FK ke `users` agar pelaku selalu valid. Domain baru cukup mengisi `entity_type` sendiri (mis. `medicine`, `supplier`) tanpa perubahan skema.
 

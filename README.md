@@ -85,6 +85,8 @@ Audit trail: setiap aksi buat/ubah menulis satu baris `audit_logs` berisi `entit
 
 Tabel log sengaja **generik** lewat pasangan `entity_type`/`entity_id`, bukan reception-scoped: kolom inti audit (`actor_id`, `action`, waktu, snapshot) sama untuk entitas apa pun, sehingga domain tulis lain (mis. master obat) cukup memakai tabel yang sama tanpa skema baru. `entity_type` berisi `reception` untuk baris penerimaan. Trade-off-nya `entity_id` tidak dapat di-FK karena menunjuk ke banyak tabel — diterima karena jejak audit justru harus hidup ketika datanya dihapus; `actor_id` tetap ber-FK ke `users`.
 
+Kolom `action` menyimpan **token kanonik** (`CREATE`/`UPDATE`/`DELETE`), bukan kalimat siap tampil. Label berbahasa Indonesia/Inggris dirakit di lapisan render: `Reception.log.action_create` dkk. dikirim lewat boot i18n dan JS memetakannya saat menampilkan riwayat aksi (token tak dikenal tampil apa adanya). Dengan begitu data audit tetap stabil lintas bahasa dan tetap nyaman difilter (`WHERE action = 'CREATE'`).
+
 Contoh request membuat penerimaan (setelah login, kirim cookie session):
 
 ```
@@ -110,7 +112,7 @@ GET /api/stocks?on_date=2026-10-03
 
 ## 6. Pengujian dan Verifikasi
 
-Pengujian otomatis (115 test, 368 assertion):
+Pengujian otomatis (119 test, 381 assertion):
 
 ```
 composer run test
