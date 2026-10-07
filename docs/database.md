@@ -76,7 +76,7 @@ erDiagram
         varchar entity_type "reception = entitas yang diaudit"
         int entity_id "id entitas, polimorfik tanpa FK"
         int actor_id FK
-        enum action "CREATE|UPDATE|DELETE"
+        varchar action "kunci i18n aksi, mis. Audit.receptions.action.create"
         json data_before "NULL saat CREATE"
         json data_after "snapshot keadaan akhir"
         datetime created_at
@@ -145,14 +145,14 @@ Karena stok adalah hasil agregasi atas data tersimpan, rollback otomatis mengemb
 
 ## Audit Trail
 
-`audit_logs` menyimpan satu baris per aksi tulis: `CREATE` atau `UPDATE` (enum juga menyediakan `DELETE`, tetapi endpoint hapus tidak ada di lingkup tes). Tabelnya generik — satu tabel melayani semua entitas — dengan pasangan `entity_type`/`entity_id` sebagai penunjuk entitas; baris milik penerimaan memakai `entity_type = 'reception'` dan `entity_id` berisi `receptions.id`.
+`audit_logs` menyimpan satu baris per aksi tulis: `create` atau `update` (kunci `delete` juga disediakan, tetapi endpoint hapus tidak ada di lingkup tes). Tabelnya generik — satu tabel melayani semua entitas — dengan pasangan `entity_type`/`entity_id` sebagai penunjuk entitas; baris milik penerimaan memakai `entity_type = 'reception'` dan `entity_id` berisi `receptions.id`.
 
 | Kolom | Isi |
 | --- | --- |
 | `entity_type` | Jenis entitas yang diaudit: `reception` atau `medicine`. |
 | `entity_id` | ID entitas yang diaudit (untuk reception: `receptions.id`; untuk medicine: `medicines.id`). |
 | `actor_id` | Petugas pelaku, diambil server dari sesi. |
-| `action` | Token kanonik `CREATE` atau `UPDATE` (bukan kalimat tampilan). |
+| `action` | Kunci i18n aksi, mis. `Audit.receptions.action.create` (bukan kalimat tampilan). |
 | `data_before` | Snapshot keadaan entitas **sebelum** perubahan. `NULL` untuk `CREATE`. |
 | `data_after` | Snapshot keadaan entitas **sesudah** perubahan. |
 | `created_at` | Waktu aksi. |
@@ -175,7 +175,9 @@ Kontrak snapshot (dibentuk `ReceptionService::snapshot()`):
 - Request yang ditolak (403/422) tidak menulis baris log sama sekali.
 - `PUT` identik tetap tercatat sebagai aksi baru dengan `data_before == data_after`, sehingga beda antara "ada aksi" dan "ada perubahan" tetap terlihat.
 
-Token vs label: `action` menyimpan token kanonik (`CREATE`/`UPDATE`/`DELETE`), bukan kalimat siap tampil seperti "Menambah data penerimaan". Terjemahannya dibuat di lapisan render: view form mengirim `Reception.log.action_create`/`action_update`/`action_delete` lewat boot i18n, lalu JS memetakan token ke label saat menampilkan riwayat (token tak dikenal tampil apa adanya). Alasannya: data audit harus stabil lintas bahasa dan tetap bisa difilter (`WHERE action = 'CREATE'`), sedangkan kalimat terjemahan yang ikut tersimpan akan mengunci bahasa saat tulis dan menyulitkan query; konteks entitas sudah dibawa `entity_type`, jadi tidak perlu key gabungan ala `receptions.insert`.
+Kunci vs label: `action` menyimpan **kunci i18n** (`Audit.receptions.action.create`), bukan kalimat siap tampil seperti "Menambahkan data penerimaan". Kunci itu menunjuk berkas label tersendiri — `app/Language/{id,en}/Audit.php` — sehingga label tidak lagi menumpang berkas domain (`Reception.php`) dan entitas baru cukup menambah grupnya (`Audit.medicines.…`). Terjemahannya dibuat di lapisan render: view form mengirim peta kunci→label lewat boot i18n dan JS mencarinya berdasarkan nilai dari API, sedangkan sisi Astro memakai padanan `features/audit/labels.ts` (Astro belum punya sistem terjemahan sendiri). Kunci tak dikenal tampil apa adanya, jadi baris lama maupun entitas yang labelnya belum dibuat tetap terbaca.
+
+Alasan bentuk kunci: satu kolom `VARCHAR(100)` menggantikan ENUM sehingga entitas baru tidak menuntut migrasi kolom; `WHERE action = 'Audit.receptions.action.create'` tetap dapat difilter seperti token dulu (pencariannya eksak, bukan LIKE); dan segmen berkasnya sengaja kapital karena `lang()` mencari `Language/{locale}/{file}.php` apa adanya — kunci `audit.…` akan berjalan di Windows tetapi gagal di sistem berkas case-sensitive. Konteks entitas tetap dibawa `entity_type`, sehingga kunci tidak perlu dirangkai dari tipe aksi saja (`Audit.action.create` ambigu untuk dua entitas). Migrasi `AuditActionToI18nKey` memindahkan baris lama `entity_type = 'reception'` dan melebarkan kolomnya lebih dulu, karena selama masih ENUM nilai di luar daftar dibuang MySQL.
 
 Alasan tabel generik: `reception_logs` dahulu reception-scoped karena hanya penerimaan yang dapat ditulis aplikasi. Begitu log dimaksudkan dapat dipakai domain lain, bentuk generik `audit_logs` lebih tepat daripada menambah tabel log per entitas — kolom inti (`actor_id`, `action`, waktu, snapshot) identik untuk entitas apa pun, sehingga satu model, satu repository (`AuditLogRepository`), dan satu service (`AuditService`) cukup. Trade-off-nya: `entity_id` tidak dapat diberi foreign key karena satu kolom menunjuk ke banyak tabel. Itu diterima karena jejak audit justru harus tetap hidup ketika entitasnya dihapus; `actor_id` tetap ber-FK ke `users` agar pelaku selalu valid. Domain baru cukup mengisi `entity_type` sendiri (mis. `medicine`, `supplier`) tanpa perubahan skema: service domain memanggil `AuditService::logCreated/logUpdated/logDeleted` di dalam transaksinya, dan membacanya lewat `forEntity`.
 
@@ -189,7 +191,7 @@ Pembuktian pertama perluasan itu adalah master obat (`MedicineService`): ia mema
 - Database tidak memakai `DEFAULT CURRENT_TIMESTAMP` maupun trigger MySQL. `CURRENT_TIMESTAMP` mengikuti zona waktu server database, bukan Asia/Jakarta yang diwajibkan soal, dan default kolom tidak dapat menjaga `updated_at` tetap `NULL` sampai edit pertama. Sebagai jaring pengaman, insert tanpa `created_at` ditolak database (`ERROR 1364`).
 - Model CI4 memakai `useTimestamps = false`. Bila diaktifkan, CI4 mengisi `updated_at` pada saat insert juga (`BaseModel::insert()`), sehingga merusak konvensi null di atas.
 - `reception_items` tidak punya timestamp: item selalu diganti penuh saat pembaruan sehingga waktu per baris menyesatkan. Waktu perubahan tercatat di `receptions.updated_at` dan `audit_logs.created_at`.
-- Setiap aksi buat/ubah menambah satu baris `audit_logs` berisi `entity_type`, `entity_id`, `actor_id`, `action`, snapshot `data_before`/`data_after`, dan `created_at`.
+- Setiap aksi buat/ubah menambah satu baris `audit_logs` berisi `entity_type`, `entity_id`, `actor_id`, `action` (kunci i18n, mis. `Audit.receptions.action.create`), snapshot `data_before`/`data_after`, dan `created_at`.
 - Satuan mengikuti `medicines.unit` tanpa konversi.
 - `medicines` tidak pernah dihapus lewat aplikasi. `medicines.id` dirujuk `reception_items` dan `stock_movements` dengan foreign key `RESTRICT`, sehingga menghapus obat yang sudah pernah diterima akan ditolak database — dan kalaupun bisa, angka stok historisnya ikut kehilangan makna. Obat yang tidak dipakai lagi ditandai `is_active = 0`: barisnya hilang dari dropdown form penerimaan (`GET /api/references/medicines` hanya mengirim baris aktif) tetapi tetap tampil di halaman master, sehingga katalog tidak menyembunyikan riwayat. `MedicineService` sengaja tidak menyediakan operasi hapus.
 - `medicines.code` unik, dan keunikannya diperiksa validator sebelum insert. Pemeriksaan itu **case-insensitive** karena unique index MySQL memakai collation `_ci`: tanpa itu `OBT-001` vs `obt-001` lolos validasi lalu gagal di database sebagai error 500, bukan 422 yang bisa dibaca pengguna.
