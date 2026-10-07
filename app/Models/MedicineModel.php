@@ -9,6 +9,6 @@ class MedicineModel extends Model
     protected $table         = 'medicines';
     protected $primaryKey    = 'id';
     protected $returnType    = 'array';
-    protected $allowedFields = [];
+    protected $allowedFields = ['code', 'name', 'unit', 'is_active'];
     protected $useTimestamps = false;
 }

@@ -14,6 +14,9 @@ class Permissions extends BaseConfig
     public const RECEIPT_UPDATE_OWN = 'receipt.update-own';
     public const RECEIPT_UPDATE_ANY = 'receipt.update-any';
 
+    public const MEDICINE_VIEW  = 'medicine.view';
+    public const MEDICINE_WRITE = 'medicine.write';
+
     /**
      * @var array<string, list<string>>
      */
@@ -22,12 +25,15 @@ class Permissions extends BaseConfig
             self::RECEIPT_CREATE,
             self::RECEIPT_VIEW,
             self::RECEIPT_UPDATE_OWN,
+            self::MEDICINE_VIEW,
         ],
         self::ROLE_SUPERVISOR => [
             self::RECEIPT_CREATE,
             self::RECEIPT_VIEW,
             self::RECEIPT_UPDATE_OWN,
             self::RECEIPT_UPDATE_ANY,
+            self::MEDICINE_VIEW,
+            self::MEDICINE_WRITE,
         ],
     ];
 

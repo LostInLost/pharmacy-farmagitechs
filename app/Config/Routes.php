@@ -52,6 +52,11 @@ $routes->group('api', static function (RouteCollection $routes): void {
 
         $routes->get('stocks', 'Api\StockController::index');
 
+        $routes->get('medicines', 'Api\MedicineController::index');
+        $routes->post('medicines', 'Api\MedicineController::create');
+        $routes->get('medicines/(:num)', 'Api\MedicineController::show/$1');
+        $routes->put('medicines/(:num)', 'Api\MedicineController::update/$1');
+
         $routes->get('references/suppliers', 'Api\ReferenceController::suppliers');
         $routes->get('references/medicines', 'Api\ReferenceController::medicines');
     });

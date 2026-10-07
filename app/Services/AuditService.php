@@ -12,6 +12,7 @@ use App\Repositories\AuditLogRepository;
 class AuditService
 {
     public const ENTITY_RECEPTION = 'reception';
+    public const ENTITY_MEDICINE  = 'medicine';
 
     public function __construct(
         private readonly AuditLogRepository $logs = new AuditLogRepository(),
