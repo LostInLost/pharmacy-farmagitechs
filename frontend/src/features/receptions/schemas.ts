@@ -7,8 +7,14 @@ import { z } from "zod"
  * (join `left`), jadi kolom `*_name` sengaja nullable.
  */
 
-/** Baris `GET /api/receipts`. */
-export const receptionRowSchema = z.object({
+/**
+ * Kolom header penerimaan yang selalu ada di semua respons.
+ *
+ * `can_update` TIDAK termasuk di sini: nilainya dihitung `ReceptionPolicy`
+ * hanya pada `index()` dan `show()`, sedangkan `create()`/`update()`
+ * mengembalikan `ReceptionService::detail()` yang belum tersentuh policy.
+ */
+const receptionHeaderSchema = z.object({
   id: z.number(),
   reference_no: z.string(),
   supplier_id: z.number(),
@@ -20,7 +26,10 @@ export const receptionRowSchema = z.object({
   updated_by: z.number().nullable(),
   updated_by_name: z.string().nullable(),
   updated_at: z.string().nullable(),
-  /** Dihitung `ReceptionPolicy` per baris. */
+})
+
+/** Baris `GET /api/receipts` — policy menambahkan `can_update`. */
+export const receptionRowSchema = receptionHeaderSchema.extend({
   can_update: z.boolean(),
 })
 
@@ -60,7 +69,10 @@ export const auditLogSchema = z.object({
 
 export type AuditLog = z.infer<typeof auditLogSchema>
 
-/** Detail `GET /api/receipts/:id` — header + items + logs. */
+/**
+ * Detail `GET /api/receipts/:id` — header + items + logs, plus `can_update`
+ * yang ditambahkan `ReceptionController::show()`.
+ */
 export const receptionDetailSchema = receptionRowSchema.extend({
   items: z.array(receptionItemSchema),
   logs: z.array(auditLogSchema),
@@ -71,6 +83,18 @@ export type ReceptionDetail = z.infer<typeof receptionDetailSchema>
 export const receptionDetailResponseSchema = z.looseObject({
   data: receptionDetailSchema,
 })
+
+/**
+ * Detail dari `create()`/`update()` — tanpa `can_update` karena policy hanya
+ * berjalan di `index()`/`show()`. Dipakai juga sebagai `ReceptionDetail`
+ * dengan `can_update` opsional agar pemanggil tidak perlu dua tipe.
+ */
+export const receptionWriteDetailSchema = receptionHeaderSchema.extend({
+  items: z.array(receptionItemSchema),
+  logs: z.array(auditLogSchema),
+})
+
+export type ReceptionWriteDetail = z.infer<typeof receptionWriteDetailSchema>
 
 /** `GET /api/references/suppliers`. */
 export const supplierSchema = z.object({
@@ -97,9 +121,9 @@ export const medicinesResponseSchema = z.looseObject({
   data: z.array(medicineSchema),
 })
 
-/** Respons sukses `POST`/`PUT /api/receipts` (dipakai untuk memastikan bentuknya). */
+/** Respons sukses `POST`/`PUT /api/receipts`. */
 export const receptionWriteResponseSchema = z.looseObject({
-  data: receptionDetailSchema,
+  data: receptionWriteDetailSchema,
 })
 
 /**

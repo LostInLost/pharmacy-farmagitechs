@@ -16,6 +16,7 @@ import {
   type ReceptionDetail,
   type ReceptionFormInput,
   type ReceptionRow,
+  type ReceptionWriteDetail,
   type Supplier,
 } from "./schemas"
 
@@ -78,7 +79,7 @@ async function save(
   method: "POST" | "PUT",
   path: string,
   input: ReceptionFormInput
-): Promise<ApiResult<ReceptionDetail>> {
+): Promise<ApiResult<ReceptionWriteDetail>> {
   try {
     const result = await requestJson(method, path, input)
 
@@ -99,7 +100,7 @@ async function save(
 /** `POST /api/receipts` */
 export async function createReception(
   input: ReceptionFormInput
-): Promise<ApiResult<ReceptionDetail>> {
+): Promise<ApiResult<ReceptionWriteDetail>> {
   return save("POST", "/api/receipts", input)
 }
 
@@ -107,7 +108,7 @@ export async function createReception(
 export async function updateReception(
   id: number,
   input: ReceptionFormInput
-): Promise<ApiResult<ReceptionDetail>> {
+): Promise<ApiResult<ReceptionWriteDetail>> {
   return save("PUT", `/api/receipts/${id}`, input)
 }
 

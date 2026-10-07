@@ -84,11 +84,19 @@ export function StockReport() {
     getStockReport(onDate).then(applyResult)
   }
 
-  // Filter status hanya menyaring tampilan; angka tetap dari server.
+  /**
+   * Filter status hanya menyaring tampilan; angka tetap dari server.
+   *
+   * "Semua status" menampilkan setiap obat — termasuk yang belum punya batch
+   * sama sekali — agar cocok dengan halaman CI4. Status lain hanya menyisakan
+   * obat yang punya batch pada kelompok tersebut.
+   */
   const rows =
     state.status === "ready"
-      ? state.medicines.filter(
-          (medicine) => batchesFor(medicine, statusFilter).length > 0
+      ? state.medicines.filter((medicine) =>
+          statusFilter === "all"
+            ? true
+            : batchesFor(medicine, statusFilter).length > 0
         )
       : []
 
